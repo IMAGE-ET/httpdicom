@@ -356,7 +356,7 @@ int main(int argc, const char* argv[]) {
         {
             [custodianoids setObject:d[@"custodiantitle"] forKey:d[@"custodianoid"]];
             [custodiantitles setObject:d[@"custodianoid"] forKey:d[@"custodiantitle"]];
-            NSString *s=[d objectForKey:@"sql"];
+            NSString *s=[d objectForKey:@"sqlQueriesDictionary"];
             if (s) [sqlset addObject:s];
         }
         NSData *custodianOIDsData = [NSJSONSerialization dataWithJSONObject:[custodianoids allKeys] options:0 error:nil];
@@ -608,6 +608,7 @@ int main(int argc, const char* argv[]) {
 
              NSString *q=request.URL.query;//a same param may repeat
              
+             //use case where qido exists in pacs (therefore pacs is local)
              NSString *qidoBaseString=pacsaei[@"qido"];
              if (![qidoBaseString isEqualToString:@""])
              {
@@ -618,13 +619,27 @@ int main(int argc, const char* argv[]) {
                                  );//application/dicom+json not accepted
              }
              
-             NSString *sql=pacsaei[@"sql"];
-             if (sql)
+             //use case where sql exists in pacs (therefore pacs is local)
+             NSDictionary *qidoSqlDict=sql[pacsaei[@"sqlQueriesDictionary"]];
+             if (qidoSqlDict)
              {
                  //local ... simulation qido through database access
-#pragma mark TODO QIDO SQL
+                 if ([pComponents[4] isEqualToString:@"studies"])
+                 {
+                     
+                 }
+                 if ([pComponents[4] isEqualToString:@"series"])
+                 {
+                     
+                 }
+                 if ([pComponents[4] isEqualToString:@"instances"])
+                 {
+                     
+                 }
+                 else return [RSErrorResponse responseWithClientError:404 message:@"%@ [path should end with studies | series | instances]",request.path];
              }
-             
+
+             //use case where qido should be forwarded
              if (pcsuri)
              {
                  //remote... access through another PCS
@@ -640,7 +655,7 @@ int main(int argc, const char* argv[]) {
                  return urlProxy(urlString,@"application/dicom+json");
              }
              
-             
+             //otherwise
              return [RSErrorResponse responseWithClientError:404 message:@"%@ [QIDO not available]",request.path];
              
          }(request));}];
@@ -737,7 +752,7 @@ int main(int argc, const char* argv[]) {
                  return urlProxy(urlString,@"multipart/related;type=application/dicom");
              }
              
-             NSString *sql=pacsaei[@"sql"];
+             NSString *sql=pacsaei[@"sqlQueriesDictionary"];
              if (sql)
              {
                  //local ... the PCS simulates wadors thanks to a combination of
@@ -769,132 +784,112 @@ int main(int argc, const char* argv[]) {
             NSDictionary *destPacs=pacsDictionaries[pComponents[2]];
             if (!destPacs) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
 
-            //buscar SERIES wadors URIs
-            if (!destPacs[@"qido"]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [qido not available]",request.path];
-            NSArray *seriesArray=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/series?%@",destPacs[@"qido"],request.URL.query]]] options:0 error:nil];
-
-            
-            __block NSMutableArray *wados=[NSMutableArray array];
-            for (NSDictionary *dictionary in seriesArray)
+            //choose option
+            if (!destPacs[@"qido"] || [destPacs[@"qido"]isEqualToString:@""])
             {
-                //download series
-                //00081190 UR RetrieveURL
-                [wados addObject:((dictionary[@"00081190"])[@"Value"])[0]];
-#pragma mark TODO correct proxy wadors...
-            }
-            LOG_DEBUG(@"%@",[wados description]);
+                //sql + wado-uri
 
-            
-            __block NSMutableData *wadors=[NSMutableData data];
-            __block NSMutableData *boundary=[NSMutableData data];
-            __block NSMutableData *directory=[NSMutableData data];
-            __block NSRange wadorsRange=NSMakeRange(0,0);
-            __block uint32 entryPointer=0;
-            __block uint16 entriesCount=0;
-            __block NSRange ctadRange=NSMakeRange(0,0);
-            __block NSRange boundaryRange=NSMakeRange(0,0);
+                //return [RSErrorResponse responseWithClientError:404 message:@"%@ [qido not available]",request.path];
 
-            /**
-             *  The RSAsyncStreamBlock works like the RSStreamBlock
-             *  except the streamed data can be returned at a later time allowing for
-             *  truly asynchronous generation of the data.
-             *
-             *  The block must call "completionBlock" passing the new chunk of data when ready,
-             *  an empty NSData when done, or nil on error and pass a NSError.
-             *
-             *  The block cannot call "completionBlock" more than once per invocation.
-             */
-            
-            RSStreamedResponse* response = [RSStreamedResponse responseWithContentType:@"application/octet-stream" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
-            {
-                if (wadorsRange.length<1000)
+                //sql instance level
+                NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
+                NSString *WadoUrisSqlString;
+                NSString *AccessionNumber=request.query[@"AccessionNumber"];
+                if (AccessionNumber)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"studyAccessionNumberWadosUris"],AccessionNumber];
+                else
                 {
-                    LOG_INFO(@"need data. Remaining wadors:%lu",(unsigned long)wados.count);
-                    if (wados.count>0)
+                    NSString *StudyInstanceUID=request.query[@"StudyInstanceUID"];
+                    if (StudyInstanceUID)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"studyUIDWadosUris"],StudyInstanceUID];
+                    else
                     {
-                        //request, response and error
-                        NSMutableURLRequest *wadorsRequest=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:wados[0]] cachePolicy:NSURLRequestReturnCacheDataElseLoad timeoutInterval:timeout];
-                        //https://developer.apple.com/reference/foundation/nsurlrequestcachepolicy?language=objc
-                        //NSURLRequestReloadIgnoringCacheData
-                        [wadorsRequest setHTTPMethod:@"GET"];
-                        [wadorsRequest setValue:@"multipart/related;type=application/dicom" forHTTPHeaderField:@"Accept"];
-                        NSHTTPURLResponse *response=nil;
-                        //URL properties: expectedContentLength, MIMEType, textEncodingName
-                        //HTTP properties: statusCode, allHeaderFields
-                        
-                        NSError *error=nil;
-                        [wadors setData:[NSURLConnection sendSynchronousRequest:wadorsRequest returningResponse:&response error:&error]];
-                        if (response.statusCode==200)
-                        {
-                            wadorsRange.location=0;
-                            wadorsRange.length=[wadors length];
-                            NSString *ctString=response.allHeaderFields[@"Content-Type"];
-                            NSString *boundaryString=[@"\r\n--" stringByAppendingString:[ctString substringFromIndex:ctString.length-36]];
-                            [boundary setData:[boundaryString dataUsingEncoding:NSUTF8StringEncoding]];
-                            LOG_INFO(@"%@\r\n(%lu,%lu) boundary:%@",wados[0],(unsigned long)wadorsRange.location,(unsigned long)wadorsRange.length,boundaryString);
-                        }
-                        [wados removeObjectAtIndex:0];
+                        NSString *SeriesInstanceUID=request.query[@"SeriesInstanceUID"];
+                        if (SeriesInstanceUID)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"seriesUIDWadosUris"],SeriesInstanceUID];
+
+                        else return [RSErrorResponse responseWithClientError:404 message:
+                                 @"parameter AccessionNumber or StudyInstanceUID required"];
                     }
                 }
-                ctadRange=[wadors rangeOfData:ctad options:0 range:wadorsRange];
-                boundaryRange=[wadors rangeOfData:boundary options:0 range:wadorsRange];
-                if ((ctadRange.length>0) && (boundaryRange.length>0)) //chunk with new entry
+                LOG_DEBUG(@"%@",WadoUrisSqlString);
+                NSMutableData *wadoUrisData=[NSMutableData data];
+                int studiesResult=task(@"/bin/bash",
+                                       @[@"-s"],
+                                       [WadoUrisSqlString dataUsingEncoding:NSUTF8StringEncoding],
+                                       wadoUrisData
+                                       );
+                __block NSMutableArray *wados=[NSJSONSerialization JSONObjectWithData:wadoUrisData options:NSJSONReadingMutableContainers error:nil];
+                __block NSMutableData *directory=[NSMutableData data];
+                __block uint32 entryPointer=0;
+                __block uint16 entriesCount=0;
+
+                 // The RSAsyncStreamBlock works like the RSStreamBlock
+                 // The block must call "completionBlock" passing the new chunk of data when ready, an empty NSData when done, or nil on error and pass a NSError.
+                 // The block cannot call "completionBlock" more than once per invocation.
+                RSStreamedResponse* response = [RSStreamedResponse responseWithContentType:@"application/octet-stream" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
                 {
-                    //dcm
-                    unsigned long dcmLocation=ctadRange.location+ctadRange.length;
-                    unsigned long dcmLength=boundaryRange.location-dcmLocation;
-                    wadorsRange.location=boundaryRange.location+boundaryRange.length;
-                    wadorsRange.length=wadors.length-wadorsRange.location;
+                if (wados.count>0)
+                {
+                    //request, response and error
+                    NSString *wadoString=[NSString stringWithFormat:@"%@%@%@",
+                                          destPacs[@"wadouri"],
+                                          wados[0],
+                                          destPacs[@"wadoadditionalparameters"]];
+                    __block NSData *wadoData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadoString]];
+                    if (!wadoData)
+                    {
+                        NSLog(@"could not retrive: %@",wadoString);
+                        completionBlock([NSData data], nil);
+                    }
+                    else
+                    {
+                        [wados removeObjectAtIndex:0];
+                        unsigned long wadoLength=(unsigned long)[wadoData length];
+                        NSString *dcmUUID=[[[NSUUID UUID]UUIDString]stringByAppendingPathExtension:@"dcm"];
+                        NSData *dcmName=[dcmUUID dataUsingEncoding:NSUTF8StringEncoding];
+                        //LOG_INFO(@"dcm (%lu bytes):%@",dcmLength,dcmUUID);
                     
-                    NSString *dcmUUID=[[[NSUUID UUID]UUIDString]stringByAppendingPathExtension:@"dcm"];
-                    NSData *dcmName=[dcmUUID dataUsingEncoding:NSUTF8StringEncoding];
-                    //LOG_INFO(@"dcm (%lu bytes):%@",dcmLength,dcmUUID);
+                        __block NSMutableData *entry=[NSMutableData data];
+                        [entry appendBytes:&zipLocalFileHeader length:4];//0x04034B50
+                        [entry appendBytes:&zipVersion length:2];//0x000A
+                        [entry increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
+                        uint32 zipCrc32=[wadoData crc32];
+                        [entry appendBytes:&zipCrc32 length:4];
+                        [entry appendBytes:&wadoLength length:4];//zipCompressedSize
+                        [entry appendBytes:&wadoLength length:4];//zipUncompressedSize
+                        [entry appendBytes:&zipNameLength length:4];//0x28
+                        [entry appendData:dcmName];
+                        //extra param
+                        [entry appendData:wadoData];
                     
-                    __block NSMutableData *entry=[NSMutableData data];
-                    [entry appendBytes:&zipLocalFileHeader length:4];//0x04034B50
-                    [entry appendBytes:&zipVersion length:2];//0x000A
-                    [entry increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
-                    
-                    NSData *dcmData=[wadors subdataWithRange:NSMakeRange(dcmLocation,dcmLength)];
-                    uint32 zipCrc32=[dcmData crc32];
-                    
-                    [entry appendBytes:&zipCrc32 length:4];
-                    [entry appendBytes:&dcmLength length:4];//zipCompressedSize
-                    [entry appendBytes:&dcmLength length:4];//zipUncompressedSize
-                    [entry appendBytes:&zipNameLength length:4];//0x28
-                    [entry appendData:dcmName];
-                    //extra param
-                    [entry appendData:dcmData];
-                    
-                    completionBlock(entry, nil);
-                    
-                    //directory
-                    [directory appendBytes:&zipFileHeader length:4];//0x02014B50
-                    [directory appendBytes:&zipVersion length:2];//0x000A
-                    [directory appendBytes:&zipVersion length:2];//0x000A
-                    [directory increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
-                    [directory appendBytes:&zipCrc32 length:4];
-                    [directory appendBytes:&dcmLength length:4];//zipCompressedSize
-                    [directory appendBytes:&dcmLength length:4];//zipUncompressedSize
-                    [directory appendBytes:&zipNameLength length:4];//0x28
-                    /*
-                     uint16 zipFileCommLength=0x0;
-                     uint16 zipDiskStart=0x0;
-                     uint16 zipInternalAttr=0x0;
-                     uint32 zipExternalAttr=0x0;
-                     */
-                    [directory increaseLengthBy:10];
-                    
-                    [directory appendBytes:&entryPointer length:4];//offsetOfLocalHeader
-                    entryPointer+=dcmLength+70;
-                    entriesCount++;
-                    [directory appendData:dcmName];
-                    //extra param
+                        completionBlock(entry, nil);
+                        
+                        //directory
+                        [directory appendBytes:&zipFileHeader length:4];//0x02014B50
+                        [directory appendBytes:&zipVersion length:2];//0x000A
+                        [directory appendBytes:&zipVersion length:2];//0x000A
+                        [directory increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
+                        [directory appendBytes:&zipCrc32 length:4];
+                        [directory appendBytes:&wadoLength length:4];//zipCompressedSize
+                        [directory appendBytes:&wadoLength length:4];//zipUncompressedSize
+                        [directory appendBytes:&zipNameLength length:4];//0x28
+                        /*
+                         uint16 zipFileCommLength=0x0;
+                         uint16 zipDiskStart=0x0;
+                         uint16 zipInternalAttr=0x0;
+                         uint32 zipExternalAttr=0x0;
+                         */
+                        [directory increaseLengthBy:10];
+                        
+                        [directory appendBytes:&entryPointer length:4];//offsetOfLocalHeader
+                        entryPointer+=wadoLength+70;
+                        entriesCount++;
+                        [directory appendData:dcmName];
+                        //extra param
+                    }
                 }
                 else if (directory.length) //chunk with directory
                 {
                     //ZIP "end of central directory record"
-                    
+                
                     //uint32 zipEndOfCentralDirectory=0x06054B50;
                     [directory appendBytes:&zipEndOfCentralDirectory length:4];
                     [directory increaseLengthBy:4];//zipDiskNumber
@@ -913,7 +908,155 @@ int main(int argc, const char* argv[]) {
 
             return response;
             
+            }
+            else
+            {
+                //faster series wadors
+                NSArray *seriesArray=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/series?%@",destPacs[@"qido"],request.URL.query]]] options:0 error:nil];
+
+                
+                __block NSMutableArray *wados=[NSMutableArray array];
+                for (NSDictionary *dictionary in seriesArray)
+                {
+                    //download series
+                    //00081190 UR RetrieveURL
+                    [wados addObject:((dictionary[@"00081190"])[@"Value"])[0]];
+    #pragma mark TODO correct proxy wadors...
+                }
+                LOG_DEBUG(@"%@",[wados description]);
+
+                
+                __block NSMutableData *wadors=[NSMutableData data];
+                __block NSMutableData *boundary=[NSMutableData data];
+                __block NSMutableData *directory=[NSMutableData data];
+                __block NSRange wadorsRange=NSMakeRange(0,0);
+                __block uint32 entryPointer=0;
+                __block uint16 entriesCount=0;
+                __block NSRange ctadRange=NSMakeRange(0,0);
+                __block NSRange boundaryRange=NSMakeRange(0,0);
+
+                /**
+                 *  The RSAsyncStreamBlock works like the RSStreamBlock
+                 *  except the streamed data can be returned at a later time allowing for
+                 *  truly asynchronous generation of the data.
+                 *
+                 *  The block must call "completionBlock" passing the new chunk of data when ready,
+                 *  an empty NSData when done, or nil on error and pass a NSError.
+                 *
+                 *  The block cannot call "completionBlock" more than once per invocation.
+                 */
+                
+                RSStreamedResponse* response = [RSStreamedResponse responseWithContentType:@"application/octet-stream" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
+                {
+                    if (wadorsRange.length<1000)
+                    {
+                        LOG_INFO(@"need data. Remaining wadors:%lu",(unsigned long)wados.count);
+                        if (wados.count>0)
+                        {
+                            //request, response and error
+                            NSMutableURLRequest *wadorsRequest=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:wados[0]] cachePolicy:NSURLRequestReturnCacheDataElseLoad timeoutInterval:timeout];
+                            //https://developer.apple.com/reference/foundation/nsurlrequestcachepolicy?language=objc
+                            //NSURLRequestReloadIgnoringCacheData
+                            [wadorsRequest setHTTPMethod:@"GET"];
+                            [wadorsRequest setValue:@"multipart/related;type=application/dicom" forHTTPHeaderField:@"Accept"];
+                            NSHTTPURLResponse *response=nil;
+                            //URL properties: expectedContentLength, MIMEType, textEncodingName
+                            //HTTP properties: statusCode, allHeaderFields
+                            
+                            NSError *error=nil;
+                            [wadors setData:[NSURLConnection sendSynchronousRequest:wadorsRequest returningResponse:&response error:&error]];
+                            if (response.statusCode==200)
+                            {
+                                wadorsRange.location=0;
+                                wadorsRange.length=[wadors length];
+                                NSString *ctString=response.allHeaderFields[@"Content-Type"];
+                                NSString *boundaryString=[@"\r\n--" stringByAppendingString:[ctString substringFromIndex:ctString.length-36]];
+                                [boundary setData:[boundaryString dataUsingEncoding:NSUTF8StringEncoding]];
+                                LOG_INFO(@"%@\r\n(%lu,%lu) boundary:%@",wados[0],(unsigned long)wadorsRange.location,(unsigned long)wadorsRange.length,boundaryString);
+                            }
+                            [wados removeObjectAtIndex:0];
+                        }
+                    }
+                    ctadRange=[wadors rangeOfData:ctad options:0 range:wadorsRange];
+                    boundaryRange=[wadors rangeOfData:boundary options:0 range:wadorsRange];
+                    if ((ctadRange.length>0) && (boundaryRange.length>0)) //chunk with new entry
+                    {
+                        //dcm
+                        unsigned long dcmLocation=ctadRange.location+ctadRange.length;
+                        unsigned long dcmLength=boundaryRange.location-dcmLocation;
+                        wadorsRange.location=boundaryRange.location+boundaryRange.length;
+                        wadorsRange.length=wadors.length-wadorsRange.location;
+                        
+                        NSString *dcmUUID=[[[NSUUID UUID]UUIDString]stringByAppendingPathExtension:@"dcm"];
+                        NSData *dcmName=[dcmUUID dataUsingEncoding:NSUTF8StringEncoding];
+                        //LOG_INFO(@"dcm (%lu bytes):%@",dcmLength,dcmUUID);
+                        
+                        __block NSMutableData *entry=[NSMutableData data];
+                        [entry appendBytes:&zipLocalFileHeader length:4];//0x04034B50
+                        [entry appendBytes:&zipVersion length:2];//0x000A
+                        [entry increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
+                        
+                        NSData *dcmData=[wadors subdataWithRange:NSMakeRange(dcmLocation,dcmLength)];
+                        uint32 zipCrc32=[dcmData crc32];
+                        
+                        [entry appendBytes:&zipCrc32 length:4];
+                        [entry appendBytes:&dcmLength length:4];//zipCompressedSize
+                        [entry appendBytes:&dcmLength length:4];//zipUncompressedSize
+                        [entry appendBytes:&zipNameLength length:4];//0x28
+                        [entry appendData:dcmName];
+                        //extra param
+                        [entry appendData:dcmData];
+                        
+                        completionBlock(entry, nil);
+                        
+                        //directory
+                        [directory appendBytes:&zipFileHeader length:4];//0x02014B50
+                        [directory appendBytes:&zipVersion length:2];//0x000A
+                        [directory appendBytes:&zipVersion length:2];//0x000A
+                        [directory increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
+                        [directory appendBytes:&zipCrc32 length:4];
+                        [directory appendBytes:&dcmLength length:4];//zipCompressedSize
+                        [directory appendBytes:&dcmLength length:4];//zipUncompressedSize
+                        [directory appendBytes:&zipNameLength length:4];//0x28
+                        /*
+                         uint16 zipFileCommLength=0x0;
+                         uint16 zipDiskStart=0x0;
+                         uint16 zipInternalAttr=0x0;
+                         uint32 zipExternalAttr=0x0;
+                         */
+                        [directory increaseLengthBy:10];
+                        
+                        [directory appendBytes:&entryPointer length:4];//offsetOfLocalHeader
+                        entryPointer+=dcmLength+70;
+                        entriesCount++;
+                        [directory appendData:dcmName];
+                        //extra param
+                    }
+                    else if (directory.length) //chunk with directory
+                    {
+                        //ZIP "end of central directory record"
+                        
+                        //uint32 zipEndOfCentralDirectory=0x06054B50;
+                        [directory appendBytes:&zipEndOfCentralDirectory length:4];
+                        [directory increaseLengthBy:4];//zipDiskNumber
+                        [directory appendBytes:&entriesCount length:2];//disk zipEntries
+                        [directory appendBytes:&entriesCount length:2];//total zipEntries
+                        uint32 directorySize=86 * entriesCount;
+                        [directory appendBytes:&directorySize length:4];
+                        [directory appendBytes:&entryPointer length:4];
+                        [directory increaseLengthBy:2];//zipCommentLength
+                        completionBlock(directory, nil);
+                        [directory setData:[NSData data]];
+                    }
+                    else completionBlock([NSData data], nil);//last chunck
+                    
+                }];
+
+                return response;
+            }
+            
         }(request));}];
+
         
 
         
@@ -1054,7 +1197,7 @@ int main(int argc, const char* argv[]) {
 
 
              NSDictionary *destPacs=pacsDictionaries[q[@"custodianOID"]];
-             NSDictionary *destSql=sql[destPacs[@"sql"]];
+             NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
              if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
 
              NSString *sqlString;
@@ -1209,7 +1352,7 @@ int main(int argc, const char* argv[]) {
              //NSString *q=requestURL.query;
              NSDictionary *q=request.query;
              NSDictionary *destPacs=pacsDictionaries[q[@"custodianOID"]];
-             NSDictionary *destSql=sql[destPacs[@"sql"]];
+             NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
              if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
 
              NSString *sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisSeriesStudyInstanceUIDSeriesInstanceUID"],StudyInstanceUID,SeriesInstanceUID];
@@ -1473,7 +1616,7 @@ int main(int argc, const char* argv[]) {
                        stringByAppendingString:patientWhere]
                       stringByAppendingFormat:sqlDict[@"patientEpilog"],session,session];
                      
-                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destSql[@"stringEncoding"]unsignedIntegerValue]);
+                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
                      
                      //sorted study date (5) desc
                      [studiesArray sortWithOptions:0 usingComparator:^NSComparisonResult(id obj1, id obj2) {
@@ -1509,7 +1652,7 @@ int main(int argc, const char* argv[]) {
                                          );//application/dicom+json not accepted
                  }
                  
-                 NSString *sql=pacsaei[@"sql"];
+                 NSString *sql=pacsaei[@"sqlQueriesDictionary"];
                  if (sql)
                  {
                      //local ... simulation qido through database access
@@ -1628,12 +1771,12 @@ int main(int argc, const char* argv[]) {
                  NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
                  NSDictionary *destPacs=pacsDictionaries[destOID];
                  
-                 NSDictionary *destSql=sql[destPacs[@"sql"]];
+                 NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
                  if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
                  
                  //local ... simulation qido through database access
                  
-                 //LOG_INFO(@"different context with db: %@",destPacs[@"sql"]);
+                 //LOG_INFO(@"different context with db: %@",destPacs[@"sqlQueriesDictionary"]);
                  
                  if (r){
                      //replace previous request of the session.
@@ -1673,11 +1816,13 @@ int main(int argc, const char* argv[]) {
                  //PEP por aet or custodian
                  if ([q[@"aet"] isEqualToString:q[@"custodiantitle"]])
                  {
+                     /*
                      [studiesWhere appendFormat:
                       @" AND %@ in %@",
                       destSql[@"accessControlId"],
                       custodianTitlesaetsStrings[q[@"custodiantitle"]]
                       ];
+                      */
                  }
                  else
                  {
@@ -1770,28 +1915,73 @@ int main(int argc, const char* argv[]) {
                         ||(qDate_end && [qDate_end length])
                         )
                      {
-                         //StudyDate _00080020 aaaammdd,-aaaammdd,aaaammdd-,aaaammdd-aaaammdd
-                         
-                         if ([qDate_start isEqualToString:qDate_end])
+                         if ([destSql[@"StudyDate"]hasSuffix:@"datetime"])
                          {
-                             //no hyphen
-                             [studiesWhere appendFormat:@" AND %@ = '%@'", destSql[@"StudyDate"], qDate_start];
-                         }
-                         else if (!qDate_start || [qDate_start isEqualToString:@""])
-                         {
-                             //until
-                             [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], qDate_end];
-                         }
-                         else if (!qDate_end || [qDate_end isEqualToString:@""])
-                         {
-                             //since
-                             [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], qDate_start];
+                             // sql datatype datetime... aaaa-mm-dd 00:00:00
+                             NSString *dateWithoutTime=[NSString stringWithFormat:@"%@-%@-%@",
+                                              [qDate_start substringWithRange:NSMakeRange(0, 4)],
+                                              [qDate_start substringWithRange:NSMakeRange(4, 2)],
+                                              [qDate_start substringWithRange:NSMakeRange(6, 2)]];
+                             
+                             NSString *since=[NSString stringWithFormat:@"%@-%@-%@ 00:00:00",
+                                              [qDate_start substringWithRange:NSMakeRange(0, 4)],
+                                              [qDate_start substringWithRange:NSMakeRange(4, 2)],
+                                              [qDate_start substringWithRange:NSMakeRange(6, 2)]];
+                             
+                             NSString *until=[NSString stringWithFormat:@"%@-%@-%@ 23:59:59",
+                                              [qDate_end substringWithRange:NSMakeRange(0, 4)],
+                                              [qDate_end substringWithRange:NSMakeRange(4, 2)],
+                                              [qDate_end substringWithRange:NSMakeRange(6, 2)]];
+                             
+                             
+                             if ([qDate_start isEqualToString:qDate_end])
+                             {
+                                 //no hyphen
+                                 [studiesWhere appendFormat:@" AND %@ LIKE '%@%%'", destSql[@"StudyDate"], dateWithoutTime];
+                             }
+                             else if (!qDate_start || [qDate_start isEqualToString:@""])
+                             {
+                                 //until
+                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], until];
+                             }
+                             else if (!qDate_end || [qDate_end isEqualToString:@""])
+                             {
+                                 //since
+                                 [studiesWhere appendFormat:@" AND %@ >= '%@'", destSql[@"StudyDate"], since];
+                             }
+                             else
+                             {
+                                 //inbetween
+                                 [studiesWhere appendFormat:@" AND %@ >= '%@'", destSql[@"StudyDate"], since];
+                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], until];
+                             }
+
                          }
                          else
                          {
-                             //inbetween
-                             [studiesWhere appendFormat:@" AND %@ >= '%@'", destSql[@"StudyDate"], qDate_start];
-                             [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], qDate_end];
+                             //StudyDate _00080020 aaaammdd,-aaaammdd,aaaammdd-,aaaammdd-aaaammdd
+                             
+                             if ([qDate_start isEqualToString:qDate_end])
+                             {
+                                 //no hyphen
+                                 [studiesWhere appendFormat:@" AND %@ = '%@'", destSql[@"StudyDate"], qDate_start];
+                             }
+                             else if (!qDate_start || [qDate_start isEqualToString:@""])
+                             {
+                                 //until
+                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], qDate_end];
+                             }
+                             else if (!qDate_end || [qDate_end isEqualToString:@""])
+                             {
+                                 //since
+                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], qDate_start];
+                             }
+                             else
+                             {
+                                 //inbetween
+                                 [studiesWhere appendFormat:@" AND %@ >= '%@'", destSql[@"StudyDate"], qDate_start];
+                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], qDate_end];
+                             }
                          }
                      }
                      
@@ -1813,10 +2003,12 @@ int main(int argc, const char* argv[]) {
 
 
 //2 count
-                 NSString *sqlCountQuery=
-                 [[destSql[@"studiesCountProlog"]
-                   stringByAppendingString:studiesWhere]
-                  stringByAppendingString:destSql[@"studiesCountEpilog"]];
+                 NSString *sqlCountQuery=[NSString stringWithFormat:@"%@%@%@%@",
+                                          destPacs[@"sqlProlog"],
+                                          destSql[@"studiesCountProlog"],
+                                          studiesWhere,
+                                          destSql[@"studiesCountEpilog"]
+                                          ];
                  LOG_DEBUG(@"%@",sqlCountQuery);
                  NSMutableData *countData=[NSMutableData data];
                  if (task(@"/bin/bash",@[@"-s"],[sqlCountQuery dataUsingEncoding:NSUTF8StringEncoding],countData))
@@ -1846,7 +2038,7 @@ int main(int argc, const char* argv[]) {
                        stringByAppendingString:studiesWhere]
                       stringByAppendingFormat:destSql[@"datatablesStudiesEpilog"],session,session];
                      
-                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destSql[@"stringEncoding"]unsignedIntegerValue]);
+                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
 
                      [Total setObject:studiesArray forKey:session];
                      [Filtered setObject:[studiesArray mutableCopy] forKey:session];
@@ -2042,7 +2234,7 @@ int main(int argc, const char* argv[]) {
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
              NSDictionary *destPacs=pacsDictionaries[destOID];
              
-             NSDictionary *destSql=sql[destPacs[@"sql"]];
+             NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
              if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
              
              NSMutableString *studiesWhere=[NSMutableString stringWithString:destSql[@"studiesWhere"]];
@@ -2068,7 +2260,7 @@ int main(int argc, const char* argv[]) {
                stringByAppendingString:studiesWhere]
               stringByAppendingFormat:destSql[@"datatablesStudiesEpilog"],session,session];
              
-             NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destSql[@"stringEncoding"]unsignedIntegerValue]);
+             NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
              
              //sorted study date (5) desc
              [studiesArray sortWithOptions:0 usingComparator:^NSComparisonResult(id obj1, id obj2) {
@@ -2104,13 +2296,13 @@ int main(int argc, const char* argv[]) {
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
              NSDictionary *destPacs=pacsDictionaries[destOID];
              
-             NSDictionary *destSql=sql[destPacs[@"sql"]];
+             NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
              if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
              NSString *where;
              NSString *AccessionNumber=q[@"AccessionNumber"];
              NSString *StudyInstanceUID=q[@"StudyInstanceUID"];
              if (
-                    [destSql[@"preferredStudyIdentificator"] isEqualToString:@"AccessionNumber"]
+                    [destPacs[@"preferredStudyIdentificator"] isEqualToString:@"AccessionNumber"]
                  && AccessionNumber
                  && ![AccessionNumber isEqualToString:@"NULL"])
              {
@@ -2131,7 +2323,7 @@ int main(int argc, const char* argv[]) {
                stringByAppendingString:where]
               stringByAppendingFormat:destSql[@"datatablesSeriesEpilog"],session,session];
              
-             NSMutableArray *seriesArray=jsonMutableArray(sqlDataQuery, [destSql[@"stringEncoding"]unsignedIntegerValue]);
+             NSMutableArray *seriesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
              //LOG_INFO(@"series array:%@",[seriesArray description]);
              
              NSMutableDictionary *resp = [NSMutableDictionary dictionary];
@@ -2268,7 +2460,7 @@ int main(int argc, const char* argv[]) {
                      if (q[@"studyUID"] && q[@"seriesUID"]) qidoSeriesString=[NSString stringWithFormat:@"%@/series?StudyInstanceUID=%@&SeriesInstanceUID=%@",(pacsDictionaries[q[@"custodianOID"]])[@"qido"],q[@"studyUID"],q[@"seriesUID"]];
                      else return [RSDataResponse responseWithText:[NSString stringWithFormat:@"requestType=SERIES requires params studyUID and seriesUID in %@%@?%@",b,p,requestURL.query]];
                  }
-                 //LOG_INFO(@"%@",qidoSeriesString);
+                 LOG_DEBUG(@"%@",qidoSeriesString);
                  
                  NSMutableArray *seriesArray=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:qidoSeriesString]] options:NSJSONReadingMutableContainers error:nil];
                  
