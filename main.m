@@ -276,6 +276,12 @@ void ODLog(ODLogLevelEnum level, NSString* format, ...) {
     fprintf(stderr, "[%s] %s\n", levelNames[level], [message UTF8String]);
 }
 
+BOOL buildWhereString(BOOL E,BOOL S,BOOL I,NSArray *queryItems, NSDictionary *sqlDict, NSMutableString *whereString)
+{
+
+    return true;
+}
+
 int main(int argc, const char* argv[]) {
     @autoreleasepool {
         /*
@@ -284,7 +290,7 @@ int main(int argc, const char* argv[]) {
          [1] path to pacs.plist
          [2] puerto
          [3] [ DEBUG | VERBOSE | INFO | WARNING | ERROR | EXCEPTION]
-         ... path to log file         
+         ... path to log file
          */
 
         NSArray *args=[[NSProcessInfo processInfo] arguments];
@@ -413,6 +419,7 @@ int main(int argc, const char* argv[]) {
         
         //sql configurations
         NSMutableDictionary *sql=[NSMutableDictionary dictionary];
+        NSMutableDictionary *sqlWadoTags=[NSMutableDictionary dictionary];
         for (NSString *s in sqlset)
         {
             [sql setObject:
@@ -427,6 +434,17 @@ int main(int argc, const char* argv[]) {
               ]
               forKey:s
              ];
+            //sql-qido dictionary tag -> keyword
+            NSDictionary *wadoKeyword=(sql[s])[@"QidoAttrs"];
+            if (wadoKeyword)
+            {
+                NSMutableDictionary *tagKeyword=[NSMutableDictionary dictionary];
+                for (NSString *keyword in [wadoKeyword allKeys])
+                {
+                    [tagKeyword setObject:keyword forKey:(wadoKeyword[keyword])[@"tag"]];
+                }
+                [sqlWadoTags setObject:tagKeyword forKey:s];
+            }
         }
 
 #pragma mark -
@@ -620,23 +638,263 @@ int main(int argc, const char* argv[]) {
              }
              
              //use case where sql exists in pacs (therefore pacs is local)
-             NSDictionary *qidoSqlDict=sql[pacsaei[@"sqlQueriesDictionary"]];
-             if (qidoSqlDict)
+             NSDictionary *destSql=sql[pacsaei[@"sqlQueriesDictionary"]];
+             if (destSql)
              {
+
                  //local ... simulation qido through database access
-                 if ([pComponents[4] isEqualToString:@"studies"])
-                 {
-                     
+
+                 //create where
+                 NSURLComponents *urlComponents = [NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+                 NSUInteger level=[@[@"patients",@"studies",@"series",@"instances"] indexOfObject:pComponents[4]];
+
+                 
+                 NSMutableString *whereString = [NSMutableString string];
+                 switch (level) {
+                     case 1:
+                         [whereString appendString:destSql[@"studiesWhere"]];
+                         break;
+                     case 2:
+                         [whereString appendString:destSql[@"seriesWhere"]];
+                         break;
+                     case 3:
+                         [whereString appendString:destSql[@"instancesWhere"]];
+                         break;
+                     default:
+                         [RSErrorResponse responseWithClientError:404 message:@"level %@ not accepted. Should be Study, Series or Instance",pComponents[4]];
+                         break;
                  }
-                 if ([pComponents[4] isEqualToString:@"series"])
+
+                 
+                 NSArray *queryItems=[urlComponents queryItems];
+                 NSDictionary *qidoKeywordsDict=destSql[@"QidoAttrs"];
+                 if ([queryItems count])
                  {
+                     NSDictionary *qidoTags=sqlWadoTags[pacsaei[@"sqlQueriesDictionary"]];
                      
+                     for (NSURLQueryItem *qi in queryItems) {
+                         
+                         //keyword, keywordProperties
+                         NSString *keyword=qidoTags[qi.name];
+                         NSDictionary *keywordProperties=nil;
+                         if (keyword) keywordProperties=qidoKeywordsDict[keyword];
+                         else if (qidoKeywordsDict[qi.name])
+                         {
+                             keyword=qi.name;
+                             keywordProperties=qidoKeywordsDict[qi.name];
+                         }
+                         else return [RSErrorResponse responseWithClientError:404 message:@"%@ [not a qido filter for PACS %@]",qi.name,pacsaei];
+
+                         //level check
+                         if ( level < [keywordProperties[@"level"] unsignedIntegerValue]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not available at level %@]",qi.name,pComponents[4]];
+                         
+                        //string compare
+                        if ([@[@"LO",@"PN",@"CS"] indexOfObject:keywordProperties[@"vr"]])
+                        {
+                            [whereString appendString:
+                             [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
+                                              fieldString:destSql[keyword]
+                                              valueString:qi.value
+                              ]
+                             ];
+                            continue;
+                        }
+                     
+                         
+                         //date compare
+                         if ([@[@"DA"] indexOfObject:keywordProperties[@"vr"]])
+                         {
+                             //qidoDateType (qidoDate is aaaammdd, -aaaammdd, aaaammdd- o aaaammdd-aaaammdd)
+                             
+                             if ([destSql[keyword] hasSuffix:@"datetime"])
+                             {
+                                 // sql datatype datetime... aaaa-mm-dd 00:00:00
+                                 
+                                 //on
+                                 if (![qi.value containsString:@"-"])
+                                     [whereString appendFormat:
+                                      @" AND %@ LIKE '%@-%@-%@%%'",
+                                      destSql[keyword],
+                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
+                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
+                                      [qi.value substringWithRange:NSMakeRange(6, 2)]
+                                      ];
+                                 
+                                 //until
+                                 else if ([qi.value hasPrefix:@"-"])
+                                     [whereString appendFormat:
+                                      @" AND %@ <= '%@-%@-%@ 23:59:59'",
+                                      destSql[@"StudyDate"],
+                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
+                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
+                                      [qi.value substringWithRange:NSMakeRange(6, 2)]
+                                      ];
+                                 
+                                 //since
+                                 else if ([qi.value hasSuffix:@"-"])
+                                     [whereString appendFormat:
+                                      @" AND %@ >= '%@-%@-%@ 00:00:00'",
+                                      destSql[@"StudyDate"],
+                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
+                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
+                                      [qi.value substringWithRange:NSMakeRange(6, 2)]
+                                      ];
+                                 
+                                 //inbetween
+                                 else
+                                     [whereString appendFormat:
+                                      @" AND %@ >= '%@-%@-%@ 00:00:00' AND %@ <= '%@-%@-%@ 23:59:59'",
+                                      destSql[@"StudyDate"],
+                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
+                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
+                                      [qi.value substringWithRange:NSMakeRange(6, 2)],
+                                      destSql[@"StudyDate"],
+                                      [qi.value substringWithRange:NSMakeRange(9, 4)],
+                                      [qi.value substringWithRange:NSMakeRange(13, 2)],
+                                      [qi.value substringWithRange:NSMakeRange(15, 2)]
+                                      ];
+                             }
+                             else
+                             {
+                                 // sql datatype string aaaammdd
+                                 
+                                 //on
+                                 if (![qi.value containsString:@"-"])
+                                     [whereString appendFormat:
+                                      @" AND %@ LIKE '%@%%'",
+                                      destSql[@"StudyDate"],
+                                      qi.value
+                                      ];
+                                 
+                                 //until
+                                 else if ([qi.value hasPrefix:@"-"])
+                                     [whereString appendFormat:
+                                      @" AND %@ <= '%@'",
+                                      destSql[@"StudyDate"],
+                                      [qi.value substringWithRange:NSMakeRange(0, 8)]
+                                      ];
+                                 
+                                 //since
+                                 else if ([qi.value hasSuffix:@"-"])
+                                     [whereString appendFormat:
+                                      @" AND %@ >= '%@'",
+                                      destSql[@"StudyDate"],
+                                      [qi.value substringWithRange:NSMakeRange(9, 8)]
+                                      ];
+                                 
+                                 //inbetween
+                                 else
+                                     [whereString appendFormat:
+                                      @" AND %@ >= '%@' AND %@ <= '%@'",
+                                      destSql[@"StudyDate"],
+                                      [qi.value substringWithRange:NSMakeRange(0, 8)],
+                                      destSql[@"StudyDate"],
+                                      [qi.value substringWithRange:NSMakeRange(9, 8)]
+                                      ];
+                             }
+                             continue;
+                         }
+                         
+                     }//end loop
+
+                 }//end queryItems
+                 
+                 
+                 NSString *scriptString=nil;
+                 switch (level) {
+                     case 1:
+                         scriptString=[NSString stringWithFormat:@"%@%@%@%@",
+                                       pacsaei[@"sqlProlog"],
+                                       destSql[@"QidoStudyProlog"],
+                                       whereString,
+                                       destSql[@"QidoStudyEpilog"]
+                                       ];
+                         break;
+                     case 2:
+                         scriptString=[NSString stringWithFormat:@"%@%@%@%@",
+                                       pacsaei[@"sqlProlog"],
+                                       destSql[@"QidoSeriesProlog"],
+                                       whereString,
+                                       destSql[@"QidoSeriesEpilog"]
+                                       ];
+                         break;
+                     case 3:
+                         scriptString=[NSString stringWithFormat:@"%@%@%@%@",
+                                       pacsaei[@"sqlProlog"],
+                                       destSql[@"QidoInstanceProlog"],
+                                       whereString,
+                                       destSql[@"QidoInstanceEpilog"]
+                                       ];
+                         break;
                  }
-                 if ([pComponents[4] isEqualToString:@"instances"])
+
+                 
+                 LOG_DEBUG(@"%@",scriptString);
+                 /*sql query
+                 if      (encoding==4) LOG_DEBUG(@"utf8\r\n%@",scriptString);
+                 else if (encoding==5) LOG_DEBUG(@"latin1\r\n%@",scriptString);
+                 else                  LOG_DEBUG(@"encoding:%lu\r\n%@",(unsigned long)encoding,scriptString);
+                 */
+                 NSMutableData *mutableData=[NSMutableData data];
+                 if (!task(@"/bin/bash",@[@"-s"],[scriptString dataUsingEncoding:NSUTF8StringEncoding],mutableData))
+                     [RSErrorResponse responseWithClientError:404 message:@"%@",@"can not execute the script"];//NotFound
+
+                 NSError *error=nil;
+                 NSArray *arrayOfDicts=[NSJSONSerialization JSONObjectWithData:mutableData options:0 error:&error];
+                 if (!arrayOfDicts) [RSErrorResponse responseWithClientError:404 message:@"bad qido sql result : %@",[error description]];
+
+                 /*
+                  adjust presentation from
+                  
+                  [
+                    {
+                        "PatientID" = "x",
+                        ...
+                    },
+                    ...
+                  ]
+                  
+                  to DICOM JSON
+                  
+                  [
+                    {
+                        "00080020" : {
+                            "Value" : [
+                                "20080706"
+                            ],
+                        "vr"    :   "DA"
+                        },
+                        ...
+                    },
+                    ...
+                  ]
+                  
+                  NSString *string=[[NSString alloc]initWithData:mutableData encoding:encoding];//5=latinISO1 4=UTF8
+                  NSData *utf8Data=[string dataUsingEncoding:NSUTF8StringEncoding];
+                  */
+
+                 NSMutableArray *qidoResponseArray=[NSMutableArray array];
+                 for (NSDictionary *dict in arrayOfDicts)
                  {
-                     
+                     NSMutableDictionary *object=[NSMutableDictionary dictionary];
+                     for (NSString *key in dict)
+                     {
+                         NSDictionary *attrDesc=qidoKeywordsDict[@"key"];
+                         NSMutableDictionary *attrInst=[NSMutableDictionary dictionary];
+                         [attrInst setObject:@[dict[key]] forKey:@"Value"];
+                         [attrInst setObject:attrDesc[@"vr"] forKey:@"vr"];
+                         [object setObject:attrInst forKey:attrDesc[@"tag"]];
+                     }
+                     [qidoResponseArray addObject:object];
                  }
-                 else return [RSErrorResponse responseWithClientError:404 message:@"%@ [path should end with studies | series | instances]",request.path];
+                 
+                 return [RSDataResponse responseWithData:
+                         [NSJSONSerialization dataWithJSONObject:qidoResponseArray
+                                                         options:0
+                                                           error:nil
+                          ]
+                                             contentType:@"application/json"
+                         ];
              }
 
              //use case where qido should be forwarded
@@ -1518,7 +1776,8 @@ int main(int argc, const char* argv[]) {
                  NSLog(@"queryItems: %@",[queryItems description]);
              
                  for (NSURLQueryItem *qi in queryItems) {
-                     if ([qi.name isEqualToString:@"pacs"])
+                     NSString *qin=qi.name;
+                     if ([qin isEqualToString:@"pacs"])
                      {
                          hasPacsQueryItem=true;
                          NSString *sqlConnection=(pacsDictionaries[qi.value])[sql];
@@ -1528,29 +1787,29 @@ int main(int argc, const char* argv[]) {
                              [sqlConnectionSet addObject:sqlConnection];
                          }
                      }
-                     else if (!hasPatientID && [qi.name isEqualToString:@"PatientID"])
+                     else if (!hasPatientID && [qin isEqualToString:@"PatientID"])
                      {
-                         [otherQueryItems setObject:qi.value forKey:qi.name];
+                         [otherQueryItems setObject:qi.value forKey:qin];
                          hasPatientID=true;
                      }
-                     else if (!hasIssuerOfPatientID && [qi.name isEqualToString:@"IssuerOfPatientID"])
+                     else if (!hasIssuerOfPatientID && [qin isEqualToString:@"IssuerOfPatientID"])
                      {
-                         [otherQueryItems setObject:qi.value forKey:qi.name];
+                         [otherQueryItems setObject:qi.value forKey:qin];
                          hasIssuerOfPatientID=true;
                      }
-                     else if (!hasPatientName && [qi.name isEqualToString:@"PatientName"])
+                     else if (!hasPatientName && [qin isEqualToString:@"PatientName"])
                      {
-                         [otherQueryItems setObject:qi.value forKey:qi.name];
+                         [otherQueryItems setObject:qi.value forKey:qin];
                          hasPatientName=true;
                      }
-                     else if (!hasPatientBirthDate && [qi.name isEqualToString:@"PatientBirthDate"])
+                     else if (!hasPatientBirthDate && [qin isEqualToString:@"PatientBirthDate"])
                      {
-                         [otherQueryItems setObject:qi.value forKey:qi.name];
+                         [otherQueryItems setObject:qi.value forKey:qin];
                          hasPatientBirthDate=true;
                      }
-                     else if (!hasPatientSex && [qi.name isEqualToString:@"PatientSex"])
+                     else if (!hasPatientSex && [qin isEqualToString:@"PatientSex"])
                      {
-                         [otherQueryItems setObject:qi.value forKey:qi.name];
+                         [otherQueryItems setObject:qi.value forKey:qin];
                          hasPatientSex=true;
                      }
                  }
@@ -2033,11 +2292,15 @@ int main(int argc, const char* argv[]) {
                  {
                      //order is performed later, from mutableDictionary
 //3 select
-                     NSString *sqlDataQuery=
-                     [[destSql[@"datatablesStudiesProlog"]
-                       stringByAppendingString:studiesWhere]
-                      stringByAppendingFormat:destSql[@"datatablesStudiesEpilog"],session,session];
-                     
+                     NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
+                                             destPacs[@"sqlProlog"],
+                                             destSql[@"datatablesStudiesProlog"],
+                                             studiesWhere,
+                                             [NSString stringWithFormat: destSql[@"datatablesStudiesEpilog"],session,
+                                                 session
+                                              ]
+                                             ];
+
                      NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
 
                      [Total setObject:studiesArray forKey:session];
@@ -2254,11 +2517,14 @@ int main(int argc, const char* argv[]) {
              LOG_INFO(@"WHERE %@",[studiesWhere substringFromIndex:38]);
              
 
-             
-             NSString *sqlDataQuery=
-             [[destSql[@"datatablesStudiesProlog"]
-               stringByAppendingString:studiesWhere]
-              stringByAppendingFormat:destSql[@"datatablesStudiesEpilog"],session,session];
+             NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
+                                     destPacs[@"sqlProlog"],
+                                     destSql[@"datatablesStudiesProlog"],
+                                     studiesWhere,
+                                     [NSString stringWithFormat: destSql[@"datatablesStudiesEpilog"],session,
+                                      session
+                                      ]
+                                     ];
              
              NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
              
@@ -2317,11 +2583,17 @@ int main(int argc, const char* argv[]) {
              
              
              LOG_INFO(@"WHERE %@",[where substringFromIndex:38]);
-             
-             NSString *sqlDataQuery=
-             [[destSql[@"datatablesSeriesProlog"]
-               stringByAppendingString:where]
-              stringByAppendingFormat:destSql[@"datatablesSeriesEpilog"],session,session];
+
+             NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
+                                     destPacs[@"sqlProlog"],
+                                     destSql[@"datatablesSeriesProlog"],
+                                     where,
+                                     [NSString stringWithFormat:
+                                      destSql[@"datatablesSeriesEpilog"],
+                                      session,
+                                      session
+                                      ]
+                                     ];
              
              NSMutableArray *seriesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
              //LOG_INFO(@"series array:%@",[seriesArray description]);
