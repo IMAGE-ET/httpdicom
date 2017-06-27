@@ -63,7 +63,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/Shared/httpdicom/conf/SONORAD.plist"
+            argument = "/Users/jacquesfauquex/opendicom/httpdicom/conf/CHP_PCS1.plist"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -71,7 +71,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "VERBOSE"
+            argument = "DEBUG"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

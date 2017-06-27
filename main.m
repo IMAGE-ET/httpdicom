@@ -509,7 +509,7 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request){
             
-            LOG_INFO(@"%@ custodians",request.remoteAddressString);
+            LOG_DEBUG(@"%@ custodians",request.remoteAddressString);
             NSArray *pComponents=[request.path componentsSeparatedByString:@"/"];
              NSUInteger pCount=[pComponents count];
              
@@ -616,9 +616,11 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:qidoRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-
-             LOG_INFO(@"%@ qido",request.remoteAddressString);
-             NSArray *pComponents=[request.path componentsSeparatedByString:@"/"];
+             LOG_VERBOSE(@"[QIDO] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
              NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
              if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
 
@@ -930,9 +932,11 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             
-             LOG_INFO(@"%@ wado-uri",request.remoteAddressString);
-             NSArray *pComponents=[request.path componentsSeparatedByString:@"/"];
+             LOG_VERBOSE(@"[WADO-URI] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+
              //NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
              NSDictionary *pacsaei=pacsDictionaries[(request.query)[@"custodianOID"]];
              if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
@@ -997,9 +1001,11 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:wadorsRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             
-             LOG_INFO(@"%@ wado-rs",request.remoteAddressString);
-             NSArray *pComponents=[request.path componentsSeparatedByString:@"/"];
+             LOG_VERBOSE(@"[WADO-RS] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+
              NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
              if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
 
@@ -1042,9 +1048,11 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:dcmzipRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
         {
+            LOG_VERBOSE(@"[dcm.zip] from %@",request.remoteAddressString);
+            //using NSURLComponents instead of RSRequest
+            NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+            NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
-            LOG_INFO(@"%@ dcm.zip",request.remoteAddressString);
-            NSArray *pComponents=[request.path componentsSeparatedByString:@"/"];
             NSDictionary *destPacs=pacsDictionaries[pComponents[2]];
             if (!destPacs) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
 
@@ -1334,9 +1342,11 @@ int main(int argc, const char* argv[]) {
          [httpdicomServer addHandler:@"GET" regex:encapsulatedRegex processBlock:
           ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             
-             LOG_INFO(@"%@ {proxy}/ot|doc|cda",request.remoteAddressString);
-             NSArray *pComponents=[request.path componentsSeparatedByString:@"/"];
+             LOG_VERBOSE(@"[ot|doc|cda] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+
              NSDictionary *destPacs=pacsDictionaries[pComponents[2]];
              if (!destPacs) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
              
@@ -1449,7 +1459,10 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_INFO(@"%@ /manifest/weasis studies",request.remoteAddressString);
+             LOG_VERBOSE(@"[weasis studies] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
              
              //request parts logging
              NSURL *requestURL=request.URL;
@@ -1601,7 +1614,10 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_INFO(@"%@ /manifest/weasis series",request.remoteAddressString);
+             LOG_VERBOSE(@"[weasis series] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
              //request parts logging
              NSURL *requestURL=request.URL;
@@ -1609,7 +1625,6 @@ int main(int argc, const char* argv[]) {
              NSString *b=[bSlash substringToIndex:[bSlash length]-1];
              
              NSString *p=requestURL.path;
-             NSArray *pComponents=[p componentsSeparatedByString:@"/"];
              NSString *StudyInstanceUID=pComponents[4];
              NSString *SeriesInstanceUID=pComponents[6];
              
@@ -1761,11 +1776,11 @@ int main(int argc, const char* argv[]) {
           ^(RSRequest* request, RSCompletionBlock completionBlock)
           {completionBlock(^RSResponse* (RSRequest* request)
           {
-             
-              LOG_INFO(@"%@ patient",request.remoteAddressString);
+              LOG_VERBOSE(@"[patient] from %@",request.remoteAddressString);
+              //using NSURLComponents instead of RSRequest
+              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
 
               //get query part
-              NSURLComponents *urlComponents = [NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
                  NSArray *queryItems=[urlComponents queryItems];
                  
                  //filter queryItems to find the once with name pacs
@@ -1961,9 +1976,15 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:dtstudiesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
+             LOG_DEBUG(@"%@",[request.URL description]);
+             LOG_VERBOSE(@"[datatables studies] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+             
 
-             LOG_INFO(@"%@ datatables/studies",request.remoteAddressString);
              NSDictionary *q=request.query;
+             
              NSString *session=q[@"session"];
              if (!session || [session isEqualToString:@""]) return [RSDataResponse responseWithData:[NSData jsonpCallback:q[@"callback"] forDraw:q[@"draw"] withErrorString:@"query without required 'session' parameter"] contentType:@"application/dicom+json"];
              
@@ -2488,8 +2509,13 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:dtpatientRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
+             LOG_VERBOSE(@"[datatables patient] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+             
+
              NSDictionary *q=request.query;
-             //LOG_INFO(@"%@",[q description]);
              
              NSString *session=q[@"session"];
              if (!session || [session isEqualToString:@""]) return [RSDataResponse responseWithData:[NSData jsonpCallback:q[@"callback"] forDraw:q[@"draw"] withErrorString:@"query without required 'session' parameter"] contentType:@"application/dicom+json"];
@@ -2559,6 +2585,12 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:dtseriesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
+             LOG_VERBOSE(@"[datatables series] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+             
+
              NSDictionary *q=request.query;
              NSString *session=q[@"session"];
              if (!session || [session isEqualToString:@""]) return [RSDataResponse responseWithData:[NSData jsonpCallback:q[@"callback"] forDraw:q[@"draw"] withErrorString:@"query without required 'session' parameter"] contentType:@"application/dicom+json"];
@@ -2624,6 +2656,11 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:iheiidRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
+             LOG_VERBOSE(@"[IHEInvokeImageDisplay] from %@",request.remoteAddressString);
+             //using NSURLComponents instead of RSRequest
+             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+
              NSDictionary *q=request.query;
              
              //(1) b= html5dicomURL
