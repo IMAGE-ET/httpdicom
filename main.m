@@ -625,29 +625,18 @@ int main(int argc, const char* argv[]) {
              NSString *pcsuri=pacsaei[@"pcsuri"];
 
              NSString *q=request.URL.query;//a same param may repeat
-             
-             //use case where qido exists in pacs (therefore pacs is local)
-             NSString *qidoBaseString=pacsaei[@"qido"];
-             if (![qidoBaseString isEqualToString:@""])
-             {
-                 return qidoUrlProxy(
-                                 [NSString stringWithFormat:@"%@/%@",qidoBaseString,pComponents.lastObject],
-                                 q,
-                                     [pcsuri stringByAppendingString:request.path]
-                                 );//application/dicom+json not accepted
-             }
-             
-             //use case where sql exists in pacs (therefore pacs is local)
+
+//use case where sql exists in pacs (therefore pacs is local)
              NSDictionary *destSql=sql[pacsaei[@"sqlQueriesDictionary"]];
              if (destSql)
              {
-
+                 
                  //local ... simulation qido through database access
-
+                 
                  //create where
                  NSURLComponents *urlComponents = [NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
                  NSUInteger level=[@[@"patients",@"studies",@"series",@"instances"] indexOfObject:pComponents[4]];
-
+                 
                  
                  NSMutableString *whereString = [NSMutableString string];
                  switch (level) {
@@ -664,7 +653,7 @@ int main(int argc, const char* argv[]) {
                          [RSErrorResponse responseWithClientError:404 message:@"level %@ not accepted. Should be Study, Series or Instance",pComponents[4]];
                          break;
                  }
-
+                 
                  
                  NSArray *queryItems=[urlComponents queryItems];
                  NSDictionary *qidoKeywordsDict=destSql[@"QidoAttrs"];
@@ -675,7 +664,7 @@ int main(int argc, const char* argv[]) {
                      for (NSURLQueryItem *qi in queryItems) {
                          
                          //keyword, keywordProperties
-                         NSString *keyword=qidoTags[qi.name];
+                         NSString *keyword=qidoTags[qi.name];//by tags
                          NSDictionary *keywordProperties=nil;
                          if (keyword) keywordProperties=qidoKeywordsDict[keyword];
                          else if (qidoKeywordsDict[qi.name])
@@ -684,22 +673,22 @@ int main(int argc, const char* argv[]) {
                              keywordProperties=qidoKeywordsDict[qi.name];
                          }
                          else return [RSErrorResponse responseWithClientError:404 message:@"%@ [not a qido filter for PACS %@]",qi.name,pacsaei];
-
+                         
                          //level check
                          if ( level < [keywordProperties[@"level"] unsignedIntegerValue]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not available at level %@]",qi.name,pComponents[4]];
                          
-                        //string compare
-                        if ([@[@"LO",@"PN",@"CS"] indexOfObject:keywordProperties[@"vr"]])
-                        {
-                            [whereString appendString:
-                             [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                                              fieldString:destSql[keyword]
-                                              valueString:qi.value
-                              ]
-                             ];
-                            continue;
-                        }
-                     
+                         //string compare
+                         if ([@[@"LO",@"PN",@"CS",@"UI"] indexOfObject:keywordProperties[@"vr"]])
+                         {
+                             [whereString appendString:
+                              [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
+                                               fieldString:destSql[keyword]
+                                               valueString:qi.value
+                               ]
+                              ];
+                             continue;
+                         }
+                         
                          
                          //date compare
                          if ([@[@"DA"] indexOfObject:keywordProperties[@"vr"]])
@@ -796,7 +785,7 @@ int main(int argc, const char* argv[]) {
                          }
                          
                      }//end loop
-
+                     
                  }//end queryItems
                  
                  
@@ -827,22 +816,22 @@ int main(int argc, const char* argv[]) {
                                        ];
                          break;
                  }
-
+                 
                  
                  LOG_DEBUG(@"%@",scriptString);
                  /*sql query
-                 if      (encoding==4) LOG_DEBUG(@"utf8\r\n%@",scriptString);
-                 else if (encoding==5) LOG_DEBUG(@"latin1\r\n%@",scriptString);
-                 else                  LOG_DEBUG(@"encoding:%lu\r\n%@",(unsigned long)encoding,scriptString);
-                 */
+                  if      (encoding==4) LOG_DEBUG(@"utf8\r\n%@",scriptString);
+                  else if (encoding==5) LOG_DEBUG(@"latin1\r\n%@",scriptString);
+                  else                  LOG_DEBUG(@"encoding:%lu\r\n%@",(unsigned long)encoding,scriptString);
+                  */
                  NSMutableData *mutableData=[NSMutableData data];
                  if (!task(@"/bin/bash",@[@"-s"],[scriptString dataUsingEncoding:NSUTF8StringEncoding],mutableData))
                      [RSErrorResponse responseWithClientError:404 message:@"%@",@"can not execute the script"];//NotFound
-
+                 
                  NSError *error=nil;
                  NSArray *arrayOfDicts=[NSJSONSerialization JSONObjectWithData:mutableData options:0 error:&error];
                  if (!arrayOfDicts) [RSErrorResponse responseWithClientError:404 message:@"bad qido sql result : %@",[error description]];
-
+                 
                  /*
                   adjust presentation from
                   
@@ -857,37 +846,42 @@ int main(int argc, const char* argv[]) {
                   to DICOM JSON
                   
                   [
-                    {
-                        "00080020" : {
-                            "Value" : [
-                                "20080706"
-                            ],
-                        "vr"    :   "DA"
-                        },
-                        ...
-                    },
-                    ...
+                  {
+                  "00080020" : {
+                  "Value" : [
+                  "20080706"
+                  ],
+                  "vr"    :   "DA"
+                  },
+                  ...
+                  },
+                  ...
                   ]
                   
                   NSString *string=[[NSString alloc]initWithData:mutableData encoding:encoding];//5=latinISO1 4=UTF8
                   NSData *utf8Data=[string dataUsingEncoding:NSUTF8StringEncoding];
                   */
-
+                 
                  NSMutableArray *qidoResponseArray=[NSMutableArray array];
                  for (NSDictionary *dict in arrayOfDicts)
                  {
                      NSMutableDictionary *object=[NSMutableDictionary dictionary];
                      for (NSString *key in dict)
                      {
-                         NSDictionary *attrDesc=qidoKeywordsDict[@"key"];
+                         NSDictionary *attrDesc=qidoKeywordsDict[key];
                          NSMutableDictionary *attrInst=[NSMutableDictionary dictionary];
-                         [attrInst setObject:@[dict[key]] forKey:@"Value"];
+                         if ([attrDesc[@"vr"] isEqualToString:@"PN"])
+                             [attrInst setObject:@[@{@"Alphabetic":dict[key]}] forKey:@"Value"];
+                         else [attrInst setObject:@[dict[key]] forKey:@"Value"];
                          [attrInst setObject:attrDesc[@"vr"] forKey:@"vr"];
                          [object setObject:attrInst forKey:attrDesc[@"tag"]];
                      }
                      [qidoResponseArray addObject:object];
                  }
-                 
+                 NSData *j=[NSJSONSerialization dataWithJSONObject:qidoResponseArray
+                                                           options:0
+                                                             error:nil
+                            ];
                  return [RSDataResponse responseWithData:
                          [NSJSONSerialization dataWithJSONObject:qidoResponseArray
                                                          options:0
@@ -896,6 +890,18 @@ int main(int argc, const char* argv[]) {
                                              contentType:@"application/json"
                          ];
              }
+
+             //use case where qido exists in pacs (therefore pacs is local)
+             NSString *qidoBaseString=pacsaei[@"qido"];
+             if (![qidoBaseString isEqualToString:@""])
+             {
+                 return qidoUrlProxy(
+                                 [NSString stringWithFormat:@"%@/%@",qidoBaseString,pComponents.lastObject],
+                                 q,
+                                     [pcsuri stringByAppendingString:request.path]
+                                 );//application/dicom+json not accepted
+             }
+             
 
              //use case where qido should be forwarded
              if (pcsuri)
@@ -2777,8 +2783,9 @@ int main(int argc, const char* argv[]) {
                           q[@"studyUID"],
                           ((seriesQido[@"0020000E"])[@"Value"])[0]
                           ];
-                         //LOG_INFO(@"%@",qidoInstancesString);
-                         NSMutableArray *instancesArray=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:qidoInstancesString]] options:NSJSONReadingMutableContainers error:nil];
+                         LOG_INFO(@"%@",qidoInstancesString);
+                         NSData *qidoInstanceResp=[NSData dataWithContentsOfURL:[NSURL URLWithString:qidoInstancesString]];
+                         NSMutableArray *instancesArray=[NSJSONSerialization JSONObjectWithData:qidoInstanceResp options:NSJSONReadingMutableContainers error:nil];
                          
                          //classify instancesArray by instanceNumber
                          
@@ -2805,8 +2812,9 @@ int main(int argc, const char* argv[]) {
                          }
                      }
                  }
-                 //LOG_INFO(@"%@",[cornerstone description]);
-                 return [RSDataResponse responseWithData:[NSJSONSerialization dataWithJSONObject:cornerstone options:0 error:nil] contentType:@"application/json"];
+                 NSData *cornerstoneJson=[NSJSONSerialization dataWithJSONObject:cornerstone options:0 error:nil];
+                 LOG_DEBUG(@"cornerstone manifest :\r\n%@",[[NSString alloc] initWithData:cornerstoneJson encoding:NSUTF8StringEncoding]);
+                 return [RSDataResponse responseWithData:cornerstoneJson contentType:@"application/json"];
              }
              else if ([viewerType isEqualToString:@"MHD-I"])
              {
