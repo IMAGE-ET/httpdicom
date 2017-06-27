@@ -892,8 +892,10 @@ int main(int argc, const char* argv[]) {
                                              contentType:@"application/json"
                          ];
              }
+             
+             //there is no destSql
 
-             //use case where qido exists in pacs (therefore pacs is local)
+//use case where qido exists in pacs (pacs may be remote)
              NSString *qidoBaseString=pacsaei[@"qido"];
              if (![qidoBaseString isEqualToString:@""])
              {
@@ -1043,6 +1045,7 @@ int main(int argc, const char* argv[]) {
          }(request));}];
         
 #pragma mark dcm.zip
+        ///pacs/{OID}/dcm.zip?
         //servicio de segundo nivel que llama a WADO-RS para su realización
         
         [httpdicomServer addHandler:@"GET" regex:dcmzipRegex processBlock:
@@ -1058,8 +1061,13 @@ int main(int argc, const char* argv[]) {
 
             LOG_VERBOSE(@"dcm.zip?%@",[urlComponents query]);
             
-            //choose option
-            if (!destPacs[@"qido"] || [destPacs[@"qido"]isEqualToString:@""])
+            NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
+            //use case where sql exists in pacs (therefore pacs is local)
+            NSDictionary *destSql=sql[pacsaei[@"sqlQueriesDictionary"]];
+
+
+//          if (!destPacs[@"qido"] || [destPacs[@"qido"]isEqualToString:@""])
+            if (destSql)
             {
                 //sql + wado-uri
 
@@ -1185,7 +1193,7 @@ int main(int argc, const char* argv[]) {
             }
             else
             {
-                //faster series wadors
+                //series wadors
                 NSArray *seriesArray=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/series?%@",destPacs[@"qido"],request.URL.query]]] options:0 error:nil];
 
                 
