@@ -1056,6 +1056,8 @@ int main(int argc, const char* argv[]) {
             NSDictionary *destPacs=pacsDictionaries[pComponents[2]];
             if (!destPacs) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
 
+            LOG_DEBUG(@"[dcm.zip] ?%@",[urlComponents query]);
+            
             //choose option
             if (!destPacs[@"qido"] || [destPacs[@"qido"]isEqualToString:@""])
             {
