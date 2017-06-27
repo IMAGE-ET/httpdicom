@@ -509,7 +509,7 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request){
             
-            LOG_DEBUG(@"%@ custodians",request.remoteAddressString);
+            LOG_DEBUG(@"client: %@",request.remoteAddressString);
             NSArray *pComponents=[request.path componentsSeparatedByString:@"/"];
              NSUInteger pCount=[pComponents count];
              
@@ -616,7 +616,7 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:qidoRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_VERBOSE(@"[QIDO] from %@",request.remoteAddressString);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              
@@ -932,7 +932,7 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_VERBOSE(@"[WADO-URI] from %@",request.remoteAddressString);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -1001,7 +1001,7 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:wadorsRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_VERBOSE(@"[WADO-RS] from %@",request.remoteAddressString);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -1048,7 +1048,7 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:dcmzipRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
         {
-            LOG_VERBOSE(@"[dcm.zip] from %@",request.remoteAddressString);
+            LOG_DEBUG(@"client: %@",request.remoteAddressString);
             //using NSURLComponents instead of RSRequest
             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -1344,7 +1344,7 @@ int main(int argc, const char* argv[]) {
          [httpdicomServer addHandler:@"GET" regex:encapsulatedRegex processBlock:
           ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_VERBOSE(@"[ot|doc|cda] from %@",request.remoteAddressString);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -1461,7 +1461,7 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_VERBOSE(@"[weasis studies] from %@",request.remoteAddressString);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -1616,7 +1616,7 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_VERBOSE(@"[weasis series] from %@",request.remoteAddressString);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -1778,7 +1778,7 @@ int main(int argc, const char* argv[]) {
           ^(RSRequest* request, RSCompletionBlock completionBlock)
           {completionBlock(^RSResponse* (RSRequest* request)
           {
-              LOG_VERBOSE(@"[patient] from %@",request.remoteAddressString);
+              LOG_DEBUG(@"client: %@",request.remoteAddressString);
               //using NSURLComponents instead of RSRequest
               NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
 
@@ -1978,8 +1978,8 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:dtstudiesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_DEBUG(@"%@",[request.URL description]);
-             LOG_VERBOSE(@"[datatables studies] from %@",request.remoteAddressString);
+             LOG_VERBOSE(@"%@",[request.URL description]);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -2511,7 +2511,7 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:dtpatientRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_VERBOSE(@"[datatables patient] from %@",request.remoteAddressString);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -2587,7 +2587,7 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:dtseriesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_VERBOSE(@"[datatables series] from %@",request.remoteAddressString);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -2658,7 +2658,7 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:iheiidRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_VERBOSE(@"[IHEInvokeImageDisplay] from %@",request.remoteAddressString);
+             LOG_DEBUG(@"client: %@",request.remoteAddressString);
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
