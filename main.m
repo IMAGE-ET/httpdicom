@@ -697,8 +697,8 @@ int main(int argc, const char* argv[]) {
                          {
                              //qidoDateType (qidoDate is aaaammdd, -aaaammdd, aaaammdd- o aaaammdd-aaaammdd)
                              
-                             if ([destSql[keyword] hasSuffix:@"datetime"])
-                             {
+                             //if ([destSql[keyword] hasSuffix:@"datetime"])
+                             //{
                                  // sql datatype datetime... aaaa-mm-dd 00:00:00
                                  
                                  //on
@@ -748,6 +748,7 @@ int main(int argc, const char* argv[]) {
                                       [qi.value substringWithRange:NSMakeRange(13, 2)],
                                       [qi.value substringWithRange:NSMakeRange(15, 2)]
                                       ];
+                             /*
                              }
                              else
                              {
@@ -787,6 +788,7 @@ int main(int argc, const char* argv[]) {
                                       [qi.value substringWithRange:NSMakeRange(9, 8)]
                                       ];
                              }
+                              */
                              continue;
                          }
                          
