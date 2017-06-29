@@ -98,6 +98,8 @@
 
 -(NSString*)dcmDaFromIsoDate
 {
+    if ([self length]==8)return self;
+    
     return [NSString stringWithFormat:@"%@%@%@",
             [self substringWithRange:NSMakeRange(0,4)],
             [self substringWithRange:NSMakeRange(5,2)],
