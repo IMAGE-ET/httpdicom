@@ -695,100 +695,15 @@ int main(int argc, const char* argv[]) {
                          //date compare
                          if ([@[@"DA"] indexOfObject:keywordProperties[@"vr"]])
                          {
-                             //qidoDateType (qidoDate is aaaammdd, -aaaammdd, aaaammdd- o aaaammdd-aaaammdd)
-                             
-                             //if ([destSql[keyword] hasSuffix:@"datetime"])
-                             //{
-                                 // sql datatype datetime... aaaa-mm-dd 00:00:00
-                                 
-                                 //on
-                                 if (![qi.value containsString:@"-"])
-                                     [whereString appendFormat:
-                                      @" AND %@ >= '%@-%@-%@ 00:00:00' AND %@ <= '%@-%@-%@ 23:59:59'",
-                                      destSql[keyword],
-                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
-                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
-                                      [qi.value substringWithRange:NSMakeRange(6, 2)],
-                                      destSql[keyword],
-                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
-                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
-                                      [qi.value substringWithRange:NSMakeRange(6, 2)]
-                                      ];
-
-                                 //until
-                                 else if ([qi.value hasPrefix:@"-"])
-                                     [whereString appendFormat:
-                                      @" AND %@ <= '%@-%@-%@ 23:59:59'",
-                                      destSql[@"StudyDate"],
-                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
-                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
-                                      [qi.value substringWithRange:NSMakeRange(6, 2)]
-                                      ];
-                                 
-                                 //since
-                                 else if ([qi.value hasSuffix:@"-"])
-                                     [whereString appendFormat:
-                                      @" AND %@ >= '%@-%@-%@ 00:00:00'",
-                                      destSql[@"StudyDate"],
-                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
-                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
-                                      [qi.value substringWithRange:NSMakeRange(6, 2)]
-                                      ];
-                                 
-                                 //inbetween
-                                 else
-                                     [whereString appendFormat:
-                                      @" AND %@ >= '%@-%@-%@ 00:00:00' AND %@ <= '%@-%@-%@ 23:59:59'",
-                                      destSql[@"StudyDate"],
-                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
-                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
-                                      [qi.value substringWithRange:NSMakeRange(6, 2)],
-                                      destSql[@"StudyDate"],
-                                      [qi.value substringWithRange:NSMakeRange(9, 4)],
-                                      [qi.value substringWithRange:NSMakeRange(13, 2)],
-                                      [qi.value substringWithRange:NSMakeRange(15, 2)]
-                                      ];
-                             /*
+                             NSArray *startEnd=[qi.value componentsSeparatedByString:@""];
+                             switch ([startEnd count]) {
+                                 case 1:;
+                                 [whereString appendString:[destSql[keyword] sqlFilterWithStart:startEnd[0] end:startEnd[0]]];
+                                 break;
+                                 case 2:;
+                                    [whereString appendString:[destSql[keyword] sqlFilterWithStart:startEnd[0] end:startEnd[1]]];
+                                 break;
                              }
-                             else
-                             {
-                                 // sql datatype string aaaammdd
-                                 
-                                 //on
-                                 if (![qi.value containsString:@"-"])
-                                     [whereString appendFormat:
-                                      @" AND %@ LIKE '%@%%'",
-                                      destSql[@"StudyDate"],
-                                      qi.value
-                                      ];
-                                 
-                                 //until
-                                 else if ([qi.value hasPrefix:@"-"])
-                                     [whereString appendFormat:
-                                      @" AND %@ <= '%@'",
-                                      destSql[@"StudyDate"],
-                                      [qi.value substringWithRange:NSMakeRange(0, 8)]
-                                      ];
-                                 
-                                 //since
-                                 else if ([qi.value hasSuffix:@"-"])
-                                     [whereString appendFormat:
-                                      @" AND %@ >= '%@'",
-                                      destSql[@"StudyDate"],
-                                      [qi.value substringWithRange:NSMakeRange(9, 8)]
-                                      ];
-                                 
-                                 //inbetween
-                                 else
-                                     [whereString appendFormat:
-                                      @" AND %@ >= '%@' AND %@ <= '%@'",
-                                      destSql[@"StudyDate"],
-                                      [qi.value substringWithRange:NSMakeRange(0, 8)],
-                                      destSql[@"StudyDate"],
-                                      [qi.value substringWithRange:NSMakeRange(9, 8)]
-                                      ];
-                             }
-                              */
                              continue;
                          }
                          
@@ -2219,74 +2134,13 @@ int main(int argc, const char* argv[]) {
                         ||(qDate_end && [qDate_end length])
                         )
                      {
-                         if ([destSql[@"StudyDate"]hasSuffix:@"datetime"])
-                         {
-                             // sql datatype datetime... aaaa-mm-dd 00:00:00
-                             NSString *dateWithoutTime=[NSString stringWithFormat:@"%@-%@-%@",
-                                              [qDate_start substringWithRange:NSMakeRange(0, 4)],
-                                              [qDate_start substringWithRange:NSMakeRange(4, 2)],
-                                              [qDate_start substringWithRange:NSMakeRange(6, 2)]];
-                             
-                             NSString *since=[NSString stringWithFormat:@"%@-%@-%@ 00:00:00",
-                                              [qDate_start substringWithRange:NSMakeRange(0, 4)],
-                                              [qDate_start substringWithRange:NSMakeRange(4, 2)],
-                                              [qDate_start substringWithRange:NSMakeRange(6, 2)]];
-                             
-                             NSString *until=[NSString stringWithFormat:@"%@-%@-%@ 23:59:59",
-                                              [qDate_end substringWithRange:NSMakeRange(0, 4)],
-                                              [qDate_end substringWithRange:NSMakeRange(4, 2)],
-                                              [qDate_end substringWithRange:NSMakeRange(6, 2)]];
-                             
-                             
-                             if ([qDate_start isEqualToString:qDate_end])
-                             {
-                                 //no hyphen
-                                 [studiesWhere appendFormat:@" AND %@ LIKE '%@%%'", destSql[@"StudyDate"], dateWithoutTime];
-                             }
-                             else if (!qDate_start || [qDate_start isEqualToString:@""])
-                             {
-                                 //until
-                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], until];
-                             }
-                             else if (!qDate_end || [qDate_end isEqualToString:@""])
-                             {
-                                 //since
-                                 [studiesWhere appendFormat:@" AND %@ >= '%@'", destSql[@"StudyDate"], since];
-                             }
-                             else
-                             {
-                                 //inbetween
-                                 [studiesWhere appendFormat:@" AND %@ >= '%@'", destSql[@"StudyDate"], since];
-                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], until];
-                             }
-
-                         }
-                         else
-                         {
-                             //StudyDate _00080020 aaaammdd,-aaaammdd,aaaammdd-,aaaammdd-aaaammdd
-                             
-                             if ([qDate_start isEqualToString:qDate_end])
-                             {
-                                 //no hyphen
-                                 [studiesWhere appendFormat:@" AND %@ = '%@'", destSql[@"StudyDate"], qDate_start];
-                             }
-                             else if (!qDate_start || [qDate_start isEqualToString:@""])
-                             {
-                                 //until
-                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], qDate_end];
-                             }
-                             else if (!qDate_end || [qDate_end isEqualToString:@""])
-                             {
-                                 //since
-                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], qDate_start];
-                             }
-                             else
-                             {
-                                 //inbetween
-                                 [studiesWhere appendFormat:@" AND %@ >= '%@'", destSql[@"StudyDate"], qDate_start];
-                                 [studiesWhere appendFormat:@" AND %@ <= '%@'", destSql[@"StudyDate"], qDate_end];
-                             }
-                         }
+                         NSString *s=nil;
+                         if (qDate_start && [qDate_start length]) s=qDate_start;
+                         else s=@"";
+                         NSString *e=nil;
+                         if (qDate_end && [qDate_end length]) e=qDate_end;
+                         else e=@"";
+                         [studiesWhere appendString:[destSql[@"StudyDate"] sqlFilterWithStart:s end:e]];
                      }
                      
                      //qModality contains ONE modality or joker %%

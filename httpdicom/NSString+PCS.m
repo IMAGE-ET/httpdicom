@@ -105,6 +105,70 @@
             ];
 }
 
+-sqlFilterWithStart:(NSString*)start end:(NSString*)end
+{
+    NSUInteger startLength=[start length];
+    NSUInteger endLength=[end length];
+    if (!start || !end || startLength+endLength==0) return @"";
+
+    NSString *isoStart=nil;
+    switch (startLength) {
+        case 0:;
+            isoStart=@"";
+            break;
+        case 8:;
+            isoStart=[NSString stringWithFormat:@"%@-%@-%@",
+                  [start substringWithRange:NSMakeRange(0, 4)],
+                  [start substringWithRange:NSMakeRange(4, 2)],
+                  [start substringWithRange:NSMakeRange(6, 2)]
+                  ];
+        break;
+        case 10:;
+            isoStart=start;
+        
+        default:
+            return @"";
+        break;
+    }
+
+    NSString *isoEnd=nil;
+    switch (endLength) {
+        case 0:;
+        isoEnd=@"";
+        break;
+        case 8:;
+        isoEnd=[NSString stringWithFormat:@"%@-%@-%@",
+                  [end substringWithRange:NSMakeRange(0, 4)],
+                  [end substringWithRange:NSMakeRange(4, 2)],
+                  [end substringWithRange:NSMakeRange(6, 2)]
+                  ];
+        break;
+        case 10:;
+        isoEnd=end;
+        
+        default:
+        return @"";
+        break;
+    }
+
+    if([self hasSuffix:@"datetime"])
+    {
+        if (startLength==0) return [NSString stringWithFormat:@" AND %@ <= '%@ 23:59:59'", self, isoEnd];
+        else if (endLength==0) return [NSString stringWithFormat:@" AND %@ >= '%@ 00:00:00'", self, isoStart];
+        else return [NSString stringWithFormat:@" AND %@ >= '%@ 00:00:00' AND %@ <= '%@ 23:59:59'", self, isoStart, self, isoEnd];
+    }
+    
+    
+    if([self hasSuffix:@"date"])
+    {
+        if (startLength==0) return [NSString stringWithFormat:@" AND %@ <= '%@'", self, isoEnd];
+        else if (endLength==0) return [NSString stringWithFormat:@" AND %@ >= '%@'", self, isoStart];
+        else return [NSString stringWithFormat:@" AND %@ >= '%@' AND %@ <= '%@'", self, isoStart, self, isoEnd];
+    }
+    
+    return @"";
+}
+    
 @end
 
 
