@@ -15,5 +15,6 @@
 -(NSString*)MD5String;
 -(NSString*)normalizeHeaderValue;
 -(NSString*)extractHeaderValueParameter:(NSString*)name;
+-(NSString*)dcmDaFromIsoDate;
 
 @end

@@ -96,6 +96,15 @@
     return parameter;
 }
 
+-(NSString*)dcmDaFromIsoDate
+{
+    return [NSString stringWithFormat:@"%@%@%@",
+            [self substringWithRange:NSMakeRange(0,4)],
+            [self substringWithRange:NSMakeRange(5,2)],
+            [self substringWithRange:NSMakeRange(8,2)]
+            ];
+}
+
 @end
 
 

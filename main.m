@@ -704,13 +704,17 @@ int main(int argc, const char* argv[]) {
                                  //on
                                  if (![qi.value containsString:@"-"])
                                      [whereString appendFormat:
-                                      @" AND %@ LIKE '%@-%@-%@%%'",
+                                      @" AND %@ >= '%@-%@-%@ 00:00:00' AND %@ <= '%@-%@-%@ 23:59:59'",
+                                      destSql[keyword],
+                                      [qi.value substringWithRange:NSMakeRange(0, 4)],
+                                      [qi.value substringWithRange:NSMakeRange(4, 2)],
+                                      [qi.value substringWithRange:NSMakeRange(6, 2)],
                                       destSql[keyword],
                                       [qi.value substringWithRange:NSMakeRange(0, 4)],
                                       [qi.value substringWithRange:NSMakeRange(4, 2)],
                                       [qi.value substringWithRange:NSMakeRange(6, 2)]
                                       ];
-                                 
+
                                  //until
                                  else if ([qi.value hasPrefix:@"-"])
                                      [whereString appendFormat:
@@ -874,7 +878,10 @@ int main(int argc, const char* argv[]) {
                          NSMutableDictionary *attrInst=[NSMutableDictionary dictionary];
                          if ([attrDesc[@"vr"] isEqualToString:@"PN"])
                              [attrInst setObject:@[@{@"Alphabetic":dict[key]}] forKey:@"Value"];
+                         else if ([attrDesc[@"vr"] isEqualToString:@"DA"]) [attrInst setObject:@[[dict[key] dcmDaFromIsoDate]] forKey:@"Value"];
                          else [attrInst setObject:@[dict[key]] forKey:@"Value"];
+                         //TODO add other cases, like TM, DT, etc...
+                         
                          [attrInst setObject:attrDesc[@"vr"] forKey:@"vr"];
                          [object setObject:attrInst forKey:attrDesc[@"tag"]];
                      }
@@ -1074,7 +1081,6 @@ int main(int argc, const char* argv[]) {
                 //return [RSErrorResponse responseWithClientError:404 message:@"%@ [qido not available]",request.path];
 
                 //sql instance level
-                NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
                 NSString *WadoUrisSqlString;
                 NSString *AccessionNumber=request.query[@"AccessionNumber"];
                 if (AccessionNumber)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"studyAccessionNumberWadosUris"],AccessionNumber];
