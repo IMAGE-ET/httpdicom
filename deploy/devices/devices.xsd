@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema 
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://www.opendicom.com/xsd/plist/devices.xsd"
+    xmlns="http://www.opendicom.com/xsd/plist/devices.xsd" 
+    elementFormDefault="qualified"
+    xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" 
+    vc:minVersion="1.1"
+    >
+
+    <xs:element name="plist">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="dict">
+                    <xs:complexType>
+                        <xs:sequence maxOccurs="unbounded">
+                            
+
+                            <xs:element name="key">
+                                <xs:annotation>
+                                    <xs:documentation>oid de device local o del custodian al cual están conectados los devices locales</xs:documentation>
+                                </xs:annotation>
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:string">
+                                        <xs:pattern value="[1-2](\d)*(\.0|\.[1-9](\d)*)*"/>
+                                    </xs:restriction>
+                                </xs:simpleType>                                
+                            </xs:element>
+                            <xs:element name="dict">
+                                <xs:annotation>
+                                    <xs:documentation>propiedades del device (o del custodian)</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+
+                                        <xs:element name="key" fixed="local">
+                                            <xs:annotation>
+                                                <xs:documentation>pertenece a la red DICOM local</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:group ref="truefalse"/>
+                                        
+                                        <xs:element name="key" fixed="preferredstudyidentificator">
+                                            <xs:annotation>
+                                                <xs:documentation>StudyInstanceUID o AccessionNumber</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="preferredstudyidentificator" />
+                                        
+                                        <xs:element name="key" fixed="custodiantitle">
+                                            <xs:annotation>
+                                                <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="custodiantitle"/>
+
+                                        <xs:element name="key" fixed="custodianoid">
+                                            <xs:annotation>
+                                                <xs:documentation>oid del custodian (representa en internet el conjunto de los aets locales vinculados al custodian)</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="custodianoid"/>
+
+                                        <xs:element name="key" fixed="custodianbaseuri">
+                                            <xs:annotation>
+                                                <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="custodianbaseuri"/>
+
+
+                                        <!-- ================================== -->
+                                        <!-- device (mandatory if local) -->
+ 
+
+                                        <xs:element name="key" fixed="sqlprolog">
+                                            <xs:annotation>
+                                                <xs:documentation>conexión al sql</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="sqlprolog"/>
+
+
+                                        <xs:element name="key" fixed="sqlstringencoding">
+                                            <xs:annotation>
+                                                <xs:documentation>(4=UTF-8, 5=latin1)</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="sqlstringencoding"/>
+
+
+                                        <xs:element name="key" fixed="sqlqueriesdictionaryuri">
+                                            <xs:annotation>
+                                                <xs:documentation>enlace al diccionario que lista las traducciones en lenguaje sql de los queries usados por httpdicom</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="sqlqueriesdictionaryuri"/>
+
+
+                                        <xs:element name="key" fixed="filesystembaseuri">
+                                            <xs:annotation>
+                                                <xs:documentation>acceso por sistema de archivos a los dicoms del device</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="filesystembaseuri"/>
+                    
+                    
+                                        <xs:element name="key" fixed="wadouri">
+                                            <xs:annotation>
+                                                <xs:documentation>uri del servicio en caso que el device local soporte esta funcionalidad</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="wadouri"/>
+  
+  
+                                        <xs:element name="key" fixed="wadouriadditionalparameters">
+                                            <xs:annotation>
+                                                <xs:documentation>por ejemplo '&amp;amp;transferSyntax=1.2.840.10008.1.2.4.90' para pedir las imágenes con compresión JPEG2000 sin pérdida</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="wadouriadditionalparameters"/>
+
+
+                                        <xs:element name="key" fixed="qido">
+                                            <xs:annotation>
+                                                <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="qido"/>
+
+
+                                        <xs:element name="key" fixed="wadors">
+                                            <xs:annotation>
+                                                <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="wadors"/>
+
+
+                                        <xs:element name="key" fixed="stow">
+                                            <xs:annotation>
+                                                <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="stow"/>
+
+
+                                        <xs:element name="key" fixed="dicomaet">
+                                            <xs:annotation>
+                                                <xs:documentation>nombre corto (máx 16 chars) del device</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="dicomaet"/>
+                                        
+                                        
+                                        <xs:element name="key" fixed="dicomip">
+                                            <xs:annotation>
+                                                <xs:documentation>IP DICOM local</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="dicomip"/>
+                                        
+                                        
+                                        <xs:element name="key" fixed="dicomport">
+                                            <xs:annotation>
+                                                <xs:documentation>puerto DICOM local</xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element ref="string" id="dicomport"/>
+                                        
+                                        
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="version" fixed="1.0"/>
+        </xs:complexType>
+    </xs:element>    
+
+    <xs:element name="string" type="idstring">
+        <xs:alternative test="@id = 'preferredstudyidentificator'" type="studyidentificatoridstring"/>
+        <xs:alternative test="@id = 'custodiantitle'"              type="titleidstring"/>
+        <xs:alternative test="@id = 'custodianoid'"                type="oididstring"/>
+
+        <xs:alternative test="@id = 'sqlstringencoding'"           type="stringencodingidstring"/>
+
+        <xs:alternative test="@id = 'wadouri'"                     type="httpidstring"/>
+        <xs:alternative test="@id = 'qido'"                        type="httpidstring"/>
+        <xs:alternative test="@id = 'wadors'"                      type="httpidstring"/>
+        <xs:alternative test="@id = 'stow'"                        type="httpidstring"/>
+
+        <xs:alternative test="@id = 'dicomaet'"                    type="titleidstring"/>
+        <xs:alternative test="@id = 'dicomip'"                     type="ipidstring"/>
+        <xs:alternative test="@id = 'dicompuerto'"                 type="portidstring"/>
+    </xs:element>
+    
+    <xs:complexType name="idstring">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="id" use="required"/>                
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="titleidstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="16"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="oididstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:pattern value="[1-2](\d)*(\.0|\.[1-9](\d)*)*"/>
+                <xs:maxLength value="64"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:complexType name="httpidstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:pattern value="https?://.*"/>
+                <xs:whiteSpace value="collapse"></xs:whiteSpace>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    
+    <xs:complexType name="studyidentificatoridstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:enumeration value="StudyInstanceUID"/>
+                <xs:enumeration value="AccessionNumber"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    
+    <xs:complexType name="stringencodingidstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:enumeration value="4"/><!--UTF-8-->
+                <xs:enumeration value="5"/><!--latin1-->
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:complexType name="ipidstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:pattern value="[1-9]\d{0,2}\.[1-9]\d{0,2}\.[1-9]\d{0,2}\.[1-9]\d{0,2}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:complexType name="portidstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:pattern value="[1-9][0-9]{0,4}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:group name="truefalse">
+        <xs:choice>
+            <xs:element name="true">
+                <xs:complexType/>
+            </xs:element>
+            <xs:element name="false">
+                <xs:complexType/>
+            </xs:element>
+        </xs:choice>
+    </xs:group>
+
+</xs:schema>

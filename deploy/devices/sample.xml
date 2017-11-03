@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist
+    xmlns="http://www.opendicom.com/xsd/plist/devices.xsd"
+    
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.opendicom.com/xsd/plist/devices.xsd ./devices.xsd"
+    
+    version="1.0"
+    >
+    <dict>
+        <key>2</key>
+        <dict>
+            <key>local</key>
+            <false/>
+            <key>preferredstudyidentificator</key>
+            <string id="preferredstudyidentificator">AccessionNumber</string>
+            <key>custodiantitle</key>
+            <string id="custodiantitle">2</string>
+            <key>custodianoid</key>
+            <string id="custodianoid">1</string>
+            <key>custodianbaseuri</key>
+            <string id="custodianbaseuri">anyURI</string>
+            <key>sqlprolog</key>
+            <string id="sqlprolog">2.462.0</string>
+            <key>sqlstringencoding</key>
+            <string id="sqlstringencoding">5</string>
+            <key>sqlqueriesdictionaryuri</key>
+            <string id="sqlqueriesdictionaryuri">7.9.7.7</string>
+            <key>filesystembaseuri</key>
+            <string id="filesystembaseuri">anyURI</string>
+            <key>wadouri</key>
+            <string id="wadouri">http://1</string>
+            <key>wadouriadditionalparameters</key>
+            <string id="wadouriadditionalparameters">&amp;a=b</string>
+            <key>qido</key>
+            <string id="qido">http://1</string>
+            <key>wadors</key>
+            <string id="wadors">https://a</string>
+            <key>stow</key>
+            <string id="stow">http://1.2.</string>
+            <key>dicomaet</key>
+            <string id="dicomaet">device_aet</string>
+            <key>dicomip</key>
+            <string id="dicomip">1.1.1.1</string>
+            <key>dicomport</key>
+            <string id="dicomport">104</string>
+        </dict>
+    </dict>
+</plist>
