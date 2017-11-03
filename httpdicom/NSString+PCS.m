@@ -96,7 +96,7 @@
     return parameter;
 }
 
--(NSString*)dcmDaFromIsoDate
+-(NSString*)dcmDaFromDate
 {
     if ([self length]==8)return self;
     

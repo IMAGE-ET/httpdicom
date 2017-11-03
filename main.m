@@ -517,7 +517,7 @@ int main(int argc, const char* argv[]) {
              
              if ([pComponents[2]isEqualToString:@"titles"])
              {
-                 //custodian/titles
+                 //custodians/titles
                  if (pCount==3) return [RSDataResponse responseWithData:custodianTitlesData contentType:@"application/json"];
                  
                  NSUInteger p3Length = [pComponents[3] length];
@@ -528,13 +528,13 @@ int main(int argc, const char* argv[]) {
                  if (!custodiantitles[pComponents[3]])
                      return [RSErrorResponse responseWithClientError:404 message:@"%@ [{title} not found]",request.path];
                  
-                 //custodian/titles/{TITLE}
+                 //custodians/titles/{TITLE}
                  if (pCount==4) return [RSDataResponse responseWithData:[NSJSONSerialization dataWithJSONObject:[NSArray arrayWithObject:custodiantitles[pComponents[3]]] options:0 error:nil] contentType:@"application/json"];
                  
                  if (![pComponents[4]isEqualToString:@"aets"])
                      return [RSErrorResponse responseWithClientError:404 message:@"%@ [{title} unique resource is 'aets']",request.path];
                  
-                 //custodian/titles/{title}/aets
+                 //custodians/titles/{title}/aets
                  if (pCount==5)
                      return [RSDataResponse responseWithData:[NSJSONSerialization dataWithJSONObject:[custodianTitlesaets objectForKey:pComponents[3]] options:0 error:nil] contentType:@"application/json"];
 
@@ -549,7 +549,7 @@ int main(int argc, const char* argv[]) {
 
                  if (pCount>6) return [RSErrorResponse responseWithClientError:400 message:@"%@ [no handler]",request.path];
 
-                 //custodian/titles/{title}/aets/{aet}
+                 //custodians/titles/{title}/aets/{aet}
                      return [RSDataResponse responseWithData:
                              [NSJSONSerialization dataWithJSONObject:
                               [NSArray arrayWithObject:(custodianOIDsaeis[custodiantitles[pComponents[3]]])[aetIndex]]
@@ -563,7 +563,7 @@ int main(int argc, const char* argv[]) {
              
              if ([pComponents[2]isEqualToString:@"oids"])
              {
-                 //custodian/oids
+                 //custodians/oids
                  if (pCount==3) return [RSDataResponse responseWithData:custodianOIDsData contentType:@"application/json"];
                  
                  NSUInteger p3Length = [pComponents[3] length];
@@ -572,7 +572,7 @@ int main(int argc, const char* argv[]) {
                      )
                      return [RSErrorResponse responseWithClientError:404 message:@"%@ [{OID} datatype should be DICOM UI]",request.path];
                  
-                 if (custodianoids[pComponents[3]])
+                 if (!custodianoids[pComponents[3]])
                      return [RSErrorResponse responseWithClientError:404 message:@"%@ [{OID} not found]",request.path];
                  
                  //custodian/oids/{OID}
@@ -695,7 +695,7 @@ int main(int argc, const char* argv[]) {
                          //date compare
                          if ([@[@"DA"] indexOfObject:keywordProperties[@"vr"]])
                          {
-                             NSArray *startEnd=[qi.value componentsSeparatedByString:@""];
+                             NSArray *startEnd=[qi.value componentsSeparatedByString:@"-"];
                              switch ([startEnd count]) {
                                  case 1:;
                                  [whereString appendString:[destSql[keyword] sqlFilterWithStart:startEnd[0] end:startEnd[0]]];
@@ -795,7 +795,7 @@ int main(int argc, const char* argv[]) {
                          NSMutableDictionary *attrInst=[NSMutableDictionary dictionary];
                          if ([attrDesc[@"vr"] isEqualToString:@"PN"])
                              [attrInst setObject:@[@{@"Alphabetic":dict[key]}] forKey:@"Value"];
-                         else if ([attrDesc[@"vr"] isEqualToString:@"DA"]) [attrInst setObject:@[[dict[key] dcmDaFromIsoDate]] forKey:@"Value"];
+                         else if ([attrDesc[@"vr"] isEqualToString:@"DA"]) [attrInst setObject:@[[dict[key] dcmDaFromDate]] forKey:@"Value"];
                          else [attrInst setObject:@[dict[key]] forKey:@"Value"];
                          //TODO add other cases, like TM, DT, etc...
                          
@@ -2523,7 +2523,14 @@ int main(int argc, const char* argv[]) {
 
         
 #pragma mark IHEInvokeImageDisplay
-        // IHEInvokeImageDisplay?requestType=STUDY&accessionNumber=1&viewerType=IHE_BIR&diagnosticQuality=true&keyImagesOnly=false&custodianOID=xxx&proxyURI=yyy
+        //IHEInvokeImageDisplay
+        //?requestType=STUDY
+        //&accessionNumber=1
+        //&viewerType=IHE_BIR
+        //&diagnosticQuality=true
+        //&keyImagesOnly=false
+        //&custodianOID=xxx
+        //&proxyURI=yyy
         
         [httpdicomServer addHandler:@"GET" regex:iheiidRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
