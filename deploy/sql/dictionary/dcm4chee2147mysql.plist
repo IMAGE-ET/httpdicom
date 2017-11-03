@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>patientWhere</key>
+	<string> WHERE 1=1</string>
+	<key>studiesWhere</key>
+	<string> WHERE 1=1</string>
+	<key>seriesWhere</key>
+	<string> WHERE 1=1</string>
+	<key>instancesWhere</key>
+	<string> WHERE 1=1</string>
+	<key>studiesCountProlog</key>
+	<string>\
+SELECT COUNT(*) \
+FROM study \
+LEFT JOIN patient ON study.patient_fk=patient.pk
+</string>
+	<key>studiesCountEpilog</key>
+	<string>;&quot; | awk -F\\t &apos;{print $1}&apos;</string>
+	<key>NumberOfStudyRelatedInstances</key>
+	<string>\
+SELECT num_instances \
+FROM study \
+WHERE study_iuid = %@\
+;&quot; | awk -F\\t &apos;{print $1}&apos;
+</string>
+	<key>NumberOfSeriesRelatedInstances</key>
+	<string>\
+SELECT num_instances \
+FROM series \
+WHERE series_iuid = %@\
+;&quot; | awk -F\\t &apos;{print $1}&apos;
+</string>
+	<key>datatablesStudiesProlog</key>
+	<string>\
+SELECT study.accession_no, study.accession_no, study.study_iuid, study.study_custom3, patient.pat_id, patient.pat_id_issuer, patient.pat_name, study.study_datetime, study.mods_in_study, study.study_desc, study.ref_physician, study.study_custom2, patient.pat_id_issuer, patient.pat_birthdate, patient.pat_sex, study.accession_no, study.accession_no, study.study_id, study.study_iuid, study.study_datetime, study.study_custom1 \
+FROM study \
+LEFT JOIN patient ON study.patient_fk=patient.pk\
+</string>
+	<key>datatablesStudiesEpilog</key>
+	<string>;&quot; \
+|  awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[ \&quot;\&quot;, \&quot;datatables/series?AccessionNumber=&quot; $1 &quot;&amp;IssuerOfAccessionNumber.UniversalEntityID=&quot; $2 &quot;&amp;StudyInstanceUID=&quot; $3 &quot;&amp;session=%@\&quot;, \&quot;&quot; $4 &quot;\&quot;, \&quot;datatables/patient?PatientID=&quot; $5 &quot;&amp;IssuerOfPatientID.UniversalEntityID=&quot; $6 &quot;&amp;session=%@\&quot;, \&quot;&quot; $7 &quot;\&quot;, \&quot;&quot; $8 &quot;\&quot;, \&quot;&quot; $9 &quot;\&quot;, \&quot;&quot; $10 &quot;\&quot;, \&quot;&quot; $11 &quot;\&quot;, \&quot;&quot; $12 &quot;\&quot;, \&quot;&quot; $13 &quot;\&quot;, \&quot;&quot; $14 &quot;\&quot;, \&quot;&quot; $15 &quot;\&quot;, \&quot;&quot; $16 &quot;\&quot;, \&quot;&quot; $17 &quot;\&quot;, \&quot;&quot; $18 &quot;\&quot;, \&quot;&quot; $19 &quot;\&quot;, \&quot;&quot; $20 &quot;\&quot;, \&quot;&quot; $21 &quot;\&quot; ]&quot;\
+}&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;\
+</string>
+	<key>datatablesSeriesProlog</key>
+	<string>\
+SELECT series.series_iuid,series.series_no,series.modality,series.pps_start,series.pps_start,series.series_desc \
+FROM series \
+LEFT JOIN study ON series.study_fk=study.pk \
+</string>
+	<key>datatablesSeriesEpilog</key>
+	<string>;&quot; \
+|  awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[\&quot;\&quot;,\&quot;&quot; $1 &quot;\&quot;,\&quot;&quot; $2 &quot;\&quot;,\&quot;&quot; $3 &quot;\&quot;,\&quot;&quot; $4 &quot;\&quot;,\&quot;&quot; $5 &quot;\&quot;,\&quot;&quot; $6 &quot;\&quot;]&quot;}\
+&apos;  \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;
+</string>
+	<key>manifestWeasisStudyAccessionNumber</key>
+	<string>export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 192.168.1.244 -b pacsdb -e &quot;\
+SELECT patient.pat_name,patient.pat_id,patient.pat_id_issuer,patient.pat_birthdate,patient.pat_sex,study.study_iuid,study.accession_no,study.accession_no,study.retrieve_aets,study.study_id,study.study_desc,study.study_datetime,study.study_datetime,study.num_instances \
+FROM study \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+WHERE study.accession_no = &apos;%@&apos;;\
+&quot; | awk -F\\t &apos; \
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{ print &quot;[\&quot;&quot; $1 &quot;\&quot;,\&quot;&quot; $2 &quot;\&quot;,\&quot;&quot; $3 &quot;\&quot;,\&quot;&quot; $4 &quot;\&quot;,\&quot;&quot; $5 &quot;\&quot;,\&quot;&quot; $6 &quot;\&quot;,\&quot;&quot; $7 &quot;\&quot;,\&quot;&quot; $8 &quot;\&quot;,\&quot;&quot; $9 &quot;\&quot;,\&quot;&quot; $10 &quot;\&quot;,\&quot;&quot; $11 &quot;\&quot;,\&quot;&quot; $12 &quot;\&quot;,\&quot;&quot; $13 &quot;\&quot;,\&quot;&quot; $14 &quot;\&quot;]&quot; } \
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;
+</string>
+	<key>manifestWeasisStudyStudyInstanceUID</key>
+	<string>export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 192.168.1.244 -b pacsdb -e &quot;\
+SELECT patient.pat_name,patient.pat_id,patient.pat_id_issuer,patient.pat_birthdate,patient.pat_sex,study.study_iuid,study.accession_no,study.accession_no,study.retrieve_aets,study.study_id,study.study_desc,study.study_datetime,study.study_datetime,study.num_instances \
+FROM study \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+WHERE study.study_iuid = &apos;%@&apos;;\
+&quot; \
+| awk -F\\t &apos; \
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{ print &quot;[\&quot;&quot; $1 &quot;\&quot;,\&quot;&quot; $2 &quot;\&quot;,\&quot;&quot; $3 &quot;\&quot;,\&quot;&quot; $4 &quot;\&quot;,\&quot;&quot; $5 &quot;\&quot;,\&quot;&quot; $6 &quot;\&quot;,\&quot;&quot; $7 &quot;\&quot;,\&quot;&quot; $8 &quot;\&quot;,\&quot;&quot; $9 &quot;\&quot;,\&quot;&quot; $10 &quot;\&quot;,\&quot;&quot; $11 &quot;\&quot;,\&quot;&quot; $12 &quot;\&quot;,\&quot;&quot; $13 &quot;\&quot;,\&quot;&quot; $14 &quot;\&quot;]&quot; } \
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;
+</string>
+	<key>manifestWeasisSeriesStudyInstanceUID</key>
+	<string>export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 192.168.1.244 -b pacsdb -e &quot;\
+SELECT series.series_iuid, series.series_desc, series.series_no, series.modality, series.num_instances \
+FROM series
+LEFT JOIN study ON series.study_fk=study.pk \
+WHERE study.study_iuid = &apos;%@&apos;;\
+&quot; \
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[\&quot;&quot; $1 &quot;\&quot;,\&quot;&quot; $2 &quot;\&quot;,\&quot;&quot; $3 &quot;\&quot;,\&quot;&quot; $4 &quot;\&quot;,\&quot;&quot; $5 &quot;\&quot;]&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+	<key>manifestWeasisInstanceSeriesInstanceUID</key>
+	<string>export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 192.168.1.244 -b pacsdb -e &quot;\
+SELECT instance.sop_iuid, instance.inst_no, instance.sop_cuid \
+FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+WHERE series.series_iuid = &apos;%@&apos;;\
+&quot; \
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[\&quot;&quot; $1 &quot;\&quot;,\&quot;&quot; $2 &quot;\&quot;,\&quot;&quot; $3 &quot;\&quot;]&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+	<key>manifestWeasisSeriesStudyInstanceUIDSeriesInstanceUID</key>
+	<string>export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 192.168.1.244 -b pacsdb -e &quot;\
+SELECT series.series_iuid, series.series_desc, series.series_no, series.modality, series.num_instances \
+FROM series \
+LEFT JOIN study ON series.study_fk=study.pk WHERE study.study_iuid = &apos;%@&apos; AND series.series_iuid = &apos;%@&apos;;\
+&quot; \
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[\&quot;&quot; $1 &quot;\&quot;,\&quot;&quot; $2 &quot;\&quot;,\&quot;&quot; $3 &quot;\&quot;,\&quot;&quot; $4 &quot;\&quot;,\&quot;&quot; $5 &quot;\&quot;]&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+	<key>studyAccessionNumberWadosUris</key>
+	<string>export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 192.168.1.244 -b pacsdb -e &quot;\
+SELECT study.study_iuid, series.series_iuid, instance.sop_iuid \
+FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+LEFT JOIN study ON series.study_fk=study.pk \
+WHERE study.accession_no = &apos;%@&apos;;\
+&quot; \
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;\&quot;?requestType=WADO&amp;contentType=application/dicom&amp;studyUID=&quot; $1 &quot;&amp;seriesUID=&quot; $2 &quot;&amp;objectUID=&quot; $3 &quot;\&quot;&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+	<key>studyUIDWadosUris</key>
+	<string>export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 192.168.1.244 -b pacsdb -e &quot;\
+SELECT study.study_iuid, series.series_iuid, instance.sop_iuid \
+FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+LEFT JOIN study ON series.study_fk=study.pk \
+WHERE study.study_iuid = &apos;%@&apos;;\
+&quot; \
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;\&quot;?requestType=WADO&amp;contentType=application/dicom&amp;studyUID=&quot; $1 &quot;&amp;seriesUID=&quot; $2 &quot;&amp;objectUID=&quot; $3 &quot;\&quot;&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+	<key>seriesUIDWadosUris</key>
+	<string>export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 192.168.1.244 -b pacsdb -e &quot;\
+SELECT study.study_iuid, series.series_iuid, instance.sop_iuid \
+FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+LEFT JOIN study ON series.study_fk=study.pk \
+WHERE series.series_iuid = &apos;%@&apos;;\
+&quot; \
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;\&quot;?requestType=WADO&amp;contentType=application/dicom&amp;studyUID=&quot; $1 &quot;&amp;seriesUID=&quot; $2 &quot;&amp;objectUID=&quot; $3 &quot;\&quot;&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+	<key>patientProlog</key>
+	<string></string>
+	<key>patientEpilog</key>
+	<string>;&quot; |  awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[\&quot;\&quot;,\&quot;datatables/series?AccessionNumber=&quot; $1 &quot;&amp;IssuerOfPatientID.UniversalEntityID=&quot; $2 &quot;&amp;StudyIUID=&quot; $3 &quot;&amp;session=%@\&quot;,\&quot;&quot; $4 &quot;\&quot;,\&quot;datatables/patient?PatientID=&quot; $5 &quot;&amp;IssuerOfPatientID.UniversalEntityID=&quot; $6 &quot;&amp;session=%@\&quot;,\&quot;&quot; $7 &quot;^&quot; $8 &quot;^&quot; $9 &quot;^&quot; $10 &quot;^&quot; $11 &quot;\&quot;,\&quot;&quot; $12 &quot;\&quot;,\&quot;&quot; $13 &quot;\&quot;,\&quot;&quot; $14 &quot;\&quot;,\&quot;&quot; $15 &quot;^&quot; $16 &quot;^&quot; $17 &quot;^&quot; $18 &quot;^&quot; $19 &quot;\&quot;,\&quot;&quot; $20 &quot;\&quot;,\&quot;&quot; $21 &quot;\&quot;,\&quot;&quot; $22 &quot;\&quot;,\&quot;&quot; $23 &quot;\&quot;,\&quot;&quot; $24 &quot;\&quot;,\&quot;&quot; $25 &quot;\&quot;,\&quot;&quot; $26 &quot;\&quot;,\&quot;&quot; $27 &quot;\&quot;,\&quot;&quot; $28 &quot;\&quot;,\&quot;&quot; $29 &quot;\&quot;]&quot;}\
+&apos;  \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;
+</string>
+	<key>PatientID</key>
+	<string>patient.pat_id</string>
+	<key>IssuerOfPatientID</key>
+	<string>patient.pat_id_issuer</string>
+	<key>PatientName</key>
+	<array>
+		<string>patient.pat_name</string>
+	</array>
+	<key>PatientBirthDate</key>
+	<string>patient.pat_birthdate</string>
+	<key>PatientSex</key>
+	<string>patient.pat_sex</string>
+	<key>PatientInsurancePlanCodeSequence</key>
+	<string>study.study_custom2</string>
+	<key>StudyDate</key>
+	<string>study.study_datetime</string>
+	<key>ModalitiesInStudy</key>
+	<string>study.mods_in_study</string>
+	<key>StudyDescription</key>
+	<string>study.study_desc</string>
+	<key>StudyID</key>
+	<string>study.study_id</string>
+	<key>StudyInstanceUID</key>
+	<string>study.study_iuid</string>
+	<key>AccessionNumber</key>
+	<string>study.accession_no</string>
+	<key>IssuerOfAccessionNumber</key>
+	<string>study.accession_no</string>
+	<key>NameOfPhysiciansReadingStudy</key>
+	<string>study.study_custom3</string>
+	<key>ReferingPhysicianName</key>
+	<array>
+		<string>study.ref_physician</string>
+	</array>
+	<key>StudyTime</key>
+	<string>study.study_datetime</string>
+	<key>accessControlId</key>
+	<string></string>
+	<key>SeriesInstanceUID</key>
+	<string>series.series_iuid</string>
+	<key>InstitutionName</key>
+	<string>study.study_custom1</string>
+	<key>SOPClassUID</key>
+	<string>instance.sop_cuid</string>
+	<key>SOPInstanceUID</key>
+	<string>instance.sop_iuid</string>
+	<key>InstanceNumber</key>
+	<string>instance.inst_no</string>
+	<key>QidoStudyProlog</key>
+	<string>\
+SELECT \
+patient.pat_id,\
+patient.pat_id_issuer,\
+patient.pat_name,\
+patient.pat_birthdate,\
+patient.pat_sex,\
+study.study_datetime,\
+study.mods_in_study,\
+study.study_desc,\
+study.study_id,\
+study.study_iuid,\
+study.accession_no \
+FROM study \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+	</string>
+	<key>QidoSeriesProlog</key>
+	<string>\
+SELECT \
+patient.pat_id,\
+patient.pat_id_issuer,\
+patient.pat_name,\
+patient.pat_birthdate,\
+patient.pat_sex,\
+study.study_datetime,\
+study.mods_in_study,\
+study.study_desc,\
+study.study_id,\
+study.study_iuid,\
+study.accession_no,\
+series.modality,\
+series.series_desc,\
+series.series_no,\
+series.series_iuid \
+FROM series \
+LEFT JOIN study ON series.study_fk=study.pk \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+</string>
+	<key>QidoInstanceProlog</key>
+	<string>\
+SELECT \
+patient.pat_id,\
+patient.pat_id_issuer,\
+patient.pat_name,\
+patient.pat_birthdate,\
+patient.pat_sex,\
+study.study_datetime,\
+study.mods_in_study,\
+study.study_desc,\
+study.study_id,\
+study.study_iuid,\
+study.accession_no,\
+series.modality,\
+series.series_desc,\
+series.series_no,\
+series.series_iuid,\
+instance.sop_cuid,\
+instance.sop_iuid,\
+instance.inst_no \
+FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+LEFT JOIN study ON series.study_fk=study.pk \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+</string>
+	<key>QidoAttrs</key>
+	<dict>
+		<key>PatientID</key>
+		<dict>
+			<key>level</key>
+			<integer>0</integer>
+			<key>tag</key>
+			<string>00100020</string>
+			<key>vr</key>
+			<string>LO</string>
+		</dict>
+		<key>IssuerOfPatientID</key>
+		<dict>
+			<key>level</key>
+			<integer>0</integer>
+			<key>tag</key>
+			<string>00100021</string>
+			<key>vr</key>
+			<string>LO</string>
+		</dict>
+		<key>PatientName</key>
+		<dict>
+			<key>level</key>
+			<integer>0</integer>
+			<key>tag</key>
+			<string>00100010</string>
+			<key>vr</key>
+			<string>PN</string>
+		</dict>
+		<key>PatientBirthDate</key>
+		<dict>
+			<key>level</key>
+			<integer>0</integer>
+			<key>tag</key>
+			<string>00100030</string>
+			<key>vr</key>
+			<string>DA</string>
+		</dict>
+		<key>PatientSex</key>
+		<dict>
+			<key>level</key>
+			<integer>0</integer>
+			<key>tag</key>
+			<string>00100040</string>
+			<key>vr</key>
+			<string>CS</string>
+		</dict>
+		<key>StudyDate</key>
+		<dict>
+			<key>level</key>
+			<integer>1</integer>
+			<key>tag</key>
+			<string>00080020</string>
+			<key>vr</key>
+			<string>DA</string>
+		</dict>
+		<key>ModalitiesInStudy</key>
+		<dict>
+			<key>level</key>
+			<integer>1</integer>
+			<key>tag</key>
+			<string>00080061</string>
+			<key>vr</key>
+			<string>CS</string>
+		</dict>
+		<key>StudyDescription</key>
+		<dict>
+			<key>level</key>
+			<integer>1</integer>
+			<key>tag</key>
+			<string>00081030</string>
+			<key>vr</key>
+			<string>LO</string>
+		</dict>
+		<key>StudyID</key>
+		<dict>
+			<key>level</key>
+			<integer>1</integer>
+			<key>tag</key>
+			<string>00200010</string>
+			<key>vr</key>
+			<string>SH</string>
+		</dict>
+		<key>StudyInstanceUID</key>
+		<dict>
+			<key>level</key>
+			<integer>1</integer>
+			<key>tag</key>
+			<string>0020000D</string>
+			<key>vr</key>
+			<string>UI</string>
+		</dict>
+		<key>AccessionNumber</key>
+		<dict>
+			<key>level</key>
+			<integer>1</integer>
+			<key>tag</key>
+			<string>00080050</string>
+			<key>vr</key>
+			<string>SH</string>
+		</dict>
+		<key>Modality</key>
+		<dict>
+			<key>level</key>
+			<integer>2</integer>
+			<key>tag</key>
+			<string>00080060</string>
+			<key>vr</key>
+			<string>CS</string>
+		</dict>
+		<key>SeriesDescription</key>
+		<dict>
+			<key>level</key>
+			<integer>2</integer>
+			<key>tag</key>
+			<string>0008103E</string>
+			<key>vr</key>
+			<string>LO</string>
+		</dict>
+		<key>SeriesNumber</key>
+		<dict>
+			<key>level</key>
+			<integer>2</integer>
+			<key>tag</key>
+			<string>00200011</string>
+			<key>vr</key>
+			<string>IS</string>
+		</dict>
+		<key>SeriesInstanceUID</key>
+		<dict>
+			<key>level</key>
+			<integer>2</integer>
+			<key>tag</key>
+			<string>0020000E</string>
+			<key>vr</key>
+			<string>UI</string>
+		</dict>
+		<key>SOPClassUID</key>
+		<dict>
+			<key>level</key>
+			<integer>3</integer>
+			<key>tag</key>
+			<string>00080016</string>
+			<key>vr</key>
+			<string>UI</string>
+		</dict>
+		<key>SOPInstanceUID</key>
+		<dict>
+			<key>level</key>
+			<integer>3</integer>
+			<key>tag</key>
+			<string>00080018</string>
+			<key>vr</key>
+			<string>UI</string>
+		</dict>
+		<key>InstanceNumber</key>
+		<dict>
+			<key>level</key>
+			<integer>3</integer>
+			<key>tag</key>
+			<string>00200013</string>
+			<key>vr</key>
+			<string>IS</string>
+		</dict>
+	</dict>
+	<key>QidoStudyEpilog</key>
+	<string>;&quot; |  awk -F\\t \
+&apos;\
+BEGIN{\
+OFS=&quot;&quot;;\
+ORS=&quot;&quot;;\
+print &quot;[&quot;;\
+ORS=&quot;,&quot;\
+}\
+{print &quot;{\&quot;PatientID\&quot;:\&quot;&quot; $1 \
+&quot;\&quot;,\&quot;IssuerOfPatientID\&quot;:\&quot;&quot; $2 \
+&quot;\&quot;,\&quot;PatientName\&quot;:\&quot;&quot; $3 \
+&quot;\&quot;,\&quot;PatientBirthDate\&quot;:\&quot;&quot; $4 \
+&quot;\&quot;,\&quot;PatientSex\&quot;:\&quot;&quot; $5 \
+&quot;\&quot;,\&quot;StudyDate\&quot;:\&quot;&quot; $6 \
+&quot;\&quot;,\&quot;ModalitiesInStudy\&quot;:\&quot;&quot; $7 \
+&quot;\&quot;,\&quot;StudyDescription\&quot;:\&quot;&quot; $8 \
+&quot;\&quot;,\&quot;StudyID\&quot;:\&quot;&quot; $9 \
+&quot;\&quot;,\&quot;StudyInstanceUID\&quot;:\&quot;&quot; $10 \
+&quot;\&quot;,\&quot;AccessionNumber\&quot;:\&quot;&quot; $11 \
+&quot;\&quot;}&quot;}\
+&apos;  \
+| sed \
+-e &apos;s/.$/]/&apos; \
+-e &apos;s/\\/\\\\/g&apos; \
+-e &apos;s/\^NULL//g&apos;
+</string>
+	<key>QidoSeriesEpilog</key>
+	<string>;&quot; |  awk -F\\t \
+&apos;\
+BEGIN{\
+OFS=&quot;&quot;;\
+ORS=&quot;&quot;;\
+print &quot;[&quot;;\
+ORS=&quot;,&quot;\
+}\
+{print &quot;{\&quot;PatientID\&quot;:\&quot;&quot; $1 \
+&quot;\&quot;,\&quot;IssuerOfPatientID\&quot;:\&quot;&quot; $2 \
+&quot;\&quot;,\&quot;PatientName\&quot;:\&quot;&quot; $3 \
+&quot;\&quot;,\&quot;PatientBirthDate\&quot;:\&quot;&quot; $4 \
+&quot;\&quot;,\&quot;PatientSex\&quot;:\&quot;&quot; $5 \
+&quot;\&quot;,\&quot;StudyDate\&quot;:\&quot;&quot; $6 \
+&quot;\&quot;,\&quot;ModalitiesInStudy\&quot;:\&quot;&quot; $7 \
+&quot;\&quot;,\&quot;StudyDescription\&quot;:\&quot;&quot; $8 \
+&quot;\&quot;,\&quot;StudyID\&quot;:\&quot;&quot; $9 \
+&quot;\&quot;,\&quot;StudyInstanceUID\&quot;:\&quot;&quot; $10 \
+&quot;\&quot;,\&quot;AccessionNumber\&quot;:\&quot;&quot; $11 \
+&quot;\&quot;,\&quot;Modality\&quot;:\&quot;&quot; $12 \
+&quot;\&quot;,\&quot;SeriesDescription\&quot;:\&quot;&quot; $13 \
+&quot;\&quot;,\&quot;SeriesNumber\&quot;:\&quot;&quot; $14 \
+&quot;\&quot;,\&quot;SeriesInstanceUID\&quot;:\&quot;&quot; $15 \
+&quot;\&quot;}&quot;}\
+&apos;  \
+| sed \
+-e &apos;s/.$/]/&apos; \
+-e &apos;s/\\/\\\\/g&apos; \
+-e &apos;s/\^NULL//g&apos;
+</string>
+	<key>QidoInstanceEpilog</key>
+	<string>;&quot; |  awk -F\\t \
+&apos;\
+BEGIN{\
+OFS=&quot;&quot;;\
+ORS=&quot;&quot;;\
+print &quot;[&quot;;\
+ORS=&quot;,&quot;\
+}\
+{print &quot;{\&quot;PatientID\&quot;:\&quot;&quot; $1 \
+&quot;\&quot;,\&quot;IssuerOfPatientID\&quot;:\&quot;&quot; $2 \
+&quot;\&quot;,\&quot;PatientName\&quot;:\&quot;&quot; $3 \
+&quot;\&quot;,\&quot;PatientBirthDate\&quot;:\&quot;&quot; $4 \
+&quot;\&quot;,\&quot;PatientSex\&quot;:\&quot;&quot; $5 \
+&quot;\&quot;,\&quot;StudyDate\&quot;:\&quot;&quot; $6 \
+&quot;\&quot;,\&quot;ModalitiesInStudy\&quot;:\&quot;&quot; $7 \
+&quot;\&quot;,\&quot;StudyDescription\&quot;:\&quot;&quot; $8 \
+&quot;\&quot;,\&quot;StudyID\&quot;:\&quot;&quot; $9 \
+&quot;\&quot;,\&quot;StudyInstanceUID\&quot;:\&quot;&quot; $10 \
+&quot;\&quot;,\&quot;AccessionNumber\&quot;:\&quot;&quot; $11 \
+&quot;\&quot;,\&quot;Modality\&quot;:\&quot;&quot; $12 \
+&quot;\&quot;,\&quot;SeriesDescription\&quot;:\&quot;&quot; $13 \
+&quot;\&quot;,\&quot;SeriesNumber\&quot;:\&quot;&quot; $14 \
+&quot;\&quot;,\&quot;SeriesInstanceUID\&quot;:\&quot;&quot; $15 \
+&quot;\&quot;,\&quot;SOPClassUID\&quot;:\&quot;&quot; $16 \
+&quot;\&quot;,\&quot;SOPInstanceUID\&quot;:\&quot;&quot; $17 \
+&quot;\&quot;,\&quot;InstanceNumber\&quot;:\&quot;&quot; $18 \
+&quot;\&quot;}&quot;}\
+&apos;  \
+| sed \
+-e &apos;s/.$/]/&apos; \
+-e &apos;s/\\/\\\\/g&apos; \
+-e &apos;s/\^NULL//g&apos;
+</string>
+</dict>
+</plist>
