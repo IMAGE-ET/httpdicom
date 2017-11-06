@@ -809,7 +809,7 @@ int main(int argc, const char* argv[]) {
         
         
 #pragma mark WADO-URI
-        NSRegularExpression *wadouriRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/$" options:NSRegularExpressionCaseInsensitive error:NULL];
+        NSRegularExpression *wadouriRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/wado" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
@@ -819,7 +819,7 @@ int main(int argc, const char* argv[]) {
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
              //NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
-             NSDictionary *pacsaei=pacsDictionaries[(request.query)[@"custodianOID"]];
+             NSDictionary *pacsaei=pacsDictionaries[(request.query)[@"custodianoid"]];
              if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
              
              NSString *q=request.URL.query;//a same param may repeat
