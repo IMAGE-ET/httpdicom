@@ -8,38 +8,38 @@
     version="1.0"
     >
     <dict>
-        <key>2</key>
+        <key>1.2</key>
         <dict>
             <key>local</key>
             <false/>
             <key>preferredstudyidentificator</key>
             <string id="preferredstudyidentificator">AccessionNumber</string>
             <key>custodiantitle</key>
-            <string id="custodiantitle">2</string>
+            <string id="custodiantitle">custodian</string>
             <key>custodianoid</key>
             <string id="custodianoid">1</string>
             <key>custodianbaseuri</key>
-            <string id="custodianbaseuri">anyURI</string>
+            <string id="custodianbaseuri">custodianURI</string>
             <key>sqlprolog</key>
-            <string id="sqlprolog">2.462.0</string>
+            <string id="sqlprolog">sqlprolog</string>
             <key>sqlstringencoding</key>
             <string id="sqlstringencoding">5</string>
-            <key>sqlqueriesdictionaryuri</key>
-            <string id="sqlqueriesdictionaryuri">7.9.7.7</string>
+            <key>sqldictpath</key>
+            <string id="sqldictpath">/Users/Shared/httpdicom/deploy/sql/dictionary/dcm4chee2147mysql.plist</string>
             <key>filesystembaseuri</key>
-            <string id="filesystembaseuri">anyURI</string>
+            <string id="filesystembaseuri">filesystembaseuri</string>
             <key>wadouri</key>
-            <string id="wadouri">http://1</string>
+            <string id="wadouri">http://wadouri</string>
             <key>wadouriadditionalparameters</key>
             <string id="wadouriadditionalparameters">&amp;a=b</string>
             <key>qido</key>
-            <string id="qido">http://1</string>
+            <string id="qido">http://qido</string>
             <key>wadors</key>
-            <string id="wadors">https://a</string>
+            <string id="wadors">https://wadors</string>
             <key>stow</key>
-            <string id="stow">http://1.2.</string>
+            <string id="stow">http://stow</string>
             <key>dicomaet</key>
-            <string id="dicomaet">device_aet</string>
+            <string id="dicomaet">dicomaet</string>
             <key>dicomip</key>
             <string id="dicomip">1.1.1.1</string>
             <key>dicomport</key>

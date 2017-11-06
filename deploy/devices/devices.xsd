@@ -90,12 +90,12 @@
                                         <xs:element ref="string" id="sqlstringencoding"/>
 
 
-                                        <xs:element name="key" fixed="sqlqueriesdictionaryuri">
+                                        <xs:element name="key" fixed="sqldictpath">
                                             <xs:annotation>
-                                                <xs:documentation>enlace al diccionario que lista las traducciones en lenguaje sql de los queries usados por httpdicom</xs:documentation>
+                                                <xs:documentation>path al diccionario que lista las traducciones en lenguaje sql de los queries usados por httpdicom</xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element ref="string" id="sqlqueriesdictionaryuri"/>
+                                        <xs:element ref="string" id="sqldictpath"/>
 
 
                                         <xs:element name="key" fixed="filesystembaseuri">
@@ -227,7 +227,7 @@
     <xs:complexType name="httpidstring">
         <xs:simpleContent>
             <xs:restriction base="idstring">
-                <xs:pattern value="https?://.*"/>
+                <xs:pattern value="()|(https?://.*)"/>
                 <xs:whiteSpace value="collapse"></xs:whiteSpace>
             </xs:restriction>
         </xs:simpleContent>

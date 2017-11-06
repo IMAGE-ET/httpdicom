@@ -284,24 +284,24 @@ BOOL buildWhereString(BOOL E,BOOL S,BOOL I,NSArray *queryItems, NSDictionary *sq
 
 int main(int argc, const char* argv[]) {
     @autoreleasepool {
+        
+        
         /*
          syntax:
          [0] httpdicom
-         [1] path to pacs.plist
-         [2] puerto
-         [3] [ DEBUG | VERBOSE | INFO | WARNING | ERROR | EXCEPTION]
-         ... path to log file
+         [1] devicesplistpath
+         [2] httpdicomport
+         [3] loglevel [ DEBUG | VERBOSE | INFO | WARNING | ERROR | EXCEPTION]
          */
-
         NSArray *args=[[NSProcessInfo processInfo] arguments];
         if ([args count]!=4)
         {
-            LOG_WARNING(@"syntax: httpdicom path2pacs.plist port debug");
+            LOG_WARNING(@"syntax: httpdicom devicesplist httpdicomport loglevel");
             return 1;
         }
         
         
-        //[3]
+        //[3] loglevel
         NSUInteger llindex=[@[@"DEBUG",@"VERBOSE",@"INFO",@"WARNING",@"ERROR",@"EXCEPTION"] indexOfObject:args[3]];
         if (llindex==NSNotFound)
         {
@@ -310,15 +310,16 @@ int main(int argc, const char* argv[]) {
         }
         ODLogLevel=(int)llindex;
         
-        //[2]
-        long long port=[args[2]longLongValue];
         
+        //[2] httpdicomport
+        long long port=[args[2]longLongValue];
         if (port <1 || port>65535)
         {
             LOG_ERROR(@"port should be between 0 and 65535");
             return 1;
         }
         
+        //util formatters
         NSDateFormatter *dicomDTFormatter = [[NSDateFormatter alloc] init];
         [dicomDTFormatter setDateFormat:@"yyyyMMddHHmmss"];
         NSRegularExpression *UIRegex = [NSRegularExpression regularExpressionWithPattern:@"^[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*$" options:0 error:NULL];
@@ -346,29 +347,31 @@ int main(int argc, const char* argv[]) {
         sStudyDescription=[NSMutableDictionary dictionary];
         
 
-        //[1]
-        //arrays custodians
+        //[1] devicesplist (pacs is another name synonym of devices)
         NSDictionary *pacsDictionaries=[NSDictionary dictionaryWithContentsOfFile:[args[1]stringByExpandingTildeInPath]];
         if (!pacsDictionaries)
         {
             LOG_ERROR(@"could not get contents of pacs.plist");
             return 1;
         }
+        //initialization of custodian and sql dictionaries based on properties of pacsDictionaries
         NSMutableDictionary *custodianoids=[NSMutableDictionary dictionary];
         NSMutableDictionary *custodiantitles=[NSMutableDictionary dictionary];
         NSMutableSet *sqlset=[NSMutableSet set];
+        
         NSArray *pacsOids = [pacsDictionaries allValues];
         for (NSDictionary *d in pacsOids)
         {
             [custodianoids setObject:d[@"custodiantitle"] forKey:d[@"custodianoid"]];
             [custodiantitles setObject:d[@"custodianoid"] forKey:d[@"custodiantitle"]];
-            NSString *s=[d objectForKey:@"sqlQueriesDictionary"];
+            NSString *s=[d objectForKey:@"sqldictpath"];
             if (s) [sqlset addObject:s];
         }
+        //response data for root queries custodians/titles and custodians/oids
         NSData *custodianOIDsData = [NSJSONSerialization dataWithJSONObject:[custodianoids allKeys] options:0 error:nil];
         NSData *custodianTitlesData = [NSJSONSerialization dataWithJSONObject:[custodiantitles allKeys] options:0 error:nil];
 
-        
+        //devices OID classified by custodian
         NSMutableDictionary *custodianOIDsaeis=[NSMutableDictionary dictionary];
         for (NSString *custodianOID in [custodianoids allKeys])
         {
@@ -380,9 +383,9 @@ int main(int argc, const char* argv[]) {
             }
             [custodianOIDsaeis setValue:custodianOIDaeis forKey:custodianOID];
         }
-        LOG_VERBOSE(@"%@",[custodianOIDsaeis description]);
+        LOG_VERBOSE(@"known devices OID classified by corresponding custodian OID:\r\n%@",[custodianOIDsaeis description]);
 
-        
+        //devices titles grouped on custodian
         NSMutableDictionary *custodianTitlesaets=[NSMutableDictionary dictionary];
         NSMutableDictionary *custodianTitlesaetsStrings=[NSMutableDictionary dictionary];
         for (NSString *custodianTitle in [custodiantitles allKeys])
@@ -405,35 +408,31 @@ int main(int argc, const char* argv[]) {
             [s appendString:@")"];
             [custodianTitlesaetsStrings setObject:s forKey:custodianTitle];
         }
-        LOG_VERBOSE(@"%@",[custodianTitlesaets description]);
-        LOG_VERBOSE(@"%@",custodianTitlesaetsStrings);
+        LOG_VERBOSE(@"known devices aet classified by corresponding custodian title:\r\n%@",[custodianTitlesaets description]);
+        //LOG_VERBOSE(@"%@",custodianTitlesaetsStrings);
 
         NSMutableDictionary *pacsTitlesDictionary=[NSMutableDictionary dictionary];
         for (NSString *key in [pacsDictionaries allKeys])
         {
             [pacsTitlesDictionary setObject:key forKey:[(pacsDictionaries[key])[@"custodiantitle"] stringByAppendingPathExtension:(pacsDictionaries[key])[@"dicomaet"]]];
         }
-        LOG_VERBOSE(@"%@",[pacsTitlesDictionary description]);
+        //LOG_VERBOSE(@"%@",[pacsTitlesDictionary description]);
         
-        RS* httpdicomServer = [[RS alloc] init];
         
-        //sql configurations
+        
+        //sql queries and sql qido filters
+        LOG_VERBOSE(@"sqls:\r\n%@",[sqlset description]);
         NSMutableDictionary *sql=[NSMutableDictionary dictionary];
         NSMutableDictionary *sqlWadoTags=[NSMutableDictionary dictionary];
         for (NSString *s in sqlset)
         {
-            [sql setObject:
-             [NSDictionary dictionaryWithContentsOfFile:
-              [
-               [
-                [args[1]stringByExpandingTildeInPath]
-                stringByDeletingLastPathComponent
-                ]
-               stringByAppendingPathComponent:s
-               ]
-              ]
-              forKey:s
-             ];
+            NSDictionary *sqldict=[NSDictionary dictionaryWithContentsOfFile:[s stringByExpandingTildeInPath]];
+            if (!sqldict)
+            {
+                LOG_ERROR(@"could not get contents of %@",s);
+                return 1;
+            }
+            [sql setObject:sqldict forKey:s];
             //sql-qido dictionary tag -> keyword
             NSDictionary *wadoKeyword=(sql[s])[@"QidoAttrs"];
             if (wadoKeyword)
@@ -447,40 +446,16 @@ int main(int argc, const char* argv[]) {
             }
         }
 
+        
+
 #pragma mark -
 #pragma mark routing regex LIFO list
+        //httpserver init
+        RS* httpdicomServer = [[RS alloc] init];
         
-        NSRegularExpression *anyRegex = [NSRegularExpression regularExpressionWithPattern:@".*" options:0 error:NULL];
-
-        NSRegularExpression *echoRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/echo$" options:0 error:NULL];
-        
-        NSRegularExpression *custodiansRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/custodians/.*$" options:0 error:NULL];
-        
-        NSRegularExpression *qidoRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/rs\\/(studies|series|instances)$" options:NSRegularExpressionCaseInsensitive error:NULL];
-        
-        NSRegularExpression *wadouriRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/$" options:NSRegularExpressionCaseInsensitive error:NULL];
-        
-        NSRegularExpression *wadorsRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/rs\\/studies\\/" options:NSRegularExpressionCaseInsensitive error:NULL];
-
-        NSRegularExpression *dcmzipRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/dcm.zip$" options:NSRegularExpressionCaseInsensitive error:NULL];
-        
-        NSRegularExpression *encapsulatedRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/(ot|doc|cda)$" options:NSRegularExpressionCaseInsensitive error:NULL];
-
-        NSRegularExpression *mwstudiesRegex = [NSRegularExpression regularExpressionWithPattern:@"^/manifest/weasis/studies" options:NSRegularExpressionCaseInsensitive error:NULL];
-
-        NSRegularExpression *mwseriesRegex = [NSRegularExpression regularExpressionWithPattern:@"^/manifest/weasis/studies/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*/series/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*" options:NSRegularExpressionCaseInsensitive error:NULL];
-
-        NSRegularExpression *patientRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/patient$" options:NSRegularExpressionCaseInsensitive error:NULL];
-        
-        NSRegularExpression *dtstudiesRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/studies" options:0 error:NULL];
-        
-        NSRegularExpression *dtpatientRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/patient" options:0 error:NULL];
-        
-        NSRegularExpression *dtseriesRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/series" options:0 error:NULL];
-        
-        NSRegularExpression *iheiidRegex = [NSRegularExpression regularExpressionWithPattern:@"/IHEInvokeImageDisplay" options:0 error:NULL];
         
 #pragma mark any
+        NSRegularExpression *anyRegex = [NSRegularExpression regularExpressionWithPattern:@".*" options:0 error:NULL];
         [
          httpdicomServer addHandler:@"GET" regex:anyRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock)
@@ -493,6 +468,7 @@ int main(int argc, const char* argv[]) {
 
         
 #pragma mark echo
+        NSRegularExpression *echoRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/echo$" options:0 error:NULL];
         [httpdicomServer addHandler:@"GET" regex:echoRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request){
@@ -504,7 +480,7 @@ int main(int argc, const char* argv[]) {
         
 
 #pragma mark custodians
-        
+        NSRegularExpression *custodiansRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/custodians/.*$" options:0 error:NULL];
         [httpdicomServer addHandler:@"GET" regex:custodiansRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request){
@@ -610,9 +586,11 @@ int main(int argc, const char* argv[]) {
              return [RSErrorResponse responseWithClientError:404 message:@"%@ [no handler]",request.path];
 
         }(request));}];
+
         
 #pragma mark QIDO
         // /pacs/{oid}/rs/( studies | series | instances )?
+        NSRegularExpression *qidoRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/rs\\/(studies|series|instances)$" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:qidoRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
@@ -624,12 +602,12 @@ int main(int argc, const char* argv[]) {
              NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
              if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
 
-             NSString *pcsuri=pacsaei[@"pcsuri"];
+             NSString *pcsuri=pacsaei[@"custodianbaseuri"];
 
              NSString *q=request.URL.query;//a same param may repeat
 
 //use case where sql exists in pacs (therefore pacs is local)
-             NSDictionary *destSql=sql[pacsaei[@"sqlQueriesDictionary"]];
+             NSDictionary *destSql=sql[pacsaei[@"sqldictpath"]];
              if (destSql)
              {
                  
@@ -661,7 +639,7 @@ int main(int argc, const char* argv[]) {
                  NSDictionary *qidoKeywordsDict=destSql[@"QidoAttrs"];
                  if ([queryItems count])
                  {
-                     NSDictionary *qidoTags=sqlWadoTags[pacsaei[@"sqlQueriesDictionary"]];
+                     NSDictionary *qidoTags=sqlWadoTags[pacsaei[@"sqldictpath"]];
                      
                      for (NSURLQueryItem *qi in queryItems) {
                          
@@ -674,13 +652,13 @@ int main(int argc, const char* argv[]) {
                              keyword=qi.name;
                              keywordProperties=qidoKeywordsDict[qi.name];
                          }
-                         else return [RSErrorResponse responseWithClientError:404 message:@"%@ [not a qido filter for PACS %@]",qi.name,pacsaei];
+                         else return [RSErrorResponse responseWithClientError:404 message:@"%@ [not a valid qido filter for this PACS]",qi.name];
                          
                          //level check
                          if ( level < [keywordProperties[@"level"] unsignedIntegerValue]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not available at level %@]",qi.name,pComponents[4]];
                          
                          //string compare
-                         if ([@[@"LO",@"PN",@"CS",@"UI"] indexOfObject:keywordProperties[@"vr"]])
+                         if ([@[@"LO",@"PN",@"CS",@"UI"] indexOfObject:keywordProperties[@"vr"]]!=NSNotFound)
                          {
                              [whereString appendString:
                               [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
@@ -693,7 +671,7 @@ int main(int argc, const char* argv[]) {
                          
                          
                          //date compare
-                         if ([@[@"DA"] indexOfObject:keywordProperties[@"vr"]])
+                         if ([@[@"DA"] indexOfObject:keywordProperties[@"vr"]]!=NSNotFound)
                          {
                              NSArray *startEnd=[qi.value componentsSeparatedByString:@"-"];
                              switch ([startEnd count]) {
@@ -716,7 +694,7 @@ int main(int argc, const char* argv[]) {
                  switch (level) {
                      case 1:
                          scriptString=[NSString stringWithFormat:@"%@%@%@%@",
-                                       pacsaei[@"sqlProlog"],
+                                       pacsaei[@"sqlprolog"],
                                        destSql[@"QidoStudyProlog"],
                                        whereString,
                                        destSql[@"QidoStudyEpilog"]
@@ -724,7 +702,7 @@ int main(int argc, const char* argv[]) {
                          break;
                      case 2:
                          scriptString=[NSString stringWithFormat:@"%@%@%@%@",
-                                       pacsaei[@"sqlProlog"],
+                                       pacsaei[@"sqlprolog"],
                                        destSql[@"QidoSeriesProlog"],
                                        whereString,
                                        destSql[@"QidoSeriesEpilog"]
@@ -732,7 +710,7 @@ int main(int argc, const char* argv[]) {
                          break;
                      case 3:
                          scriptString=[NSString stringWithFormat:@"%@%@%@%@",
-                                       pacsaei[@"sqlProlog"],
+                                       pacsaei[@"sqlprolog"],
                                        destSql[@"QidoInstanceProlog"],
                                        whereString,
                                        destSql[@"QidoInstanceEpilog"]
@@ -742,49 +720,26 @@ int main(int argc, const char* argv[]) {
                  
                  
                  LOG_DEBUG(@"%@",scriptString);
-                 /*sql query
-                  if      (encoding==4) LOG_DEBUG(@"utf8\r\n%@",scriptString);
-                  else if (encoding==5) LOG_DEBUG(@"latin1\r\n%@",scriptString);
-                  else                  LOG_DEBUG(@"encoding:%lu\r\n%@",(unsigned long)encoding,scriptString);
-                  */
+                 
                  NSMutableData *mutableData=[NSMutableData data];
                  if (!task(@"/bin/bash",@[@"-s"],[scriptString dataUsingEncoding:NSUTF8StringEncoding],mutableData))
                      [RSErrorResponse responseWithClientError:404 message:@"%@",@"can not execute the script"];//NotFound
+
+                 //db response may be in latin1
+                 NSStringEncoding charset=(NSStringEncoding)[pacsaei[@"sqlstringencoding"] longLongValue ];
+                 if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
+                 
+                 if (charset==5) //latin1
+                 {
+                     NSString *latin1String=[[NSString alloc]initWithData:mutableData encoding:NSISOLatin1StringEncoding];
+                     [mutableData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+                 }
                  
                  NSError *error=nil;
-                 NSArray *arrayOfDicts=[NSJSONSerialization JSONObjectWithData:mutableData options:0 error:&error];
-                 if (!arrayOfDicts) [RSErrorResponse responseWithClientError:404 message:@"bad qido sql result : %@",[error description]];
+                 NSMutableArray *arrayOfDicts=[NSJSONSerialization JSONObjectWithData:mutableData options:0 error:&error];
+                 if (error) return [RSErrorResponse responseWithClientError:404 message:@"bad qido sql result : %@",[error description]];
                  
-                 /*
-                  adjust presentation from
-                  
-                  [
-                    {
-                        "PatientID" = "x",
-                        ...
-                    },
-                    ...
-                  ]
-                  
-                  to DICOM JSON
-                  
-                  [
-                  {
-                  "00080020" : {
-                  "Value" : [
-                  "20080706"
-                  ],
-                  "vr"    :   "DA"
-                  },
-                  ...
-                  },
-                  ...
-                  ]
-                  
-                  NSString *string=[[NSString alloc]initWithData:mutableData encoding:encoding];//5=latinISO1 4=UTF8
-                  NSData *utf8Data=[string dataUsingEncoding:NSUTF8StringEncoding];
-                  */
-                 
+                 //formato JSON qido
                  NSMutableArray *qidoResponseArray=[NSMutableArray array];
                  for (NSDictionary *dict in arrayOfDicts)
                  {
@@ -854,7 +809,7 @@ int main(int argc, const char* argv[]) {
         
         
 #pragma mark WADO-URI
-        
+        NSRegularExpression *wadouriRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/$" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
@@ -923,7 +878,7 @@ int main(int argc, const char* argv[]) {
         // /pacs/{OID}/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}
         // /pacs/{OID}/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}/instances/{SOPInstanceUID}
         //Accept: multipart/related;type="application/dicom"
-        
+        NSRegularExpression *wadorsRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/rs\\/studies\\/" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:wadorsRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
@@ -971,7 +926,7 @@ int main(int argc, const char* argv[]) {
 #pragma mark dcm.zip
         ///pacs/{OID}/dcm.zip?
         //servicio de segundo nivel que llama a WADO-RS para su realización
-        
+        NSRegularExpression *dcmzipRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/dcm.zip$" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:dcmzipRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
         {
@@ -1271,7 +1226,7 @@ int main(int argc, const char* argv[]) {
         {proxy}/doc?
         {proxy}/cda?
          */
-        
+        NSRegularExpression *encapsulatedRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/(ot|doc|cda)$" options:NSRegularExpressionCaseInsensitive error:NULL];
          [httpdicomServer addHandler:@"GET" regex:encapsulatedRegex processBlock:
           ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
@@ -1387,7 +1342,7 @@ int main(int argc, const char* argv[]) {
         
         
 #pragma mark /manifest/weasis/studies?
-        
+        NSRegularExpression *mwstudiesRegex = [NSRegularExpression regularExpressionWithPattern:@"^/manifest/weasis/studies" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:mwstudiesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request)
@@ -1542,7 +1497,7 @@ int main(int argc, const char* argv[]) {
         
         
 #pragma mark /manifest/weasis/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}
-        
+        NSRegularExpression *mwseriesRegex = [NSRegularExpression regularExpressionWithPattern:@"^/manifest/weasis/studies/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*/series/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:mwseriesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request)
@@ -1704,7 +1659,7 @@ int main(int argc, const char* argv[]) {
          patient?{PatientID, IssuerOfPatientID, PatientName(family^given^middle^prefix^suffix), PatientBirthDate, PatientSex} [&pacs="oid" [...]]
          -> array of object patient (which include pacs, issuer data table patient, first and last study, number of studies, modalities found)
          */
-        
+        NSRegularExpression *patientRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/patient$" options:NSRegularExpressionCaseInsensitive error:NULL];
          [httpdicomServer addHandler:@"GET" regex:patientRegex processBlock:
           ^(RSRequest* request, RSCompletionBlock completionBlock)
           {completionBlock(^RSResponse* (RSRequest* request)
@@ -1906,6 +1861,7 @@ int main(int argc, const char* argv[]) {
          r=Req=request sql
          s=subselection from caché
          */
+        NSRegularExpression *dtstudiesRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/studies" options:0 error:NULL];
         [httpdicomServer addHandler:@"GET" regex:dtstudiesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
@@ -2162,7 +2118,7 @@ int main(int argc, const char* argv[]) {
 
 //2 count
                  NSString *sqlCountQuery=[NSString stringWithFormat:@"%@%@%@%@",
-                                          destPacs[@"sqlProlog"],
+                                          destPacs[@"sqlprolog"],
                                           destSql[@"studiesCountProlog"],
                                           studiesWhere,
                                           destSql[@"studiesCountEpilog"]
@@ -2192,7 +2148,7 @@ int main(int argc, const char* argv[]) {
                      //order is performed later, from mutableDictionary
 //3 select
                      NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
-                                             destPacs[@"sqlProlog"],
+                                             destPacs[@"sqlprolog"],
                                              destSql[@"datatablesStudiesProlog"],
                                              studiesWhere,
                                              [NSString stringWithFormat: destSql[@"datatablesStudiesEpilog"],session,
@@ -2200,7 +2156,7 @@ int main(int argc, const char* argv[]) {
                                               ]
                                              ];
 
-                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
+                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlstringencoding"]unsignedIntegerValue]);
 
                      [Total setObject:studiesArray forKey:session];
                      [Filtered setObject:[studiesArray mutableCopy] forKey:session];
@@ -2377,7 +2333,7 @@ int main(int argc, const char* argv[]) {
          ventana emergente con todos los estudios del paciente
          "datatables/patient?PatientID=33333333&IssuerOfPatientID.UniversalEntityID=NULL&session=1"
          */
-        
+        NSRegularExpression *dtpatientRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/patient" options:0 error:NULL];
         [httpdicomServer addHandler:@"GET" regex:dtpatientRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
@@ -2422,7 +2378,7 @@ int main(int argc, const char* argv[]) {
              
 
              NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
-                                     destPacs[@"sqlProlog"],
+                                     destPacs[@"sqlprolog"],
                                      destSql[@"datatablesStudiesProlog"],
                                      studiesWhere,
                                      [NSString stringWithFormat: destSql[@"datatablesStudiesEpilog"],session,
@@ -2430,7 +2386,7 @@ int main(int argc, const char* argv[]) {
                                       ]
                                      ];
              
-             NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
+             NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlstringencoding"]unsignedIntegerValue]);
              
              //sorted study date (5) desc
              [studiesArray sortWithOptions:0 usingComparator:^NSComparisonResult(id obj1, id obj2) {
@@ -2454,6 +2410,7 @@ int main(int argc, const char* argv[]) {
         
 #pragma mark datatables/series
         //"datatables/series?AccessionNumber=22&IssuerOfAccessionNumber.UniversalEntityID=NULL&StudyIUID=2.16.858.2.10000675.72769.20160411084701.1.100&session=1"
+        NSRegularExpression *dtseriesRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/series" options:0 error:NULL];
         [httpdicomServer addHandler:@"GET" regex:dtseriesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
@@ -2495,7 +2452,7 @@ int main(int argc, const char* argv[]) {
              LOG_INFO(@"WHERE %@",[where substringFromIndex:38]);
 
              NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
-                                     destPacs[@"sqlProlog"],
+                                     destPacs[@"sqlprolog"],
                                      destSql[@"datatablesSeriesProlog"],
                                      where,
                                      [NSString stringWithFormat:
@@ -2505,7 +2462,7 @@ int main(int argc, const char* argv[]) {
                                       ]
                                      ];
              
-             NSMutableArray *seriesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
+             NSMutableArray *seriesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlstringencoding"]unsignedIntegerValue]);
              //LOG_INFO(@"series array:%@",[seriesArray description]);
              
              NSMutableDictionary *resp = [NSMutableDictionary dictionary];
@@ -2531,7 +2488,7 @@ int main(int argc, const char* argv[]) {
         //&keyImagesOnly=false
         //&custodianOID=xxx
         //&proxyURI=yyy
-        
+        NSRegularExpression *iheiidRegex = [NSRegularExpression regularExpressionWithPattern:@"/IHEInvokeImageDisplay" options:0 error:NULL];
         [httpdicomServer addHandler:@"GET" regex:iheiidRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
