@@ -453,7 +453,7 @@ int main(int argc, const char* argv[]) {
         //httpserver init
         RS* httpdicomServer = [[RS alloc] init];
         
-        
+/*
 #pragma mark any
         NSRegularExpression *anyRegex = [NSRegularExpression regularExpressionWithPattern:@".*" options:0 error:NULL];
         [
@@ -465,6 +465,71 @@ int main(int argc, const char* argv[]) {
             return [RSErrorResponse responseWithClientError:400 message:@"no handler for path: %@",request.path];
         
         }(request));}];
+*/
+#pragma mark WADO-URI
+        NSRegularExpression *wadouriRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/" options:NSRegularExpressionCaseInsensitive error:NULL];
+        [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
+         ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
+                                                                                  {
+                                                                                      LOG_DEBUG(@"client: %@",request.remoteAddressString);
+                                                                                      //using NSURLComponents instead of RSRequest
+                                                                                      NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+                                                                                      NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+                                                                                      
+                                                                                      //NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
+                                                                                      NSDictionary *pacsaei=pacsDictionaries[(request.query)[@"custodianOID"]];
+                                                                                      if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
+                                                                                      
+                                                                                      NSString *q=request.URL.query;//a same param may repeat
+                                                                                      
+                                                                                      NSString *wadouriBaseString=pacsaei[@"wadouri"];
+                                                                                      if (![wadouriBaseString isEqualToString:@""])
+                                                                                      {
+                                                                                          //local ... there exists an URL
+                                                                                          NSString *wadouriString;
+                                                                                          if (q) wadouriString=[NSMutableString stringWithFormat:@"%@?%@",
+                                                                                                                wadouriBaseString,
+                                                                                                                q];
+                                                                                          [wadouriString stringByReplacingOccurrencesOfString:@"%22" withString:@""];
+                                                                                          
+                                                                                          LOG_INFO(@"[WADO-URI] %@",wadouriString);
+                                                                                          //no se agrega ningún control para no enlentecer
+                                                                                          //podría optimizarse con creación asíncrona de la data
+                                                                                          //paquetes entran y salen sin esperar el fin de la entrada...
+                                                                                          NSData *responseData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadouriString]];
+                                                                                          if (!responseData) return
+                                                                                          [RSErrorResponse
+                                                                                           responseWithClientError:424
+                                                                                           message:@"no reply"];//FailedDependency
+                                                                                          
+                                                                                          if (![responseData length]) return
+                                                                                          [RSErrorResponse
+                                                                                           responseWithClientError:404
+                                                                                           message:@"empty reply"];//NotFound
+                                                                                          return [RSDataResponse
+                                                                                                  responseWithData:responseData
+                                                                                                  contentType:@"application/dicom"
+                                                                                                  ];
+                                                                                      }
+                                                                                      
+                                                                                      NSString *pcsuri=pacsaei[@"pcsuri"];
+                                                                                      if (pcsuri)
+                                                                                      {
+                                                                                          //remote... access through another PCS
+                                                                                          NSString *urlString;
+                                                                                          if (q) urlString=[NSString stringWithFormat:@"%@/%@",
+                                                                                                            pcsuri,
+                                                                                                            request.path];
+                                                                                          else    urlString=[NSString stringWithFormat:@"%@/%@",
+                                                                                                             pcsuri,
+                                                                                                             request.path];
+                                                                                          LOG_INFO(@"[QIDO] %@",urlString);
+                                                                                          return urlProxy(urlString,@"application/dicom+json");
+                                                                                      }
+                                                                                      
+                                                                                      return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-URI not available]",request.path];
+                                                                                      
+                                                                                  }(request));}];
 
         
 #pragma mark echo
@@ -718,9 +783,8 @@ int main(int argc, const char* argv[]) {
                          break;
                  }
                  
-                 
                  LOG_DEBUG(@"%@",scriptString);
-                 
+
                  NSMutableData *mutableData=[NSMutableData data];
                  if (!task(@"/bin/bash",@[@"-s"],[scriptString dataUsingEncoding:NSUTF8StringEncoding],mutableData))
                      [RSErrorResponse responseWithClientError:404 message:@"%@",@"can not execute the script"];//NotFound
@@ -808,70 +872,6 @@ int main(int argc, const char* argv[]) {
          }(request));}];
         
         
-#pragma mark WADO-URI
-        NSRegularExpression *wadouriRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/wado" options:NSRegularExpressionCaseInsensitive error:NULL];
-        [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
-         ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
-         {
-             LOG_DEBUG(@"client: %@",request.remoteAddressString);
-             //using NSURLComponents instead of RSRequest
-             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
-             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
-
-             //NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
-             NSDictionary *pacsaei=pacsDictionaries[(request.query)[@"custodianoid"]];
-             if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
-             
-             NSString *q=request.URL.query;//a same param may repeat
-
-             NSString *wadouriBaseString=pacsaei[@"wadouri"];
-             if (![wadouriBaseString isEqualToString:@""])
-             {
-                 //local ... there exists an URL
-                 NSString *wadouriString;
-                 if (q) wadouriString=[NSMutableString stringWithFormat:@"%@?%@",
-                                    wadouriBaseString,
-                                    q];
-                 [wadouriString stringByReplacingOccurrencesOfString:@"%22" withString:@""];
-
-                 LOG_INFO(@"[WADO-URI] %@",wadouriString);
-                 //no se agrega ningún control para no enlentecer
-                 //podría optimizarse con creación asíncrona de la data
-                 //paquetes entran y salen sin esperar el fin de la entrada...
-                 NSData *responseData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadouriString]];
-                 if (!responseData) return
-                     [RSErrorResponse
-                      responseWithClientError:424
-                      message:@"no reply"];//FailedDependency
-                 
-                 if (![responseData length]) return
-                     [RSErrorResponse
-                      responseWithClientError:404
-                      message:@"empty reply"];//NotFound
-                 return [RSDataResponse
-                         responseWithData:responseData
-                         contentType:@"application/dicom"
-                         ];
-             }
-             
-             NSString *pcsuri=pacsaei[@"pcsuri"];
-             if (pcsuri)
-             {
-                 //remote... access through another PCS
-                 NSString *urlString;
-                 if (q) urlString=[NSString stringWithFormat:@"%@/%@",
-                                   pcsuri,
-                                   request.path];
-                 else    urlString=[NSString stringWithFormat:@"%@/%@",
-                                    pcsuri,
-                                    request.path];
-                 LOG_INFO(@"[QIDO] %@",urlString);
-                 return urlProxy(urlString,@"application/dicom+json");
-             }
-
-             return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-URI not available]",request.path];
-                                                                                                                   
-         }(request));}];
         
 #pragma mark WADO-RS
         // /pacs/{OID}/studies/{StudyInstanceUID}
@@ -903,7 +903,7 @@ int main(int argc, const char* argv[]) {
                  return urlProxy(urlString,@"multipart/related;type=application/dicom");
              }
              
-             NSString *sql=pacsaei[@"sqlQueriesDictionary"];
+             NSString *sql=pacsaei[@"sqldictpath"];
              if (sql)
              {
                  //local ... the PCS simulates wadors thanks to a combination of
@@ -942,7 +942,7 @@ int main(int argc, const char* argv[]) {
             
             NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
             //use case where sql exists in pacs (therefore pacs is local)
-            NSDictionary *destSql=sql[pacsaei[@"sqlQueriesDictionary"]];
+            NSDictionary *destSql=sql[pacsaei[@"sqldictpath"]];
 
 
 //          if (!destPacs[@"qido"] || [destPacs[@"qido"]isEqualToString:@""])
@@ -955,15 +955,15 @@ int main(int argc, const char* argv[]) {
                 //sql instance level
                 NSString *WadoUrisSqlString;
                 NSString *AccessionNumber=request.query[@"AccessionNumber"];
-                if (AccessionNumber)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"studyAccessionNumberWadosUris"],AccessionNumber];
+                if (AccessionNumber)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"studyAccessionNumberWadosUris"],destPacs[@"sqlprolog"],AccessionNumber];
                 else
                 {
                     NSString *StudyInstanceUID=request.query[@"StudyInstanceUID"];
-                    if (StudyInstanceUID)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"studyUIDWadosUris"],StudyInstanceUID];
+                    if (StudyInstanceUID)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"studyUIDWadosUris"],destPacs[@"sqlprolog"],StudyInstanceUID];
                     else
                     {
                         NSString *SeriesInstanceUID=request.query[@"SeriesInstanceUID"];
-                        if (SeriesInstanceUID)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"seriesUIDWadosUris"],SeriesInstanceUID];
+                        if (SeriesInstanceUID)WadoUrisSqlString=[NSString stringWithFormat:destSql[@"seriesUIDWadosUris"],destPacs[@"sqlprolog"],SeriesInstanceUID];
 
                         else return [RSErrorResponse responseWithClientError:404 message:
                                  @"parameter AccessionNumber or StudyInstanceUID required"];
@@ -992,7 +992,7 @@ int main(int argc, const char* argv[]) {
                     NSString *wadoString=[NSString stringWithFormat:@"%@%@%@",
                                           destPacs[@"wadouri"],
                                           wados[0],
-                                          destPacs[@"wadoadditionalparameters"]];
+                                          destPacs[@"wadouriadditionalparameters"]];
                     __block NSData *wadoData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadoString]];
                     if (!wadoData)
                     {
@@ -1362,16 +1362,19 @@ int main(int argc, const char* argv[]) {
 
 
              NSDictionary *destPacs=pacsDictionaries[q[@"custodianOID"]];
-             NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
+             NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
              if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
+             //db response may be in latin1
+             NSStringEncoding charset=(NSStringEncoding)[destPacs[@"sqlstringencoding"] integerValue ];
+             if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
 
              NSString *sqlString;
              NSString *AccessionNumber=request.query[@"AccessionNumber"];
-             if (AccessionNumber)sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisStudyAccessionNumber"],AccessionNumber];
+             if (AccessionNumber)sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisStudyAccessionNumber"],destPacs[@"sqlprolog"],AccessionNumber];
              else
              {
                  NSString *StudyInstanceUID=request.query[@"StudyInstanceUID"];
-                 if (StudyInstanceUID)sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisStudyStudyInstanceUID"],StudyInstanceUID];
+                 if (StudyInstanceUID)sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisStudyStudyInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID];
                  else return [RSErrorResponse responseWithClientError:404 message:
                               @"parameter AccessionNumber or StudyInstanceUID required in %@%@?%@",b,p,q];
              }
@@ -1382,6 +1385,13 @@ int main(int argc, const char* argv[]) {
                                     [sqlString dataUsingEncoding:NSUTF8StringEncoding],
                                     studiesData
                                     );
+             
+             
+             if (charset==5) //latin1
+             {
+                 NSString *latin1String=[[NSString alloc]initWithData:studiesData encoding:NSISOLatin1StringEncoding];
+                 [studiesData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+             }
              NSMutableArray *studyArray=[NSJSONSerialization JSONObjectWithData:studiesData options:0 error:nil];
             /*
                 [0]  p.family_name,p.given_name,p.middle_name,p.name_prefix,p.name_suffix,
@@ -1426,9 +1436,11 @@ int main(int argc, const char* argv[]) {
                      for (NSArray *studyInstance in studyArray)
                      {
                          if (  [studyInstance[1]isEqualToString:patientAttrs[1]]
-                             &&[studyInstance[2]isEqualToString:patientAttrs[2]]
                             )
                          {
+                             //                             &&[studyInstance[2]isEqualToString:patientAttrs[2]]
+                             //TODO: add second if clause?
+                             
                             //each study of this patient
                              [weasisManifest appendFormat:
                               @"<Study SpecificCharacterSet=\"UTF-8\" StudyInstanceUID=\"%@\" AccessionNumber=\"%@\" IssuerOfAccessionNumber=\"%@\" RetrieveAETitle=\"%@\" StudyID=\"%@\" StudyDescription=\"%@\" StudyDate=\"%@\" StudyTime=\"%@\" WadorsURI=\"/studies/%@\" NumberOfStudyRelatedInstances=\"%@\">\r",
@@ -1449,11 +1461,17 @@ int main(int argc, const char* argv[]) {
                              NSMutableData *seriesData=[NSMutableData data];
                              int seriesResult=task(@"/bin/bash",
                                                     @[@"-s"],
-                                                    [[NSString stringWithFormat:destSql[@"manifestWeasisSeriesStudyInstanceUID"],studyInstance[5]]
+                                                    [[NSString stringWithFormat:destSql[@"manifestWeasisSeriesStudyInstanceUID"],destPacs[@"sqlprolog"],studyInstance[5]]
                                                      dataUsingEncoding:NSUTF8StringEncoding],
                                                     seriesData
                                                     );
+                             if (charset==5) //latin1
+                             {
+                                 NSString *latin1String=[[NSString alloc]initWithData:seriesData encoding:NSISOLatin1StringEncoding];
+                                 [seriesData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+                             }
                              NSMutableArray *seriesArray=[NSJSONSerialization JSONObjectWithData:seriesData options:0 error:nil];
+
                              for (NSArray *seriesInstance in seriesArray)
                              {
                                  [weasisManifest appendFormat:
@@ -1470,10 +1488,16 @@ int main(int argc, const char* argv[]) {
                                  NSMutableData *instanceData=[NSMutableData data];
                                  int instanceResult=task(@"/bin/bash",
                                                        @[@"-s"],
-                                                       [[NSString stringWithFormat:destSql[@"manifestWeasisInstanceSeriesInstanceUID"],seriesInstance[0]]
+                                                       [[NSString stringWithFormat:destSql[@"manifestWeasisInstanceSeriesInstanceUID"],destPacs[@"sqlprolog"],seriesInstance[0]]
                                                         dataUsingEncoding:NSUTF8StringEncoding],
                                                        instanceData
                                                        );
+                                 if (charset==5) //latin1
+                                 {
+                                     NSString *latin1String=[[NSString alloc]initWithData:instanceData encoding:NSISOLatin1StringEncoding];
+                                     [instanceData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+                                 }
+                                 
                                  NSMutableArray *instanceArray=[NSJSONSerialization JSONObjectWithData:instanceData options:0 error:nil];
                                  for (NSArray *instance in instanceArray)
                                  {
@@ -1519,10 +1543,13 @@ int main(int argc, const char* argv[]) {
              //NSString *q=requestURL.query;
              NSDictionary *q=request.query;
              NSDictionary *destPacs=pacsDictionaries[q[@"custodianOID"]];
-             NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
+             NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
              if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
+             //db response may be in latin1
+             NSStringEncoding charset=(NSStringEncoding)[destPacs[@"sqlstringencoding"] integerValue ];
+             if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
 
-             NSString *sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisSeriesStudyInstanceUIDSeriesInstanceUID"],StudyInstanceUID,SeriesInstanceUID];
+             NSString *sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisSeriesStudyInstanceUIDSeriesInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID,SeriesInstanceUID];
  
              //LOG_INFO(@"%@",sqlString);
             
@@ -1533,6 +1560,11 @@ int main(int argc, const char* argv[]) {
                                     [sqlString dataUsingEncoding:NSUTF8StringEncoding],
                                     seriesData
                                     );
+             if (charset==5) //latin1
+             {
+                 NSString *latin1String=[[NSString alloc]initWithData:seriesData encoding:NSISOLatin1StringEncoding];
+                 [seriesData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+             }
              NSMutableArray *seriesArray=[NSJSONSerialization JSONObjectWithData:seriesData options:0 error:nil];
              if (![seriesArray count]) return [RSErrorResponse responseWithClientError:404 message:@"0 record for %@%@?%@",b,p,q];
              /*
@@ -1548,9 +1580,14 @@ int main(int argc, const char* argv[]) {
              NSMutableData *studiesData=[NSMutableData data];
              int studiesResult=task(@"/bin/bash",
                                     @[@"-s"],
-                                    [[NSString stringWithFormat:destSql[@"manifestWeasisStudyStudyInstanceUID"],StudyInstanceUID] dataUsingEncoding:NSUTF8StringEncoding],
+                                    [[NSString stringWithFormat:destSql[@"manifestWeasisStudyStudyInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID] dataUsingEncoding:NSUTF8StringEncoding],
                                     studiesData
                                     );
+             if (charset==5) //latin1
+             {
+                 NSString *latin1String=[[NSString alloc]initWithData:studiesData encoding:NSISOLatin1StringEncoding];
+                 [studiesData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+             }
              NSMutableArray *studyArray=[NSJSONSerialization JSONObjectWithData:studiesData options:0 error:nil];
              /*
               [0]  p.family_name,p.given_name,p.middle_name,p.name_prefix,p.name_suffix,
@@ -1628,10 +1665,15 @@ int main(int argc, const char* argv[]) {
                              NSMutableData *instanceData=[NSMutableData data];
                              int instanceResult=task(@"/bin/bash",
                                                      @[@"-s"],
-                                                     [[NSString stringWithFormat:destSql[@"manifestWeasisInstanceSeriesInstanceUID"],seriesInstance[0]]
+                                                     [[NSString stringWithFormat:destSql[@"manifestWeasisInstanceSeriesInstanceUID"],destPacs[@"sqlprolog"],seriesInstance[0]]
                                                       dataUsingEncoding:NSUTF8StringEncoding],
                                                      instanceData
                                                      );
+                             if (charset==5) //latin1
+                             {
+                                 NSString *latin1String=[[NSString alloc]initWithData:instanceData encoding:NSISOLatin1StringEncoding];
+                                 [instanceData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+                             }
                              NSMutableArray *instanceArray=[NSJSONSerialization JSONObjectWithData:instanceData options:0 error:nil];
                              for (NSArray *instance in instanceArray)
                              {
@@ -1649,7 +1691,7 @@ int main(int argc, const char* argv[]) {
                  }
                  [weasisManifest appendString:@"</Patient>\r"];
              }
-             return [RSDataResponse responseWithData:[weasisManifest dataUsingEncoding:NSUTF8StringEncoding] contentType:@"application/json"];
+             return [RSDataResponse responseWithData:[weasisManifest dataUsingEncoding:NSUTF8StringEncoding] contentType:@"text/xml"];
              
          }(request));}];
         
@@ -1784,7 +1826,7 @@ int main(int argc, const char* argv[]) {
                        stringByAppendingString:patientWhere]
                       stringByAppendingFormat:sqlDict[@"patientEpilog"],session,session];
                      
-                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlStringEncoding"]unsignedIntegerValue]);
+                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, (NSStringEncoding) [destPacs[@"sqlstringencoding"]integerValue]);
                      
                      //sorted study date (5) desc
                      [studiesArray sortWithOptions:0 usingComparator:^NSComparisonResult(id obj1, id obj2) {
@@ -1820,7 +1862,7 @@ int main(int argc, const char* argv[]) {
                                          );//application/dicom+json not accepted
                  }
                  
-                 NSString *sql=pacsaei[@"sqlQueriesDictionary"];
+                 NSString *sql=pacsaei[@"sqldictpath"];
                  if (sql)
                  {
                      //local ... simulation qido through database access
@@ -1946,12 +1988,12 @@ int main(int argc, const char* argv[]) {
                  NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
                  NSDictionary *destPacs=pacsDictionaries[destOID];
                  
-                 NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
+                 NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
                  if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
                  
                  //local ... simulation qido through database access
                  
-                 //LOG_INFO(@"different context with db: %@",destPacs[@"sqlQueriesDictionary"]);
+                 //LOG_INFO(@"different context with db: %@",destPacs[@"sqldictpath"]);
                  
                  if (r){
                      //replace previous request of the session.
@@ -2001,12 +2043,14 @@ int main(int argc, const char* argv[]) {
                  }
                  else
                  {
+                     /*
                      [studiesWhere appendFormat:
                       @" AND %@ in ('%@','%@')",
                       destSql[@"accessControlId"],
                       q[@"aet"],
                       q[@"custodiantitle"]
                       ];
+                      */
                  }
                  
                  if (q[@"search[value]"] && ![q[@"search[value]"] isEqualToString:@""])
@@ -2156,7 +2200,7 @@ int main(int argc, const char* argv[]) {
                                               ]
                                              ];
 
-                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlstringencoding"]unsignedIntegerValue]);
+                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery,(NSStringEncoding) [destPacs[@"sqlstringencoding"]integerValue]);
 
                      [Total setObject:studiesArray forKey:session];
                      [Filtered setObject:[studiesArray mutableCopy] forKey:session];
@@ -2357,7 +2401,7 @@ int main(int argc, const char* argv[]) {
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
              NSDictionary *destPacs=pacsDictionaries[destOID];
              
-             NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
+             NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
              if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
              
              NSMutableString *studiesWhere=[NSMutableString stringWithString:destSql[@"studiesWhere"]];
@@ -2368,12 +2412,13 @@ int main(int argc, const char* argv[]) {
                ]
               ];
              //PEP por custodian aets
+             /*
              [studiesWhere appendFormat:
               @" AND %@ in ('%@')",
               destSql[@"accessControlId"],
               [custodianTitlesaets[q[@"custodiantitle"]] componentsJoinedByString:@"','"]
               ];
-
+*/
              LOG_INFO(@"WHERE %@",[studiesWhere substringFromIndex:38]);
              
 
@@ -2386,7 +2431,7 @@ int main(int argc, const char* argv[]) {
                                       ]
                                      ];
              
-             NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlstringencoding"]unsignedIntegerValue]);
+             NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, (NSStringEncoding) [destPacs[@"sqlstringencoding"]integerValue]);
              
              //sorted study date (5) desc
              [studiesArray sortWithOptions:0 usingComparator:^NSComparisonResult(id obj1, id obj2) {
@@ -2429,7 +2474,7 @@ int main(int argc, const char* argv[]) {
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
              NSDictionary *destPacs=pacsDictionaries[destOID];
              
-             NSDictionary *destSql=sql[destPacs[@"sqlQueriesDictionary"]];
+             NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
              if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
              NSString *where;
              NSString *AccessionNumber=q[@"AccessionNumber"];
@@ -2462,7 +2507,7 @@ int main(int argc, const char* argv[]) {
                                       ]
                                      ];
              
-             NSMutableArray *seriesArray=jsonMutableArray(sqlDataQuery, [destPacs[@"sqlstringencoding"]unsignedIntegerValue]);
+             NSMutableArray *seriesArray=jsonMutableArray(sqlDataQuery,(NSStringEncoding) [destPacs[@"sqlstringencoding"] integerValue]);
              //LOG_INFO(@"series array:%@",[seriesArray description]);
              
              NSMutableDictionary *resp = [NSMutableDictionary dictionary];
@@ -2524,10 +2569,12 @@ int main(int argc, const char* argv[]) {
              //custodianURI
              
              if (!q[@"custodianOID"]) return [RSDataResponse responseWithText:[NSString stringWithFormat:@"missing custodianOID param in %@%@?%@",b,p,requestURL.query]];
+             
              NSString *custodianURI;
-             if ((pacsDictionaries[q[@"custodianOID"]])[@"islocalhosted"])custodianURI=[NSString stringWithFormat:@"http://localhost:%lld",port];
-             else custodianURI=(pacsDictionaries[q[@"custodianOID"]])[@"publicuri"];
-             if (!@"custodianURI") return [RSDataResponse responseWithText:[NSString stringWithFormat:@"invalid custodianOID param in %@%@?%@",b,p,requestURL.query]];
+             //if ((pacsDictionaries[q[@"custodianOID"]])[@"local"])
+             custodianURI=[NSString stringWithFormat:@"http://localhost:%lld",port];
+             //else custodianURI=(pacsDictionaries[q[@"custodianOID"]])[@"custodianbaseuri"];
+             //if (!@"custodianURI") return [RSDataResponse responseWithText:[NSString stringWithFormat:@"invalid custodianOID param in %@%@?%@",b,p,requestURL.query]];
              
              
              //proxyURI
@@ -2597,23 +2644,37 @@ int main(int argc, const char* argv[]) {
                  //cornerstone
                  NSMutableDictionary *cornerstone=[NSMutableDictionary dictionary];
                  
-                 //qido uri
+                 //TODO CHANGE HARD CODING
+                 //qido uri [@"local"]
+                 //127.0.0.1:11111/pacs/2.16.858.0.1.4.0.72769.217215590012.2/rs
                  NSString *qidoSeriesString;
                  if ([requestType isEqualToString:@"STUDY"])
                  {
-                     if (q[@"accessionNumber"]) qidoSeriesString=[NSString stringWithFormat:@"%@/series?AccessionNumber=%@",(pacsDictionaries[q[@"custodianOID"]])[@"qido"],q[@"accessionNumber"]];
-                     else if (q[@"studyUID"]) qidoSeriesString=[NSString stringWithFormat:@"%@/series?StudyInstanceUID=%@",(pacsDictionaries[q[@"custodianOID"]])[@"qido"],q[@"studyUID"]];
+                     if (q[@"accessionNumber"]) qidoSeriesString=[NSString stringWithFormat:@"%@/pacs/2.16.858.0.1.4.0.72769.217215590012.2/rs/series?AccessionNumber=%@",custodianURI,q[@"accessionNumber"]];
+                     else if (q[@"studyUID"]) qidoSeriesString=[NSString stringWithFormat:@"%@/pacs/2.16.858.0.1.4.0.72769.217215590012.2/rs/series?StudyInstanceUID=%@",custodianURI,q[@"studyUID"]];
                      else return [RSDataResponse responseWithText:[NSString stringWithFormat:@"requestType=STUDY requires param accessionNumber or studyUID in %@%@?%@",b,p,requestURL.query]];
                  }
                  else
                  {
                      //SERIES
-                     if (q[@"studyUID"] && q[@"seriesUID"]) qidoSeriesString=[NSString stringWithFormat:@"%@/series?StudyInstanceUID=%@&SeriesInstanceUID=%@",(pacsDictionaries[q[@"custodianOID"]])[@"qido"],q[@"studyUID"],q[@"seriesUID"]];
+                     if (q[@"studyUID"] && q[@"seriesUID"]) qidoSeriesString=[NSString stringWithFormat:@"%@/pacs/2.16.858.0.1.4.0.72769.217215590012.2/rs/series?StudyInstanceUID=%@&SeriesInstanceUID=%@",custodianURI,q[@"studyUID"],q[@"seriesUID"]];
                      else return [RSDataResponse responseWithText:[NSString stringWithFormat:@"requestType=SERIES requires params studyUID and seriesUID in %@%@?%@",b,p,requestURL.query]];
                  }
                  LOG_DEBUG(@"%@",qidoSeriesString);
                  
-                 NSMutableArray *seriesArray=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:qidoSeriesString]] options:NSJSONReadingMutableContainers error:nil];
+ 
+                 NSMutableData *seriesData=[NSMutableData data];
+                 [seriesData setData:[NSData dataWithContentsOfURL:[NSURL URLWithString:qidoSeriesString]]];
+ /*TODO CHARSET
+                  if (charset==5) //latin1
+                  {
+                      NSString *latin1String=[[NSString alloc]initWithData:seriesData encoding:NSISOLatin1StringEncoding];
+                      [seriesData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+                  }
+*/
+                 NSError *error=nil;
+                 NSMutableArray *seriesArray=[NSJSONSerialization JSONObjectWithData:seriesData options:NSJSONReadingMutableContainers error:&error];
+                 if (error) return [RSErrorResponse responseWithClientError:404 message:@"bad qido sql result : %@",[error description]];
                  
                  [cornerstone setObject:((((seriesArray[0])[@"00100010"])[@"Value"])[0])[@"Alphabetic"] forKey:@"patientName"];
                  [cornerstone setObject:(((seriesArray[0])[@"00100020"])[@"Value"])[0] forKey:@"patientId"];
@@ -2649,10 +2710,10 @@ int main(int argc, const char* argv[]) {
                          NSMutableArray *instanceList=[NSMutableArray array];
                          [seriesCornerstone setObject:instanceList forKey:@"instanceList"];
                          //get instances for the series
-                         
+                         //TODO remove hardcode
                          NSString *qidoInstancesString=
-                         [NSString stringWithFormat:@"%@/instances?StudyInstanceUID=%@&SeriesInstanceUID=%@",
-                          (pacsDictionaries[q[@"custodianOID"]])[@"qido"],
+                         [NSString stringWithFormat:@"%@/pacs/2.16.858.0.1.4.0.72769.217215590012.2/rs/instances?StudyInstanceUID=%@&SeriesInstanceUID=%@",
+                          custodianURI,
                           q[@"studyUID"],
                           ((seriesQido[@"0020000E"])[@"Value"])[0]
                           ];
