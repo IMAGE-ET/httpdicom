@@ -486,7 +486,7 @@ int main(int argc, const char* argv[]) {
     
     //using NSURLComponents instead of RSRequest
     NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
-    
+    if ([urlComponents.queryItems count]<6) return [RSErrorResponse responseWithClientError:404 message:@"%@ [is not wado-uri query + custodianOID]",urlComponents.query];
     
     //find param custodianOID
     NSInteger index=nextIndexForPredicateInQueryItems(urlComponents.queryItems, [NSPredicate predicateWithFormat:@"name=custodianOID"], 0);
@@ -686,30 +686,31 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:qidoRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_DEBUG(@"client: %@",request.remoteAddressString);
+             //LOG_DEBUG(@"client: %@",request.remoteAddressString);
+             
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
-             
+             if ([urlComponents.queryItems count] < 1)
+                 return [RSErrorResponse responseWithClientError:404
+                                                         message:@"%@ [invalid qido. Requires at least one filter]",[request.URL absoluteString]];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+             
+             //find entityDict
              NSDictionary *entityDict=entitiesDicts[pComponents[2]];
-             if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
+             if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not known]",urlComponents.path];
 
-             NSString *pcsuri=entityDict[@"custodianbaseuri"];
+             NSString *custodianbaseuri=entityDict[@"custodianbaseuri"];
 
-             NSString *q=request.URL.query;//a same param may repeat
+             //NSString *q=request.URL.query;//a same param may repeat
 
-//use case where sql exists in pacs (therefore pacs is local)
+//alternative (a) sql available
              NSDictionary *destSql=sql[entityDict[@"sqldictpath"]];
              if (destSql)
              {
-                 
-                 //local ... simulation qido through database access
+                 //alternative (a) local ... simulation qido through database access
                  
                  //create where
-                 NSURLComponents *urlComponents = [NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
                  NSUInteger level=[@[@"patients",@"studies",@"series",@"instances"] indexOfObject:pComponents[4]];
-                 
-                 
                  NSMutableString *whereString = [NSMutableString string];
                  switch (level) {
                      case 1:
@@ -722,66 +723,60 @@ int main(int argc, const char* argv[]) {
                          [whereString appendString:destSql[@"instancesWhere"]];
                          break;
                      default:
-                         [RSErrorResponse responseWithClientError:404 message:@"level %@ not accepted. Should be Study, Series or Instance",pComponents[4]];
+                         return [RSErrorResponse responseWithClientError:404 message:@"level %@ not accepted. Should be study, series or instance",pComponents[4]];
                          break;
                  }
                  
-                 
-                 NSArray *queryItems=[urlComponents queryItems];
                  NSDictionary *qidoKeywordsDict=destSql[@"QidoAttrs"];
-                 if ([queryItems count])
-                 {
-                     NSDictionary *qidoTags=sqlWadoTags[entityDict[@"sqldictpath"]];
-                     
-                     for (NSURLQueryItem *qi in queryItems) {
-                         
-                         //keyword, keywordProperties
-                         NSString *keyword=qidoTags[qi.name];//by tags
-                         NSDictionary *keywordProperties=nil;
-                         if (keyword) keywordProperties=qidoKeywordsDict[keyword];
-                         else if (qidoKeywordsDict[qi.name])
-                         {
-                             keyword=qi.name;
-                             keywordProperties=qidoKeywordsDict[qi.name];
-                         }
-                         else return [RSErrorResponse responseWithClientError:404 message:@"%@ [not a valid qido filter for this PACS]",qi.name];
-                         
-                         //level check
-                         if ( level < [keywordProperties[@"level"] unsignedIntegerValue]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not available at level %@]",qi.name,pComponents[4]];
-                         
-                         //string compare
-                         if ([@[@"LO",@"PN",@"CS",@"UI"] indexOfObject:keywordProperties[@"vr"]]!=NSNotFound)
-                         {
-                             [whereString appendString:
-                              [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                                               fieldString:destSql[keyword]
-                                               valueString:qi.value
-                               ]
-                              ];
-                             continue;
-                         }
-                         
-                         
-                         //date compare
-                         if ([@[@"DA"] indexOfObject:keywordProperties[@"vr"]]!=NSNotFound)
-                         {
-                             NSArray *startEnd=[qi.value componentsSeparatedByString:@"-"];
-                             switch ([startEnd count]) {
-                                 case 1:;
-                                 [whereString appendString:[destSql[keyword] sqlFilterWithStart:startEnd[0] end:startEnd[0]]];
-                                 break;
-                                 case 2:;
-                                    [whereString appendString:[destSql[keyword] sqlFilterWithStart:startEnd[0] end:startEnd[1]]];
-                                 break;
-                             }
-                             continue;
-                         }
-                         
-                     }//end loop
-                     
-                 }//end queryItems
+                 NSDictionary *qidoTags=sqlWadoTags[entityDict[@"sqldictpath"]];
                  
+                 for (NSURLQueryItem *qi in urlComponents.queryItems) {
+                     
+                     //keyword, keywordProperties
+                     NSString *keyword=qidoTags[qi.name];//by tags
+                     NSDictionary *keywordProperties=nil;
+                     if (keyword) keywordProperties=qidoKeywordsDict[keyword];
+                     else if (qidoKeywordsDict[qi.name])
+                     {
+                         keyword=qi.name;
+                         keywordProperties=qidoKeywordsDict[qi.name];
+                     }
+                     else return [RSErrorResponse responseWithClientError:404 message:@"%@ [not a valid qido filter for this PACS]",qi.name];
+                     
+                     //level check
+                     if ( level < [keywordProperties[@"level"] unsignedIntegerValue]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not available at level %@]",qi.name,pComponents[4]];
+                     
+                     //string compare
+                     if ([@[@"LO",@"PN",@"CS",@"UI"] indexOfObject:keywordProperties[@"vr"]]!=NSNotFound)
+                     {
+                         [whereString appendString:
+                          [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
+                                           fieldString:destSql[keyword]
+                                           valueString:qi.value
+                           ]
+                          ];
+                         continue;
+                     }
+                     
+                     
+                     //date compare
+                     if ([@[@"DA"] indexOfObject:keywordProperties[@"vr"]]!=NSNotFound)
+                     {
+                         NSArray *startEnd=[qi.value componentsSeparatedByString:@"-"];
+                         switch ([startEnd count]) {
+                             case 1:;
+                             [whereString appendString:[destSql[keyword] sqlFilterWithStart:startEnd[0] end:startEnd[0]]];
+                             break;
+                             case 2:;
+                                [whereString appendString:[destSql[keyword] sqlFilterWithStart:startEnd[0] end:startEnd[1]]];
+                             break;
+                         }
+                         continue;
+                     }
+                     
+                 }//end loop
                  
+                 //join parts of sql select
                  NSString *scriptString=nil;
                  switch (level) {
                      case 1:
@@ -809,12 +804,13 @@ int main(int argc, const char* argv[]) {
                                        ];
                          break;
                  }
-                 
                  LOG_DEBUG(@"%@",scriptString);
 
+                 
+                 //execute sql select
                  NSMutableData *mutableData=[NSMutableData data];
                  if (!task(@"/bin/bash",@[@"-s"],[scriptString dataUsingEncoding:NSUTF8StringEncoding],mutableData))
-                     [RSErrorResponse responseWithClientError:404 message:@"%@",@"can not execute the script"];//NotFound
+                     [RSErrorResponse responseWithClientError:404 message:@"%@",@"can not execute the sql"];//NotFound
 
                  //db response may be in latin1
                  NSStringEncoding charset=(NSStringEncoding)[entityDict[@"sqlstringencoding"] longLongValue ];
@@ -850,50 +846,38 @@ int main(int argc, const char* argv[]) {
                      }
                      [qidoResponseArray addObject:object];
                  }
-                 NSData *j=[NSJSONSerialization dataWithJSONObject:qidoResponseArray
-                                                           options:0
-                                                             error:nil
-                            ];
                  return [RSDataResponse responseWithData:
-                         [NSJSONSerialization dataWithJSONObject:qidoResponseArray
-                                                         options:0
-                                                           error:nil
-                          ]
-                                             contentType:@"application/json"
-                         ];
+                         [NSJSONSerialization dataWithJSONObject:qidoResponseArray options:0 error:nil] contentType:@"application/json"];
              }
              
-             //there is no destSql
-
-//use case where qido exists in pacs (pacs may be remote)
+//alternative (b) there is no destSql, but entity has its own qidoBaseString
              NSString *qidoBaseString=entityDict[@"qido"];
              if (![qidoBaseString isEqualToString:@""])
              {
                  return qidoUrlProxy(
-                                 [NSString stringWithFormat:@"%@/%@",qidoBaseString,pComponents.lastObject],
-                                 q,
-                                     [pcsuri stringByAppendingString:urlComponents.path]
-                                 );//application/dicom+json not accepted
+                    [NSString stringWithFormat:@"%@/%@",qidoBaseString,pComponents.lastObject],
+                    urlComponents.query,
+                    [custodianbaseuri stringByAppendingString:urlComponents.path]
+                    );
+                 //pComponents.lastObject = ( studies | series | instances )
+                 //application/dicom+json not accepted
              }
              
 
-             //use case where qido should be forwarded
-             if (pcsuri)
+//alternative (c) qido should be forwarded to its custodian
+             if (custodianbaseuri)
              {
                  //remote... access through another PCS
-                 NSString *urlString;
-                 if (q) urlString=[NSString stringWithFormat:@"%@/%@?%@",
-                                    pcsuri,
-                                    urlComponents.path,
-                                    q];
-                 else    urlString=[NSString stringWithFormat:@"%@/%@?",
-                                     pcsuri,
-                                     urlComponents.path];
+                 NSString *urlString=[NSString stringWithFormat:@"%@/%@?%@",
+                                      custodianbaseuri,
+                                      urlComponents.path,
+                                      urlComponents.query
+                                      ];
                  LOG_INFO(@"[QIDO] %@",urlString);
                  return urlProxy(urlString,@"application/dicom+json");
              }
              
-             //otherwise
+//alternative (d) otherwise qido not available
              return [RSErrorResponse responseWithClientError:404 message:@"%@ [QIDO not available]",urlComponents.path];
              
          }(request));}];
