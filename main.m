@@ -852,7 +852,7 @@ int main(int argc, const char* argv[]) {
              
 //alternative (b) there is no destSql, but entity has its own qidoBaseString
              NSString *qidoBaseString=entityDict[@"qido"];
-             if (![qidoBaseString isEqualToString:@""])
+             if ([qidoBaseString length]>0)
              {
                  return qidoUrlProxy(
                     [NSString stringWithFormat:@"%@/%@",qidoBaseString,pComponents.lastObject],
@@ -862,12 +862,10 @@ int main(int argc, const char* argv[]) {
                  //pComponents.lastObject = ( studies | series | instances )
                  //application/dicom+json not accepted
              }
-             
 
 //alternative (c) qido should be forwarded to its custodian
              if (custodianbaseuri)
              {
-                 //remote... access through another PCS
                  NSString *urlString=[NSString stringWithFormat:@"%@/%@?%@",
                                       custodianbaseuri,
                                       urlComponents.path,
@@ -895,7 +893,8 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:wadorsRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_DEBUG(@"client: %@",request.remoteAddressString);
+             //LOG_DEBUG(@"client: %@",request.remoteAddressString);
+             
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
@@ -903,10 +902,20 @@ int main(int argc, const char* argv[]) {
              NSDictionary *entityDict=entitiesDicts[pComponents[2]];
              if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
 
-             NSString *wadorsBaseString=entityDict[@"wadors"];
-             if (![wadorsBaseString isEqualToString:@""])
+//alternative (a) sql available
+             NSString *destSql=entityDict[@"sqldictpath"];
+             if (destSql)
              {
-                 //local ... there exists an URI that uses the PACS implementation
+                 //local ... the PCS simulates WADO-RS thanks to a combination of
+                 //database access and wado-url
+#pragma mark TODO WADO-RS SQL
+                 //return...
+             }
+
+//alternative (b) there is no destSql, but entity has its own wadorsBaseString
+             NSString *wadorsBaseString=entityDict[@"wadors"];
+             if ([wadorsBaseString length]>0)
+             {
                  NSString *urlString;
                  if (pComponents.count==6) urlString=[NSString stringWithFormat:@"%@/studies/%@",wadorsBaseString,pComponents[5]];
                  else if (pComponents.count==8) urlString=[NSString stringWithFormat:@"%@/studies/%@/series/%@", wadorsBaseString,pComponents[5],pComponents[7]];
@@ -916,22 +925,17 @@ int main(int argc, const char* argv[]) {
                  return urlProxy(urlString,@"multipart/related;type=application/dicom");
              }
              
-             NSString *sql=entityDict[@"sqldictpath"];
-             if (sql)
+
+//alternative (c) qido should be forwarded to its custodian
+             NSString *custodianbaseuri=entityDict[@"custodianbaseuri"];
+             if (custodianbaseuri)
              {
-                 //local ... the PCS simulates wadors thanks to a combination of
-                 //database access and wado-url
-#pragma mark TODO WADO-RS SQL
-             }
-             
-             NSString *pcsuri=entityDict[@"pcsuri"];
-             if (pcsuri)
-             {
-                 //when there is neither direct access to pacs implementation nor sql access in order to simulate the function, then we use the proxying services of another PCS accessed through pcsuri
-                 NSString *urlString=[NSString stringWithFormat:@"%@/%@",pcsuri,urlComponents.path];
+                 NSString *urlString=[NSString stringWithFormat:@"%@/%@",custodianbaseuri,urlComponents.path];
                  LOG_INFO(@"[WADO-RS] %@",urlString);
                  return urlProxy(urlString,@"multipart/related;type=application/dicom");
              }
+             
+//alternative (d) otherwise qido not available
              return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-RS not available]",urlComponents.path];
              
          }(request));}];
