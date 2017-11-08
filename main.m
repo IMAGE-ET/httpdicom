@@ -282,6 +282,17 @@ BOOL buildWhereString(BOOL E,BOOL S,BOOL I,NSArray *queryItems, NSDictionary *sq
     return true;
 }
 
+NSInteger nextIndexForPredicateInQueryItems(NSArray *queryItems, NSPredicate *predicate, NSInteger offset)
+{
+    //NSPredicate *predicate = [NSPredicate predicateWithFormat:@"name=%@", key];
+    if (offset < 0) return NSNotFound;
+    while (offset++ < [queryItems count]) {
+        if ([predicate evaluateWithObject:queryItems[offset]]) return offset;
+    }
+    return NSNotFound;
+}
+
+
 int main(int argc, const char* argv[]) {
     @autoreleasepool {
         
@@ -348,18 +359,18 @@ int main(int argc, const char* argv[]) {
         
 
         //[1] devicesplist (pacs is another name synonym of devices)
-        NSDictionary *pacsDictionaries=[NSDictionary dictionaryWithContentsOfFile:[args[1]stringByExpandingTildeInPath]];
-        if (!pacsDictionaries)
+        NSDictionary *entitiesDicts=[NSDictionary dictionaryWithContentsOfFile:[args[1]stringByExpandingTildeInPath]];
+        if (!entitiesDicts)
         {
             LOG_ERROR(@"could not get contents of pacs.plist");
             return 1;
         }
-        //initialization of custodian and sql dictionaries based on properties of pacsDictionaries
+        //initialization of custodian and sql dictionaries based on properties of entitiesDicts
         NSMutableDictionary *custodianoids=[NSMutableDictionary dictionary];
         NSMutableDictionary *custodiantitles=[NSMutableDictionary dictionary];
         NSMutableSet *sqlset=[NSMutableSet set];
         
-        NSArray *pacsOids = [pacsDictionaries allValues];
+        NSArray *pacsOids = [entitiesDicts allValues];
         for (NSDictionary *d in pacsOids)
         {
             [custodianoids setObject:d[@"custodiantitle"] forKey:d[@"custodianoid"]];
@@ -376,9 +387,9 @@ int main(int argc, const char* argv[]) {
         for (NSString *custodianOID in [custodianoids allKeys])
         {
             NSMutableArray *custodianOIDaeis=[NSMutableArray array];
-            for (NSString *k in [pacsDictionaries allKeys])
+            for (NSString *k in [entitiesDicts allKeys])
             {
-                NSDictionary *d=[pacsDictionaries objectForKey:k];
+                NSDictionary *d=[entitiesDicts objectForKey:k];
                 if ([[d objectForKey:@"custodianoid"]isEqualToString:custodianOID])[custodianOIDaeis addObject:k];
             }
             [custodianOIDsaeis setValue:custodianOIDaeis forKey:custodianOID];
@@ -393,9 +404,9 @@ int main(int argc, const char* argv[]) {
             NSMutableArray *custodianTitleaets=[NSMutableArray array];
             NSMutableString *s=[NSMutableString stringWithString:@"("];
 
-            for (NSString *k in [pacsDictionaries allKeys])
+            for (NSString *k in [entitiesDicts allKeys])
             {
-                NSDictionary *d=[pacsDictionaries objectForKey:k];
+                NSDictionary *d=[entitiesDicts objectForKey:k];
                 if ([[d objectForKey:@"custodiantitle"]isEqualToString:custodianTitle])
                 {
                     [custodianTitleaets addObject:[d objectForKey:@"dicomaet"]];
@@ -412,9 +423,9 @@ int main(int argc, const char* argv[]) {
         //LOG_VERBOSE(@"%@",custodianTitlesaetsStrings);
 
         NSMutableDictionary *pacsTitlesDictionary=[NSMutableDictionary dictionary];
-        for (NSString *key in [pacsDictionaries allKeys])
+        for (NSString *key in [entitiesDicts allKeys])
         {
-            [pacsTitlesDictionary setObject:key forKey:[(pacsDictionaries[key])[@"custodiantitle"] stringByAppendingPathExtension:(pacsDictionaries[key])[@"dicomaet"]]];
+            [pacsTitlesDictionary setObject:key forKey:[(entitiesDicts[key])[@"custodiantitle"] stringByAppendingPathExtension:(entitiesDicts[key])[@"dicomaet"]]];
         }
         //LOG_VERBOSE(@"%@",[pacsTitlesDictionary description]);
         
@@ -449,88 +460,94 @@ int main(int argc, const char* argv[]) {
         
 
 #pragma mark -
-#pragma mark routing regex LIFO list
-        //httpserver init
         RS* httpdicomServer = [[RS alloc] init];
         
-/*
-#pragma mark any
-        NSRegularExpression *anyRegex = [NSRegularExpression regularExpressionWithPattern:@".*" options:0 error:NULL];
-        [
-         httpdicomServer addHandler:@"GET" regex:anyRegex processBlock:
-         ^(RSRequest* request, RSCompletionBlock completionBlock)
-         {completionBlock(^RSResponse* (RSRequest* request){
-            
-            LOG_INFO(@"%@ no handler for path: %@",request.remoteAddressString,request.path);
-            return [RSErrorResponse responseWithClientError:400 message:@"no handler for path: %@",request.path];
+//-----------------------------------------------
         
-        }(request));}];
-*/
+#pragma mark any
 #pragma mark WADO-URI
+//default
+        
+//http://{ip}:{port}/wado
+//?requestType=WADO
+//&contentType=application/dicom
+//&studyUID={studyUID}
+//&seriesUID={seriesUID}
+//&objectUID={objectUID}
+        
+//&custodianOID={custodianOID} (added, mandatory)
+        
         NSRegularExpression *wadouriRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
-                                                                                  {
-                                                                                      LOG_DEBUG(@"client: %@",request.remoteAddressString);
-                                                                                      //using NSURLComponents instead of RSRequest
-                                                                                      NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
-                                                                                      NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
-                                                                                      
-                                                                                      //NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
-                                                                                      NSDictionary *pacsaei=pacsDictionaries[(request.query)[@"custodianOID"]];
-                                                                                      if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
-                                                                                      
-                                                                                      NSString *q=request.URL.query;//a same param may repeat
-                                                                                      
-                                                                                      NSString *wadouriBaseString=pacsaei[@"wadouri"];
-                                                                                      if (![wadouriBaseString isEqualToString:@""])
-                                                                                      {
-                                                                                          //local ... there exists an URL
-                                                                                          NSString *wadouriString;
-                                                                                          if (q) wadouriString=[NSMutableString stringWithFormat:@"%@?%@",
-                                                                                                                wadouriBaseString,
-                                                                                                                q];
-                                                                                          [wadouriString stringByReplacingOccurrencesOfString:@"%22" withString:@""];
-                                                                                          
-                                                                                          LOG_INFO(@"[WADO-URI] %@",wadouriString);
-                                                                                          //no se agrega ningún control para no enlentecer
-                                                                                          //podría optimizarse con creación asíncrona de la data
-                                                                                          //paquetes entran y salen sin esperar el fin de la entrada...
-                                                                                          NSData *responseData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadouriString]];
-                                                                                          if (!responseData) return
-                                                                                          [RSErrorResponse
-                                                                                           responseWithClientError:424
-                                                                                           message:@"no reply"];//FailedDependency
-                                                                                          
-                                                                                          if (![responseData length]) return
-                                                                                          [RSErrorResponse
-                                                                                           responseWithClientError:404
-                                                                                           message:@"empty reply"];//NotFound
-                                                                                          return [RSDataResponse
-                                                                                                  responseWithData:responseData
-                                                                                                  contentType:@"application/dicom"
-                                                                                                  ];
-                                                                                      }
-                                                                                      
-                                                                                      NSString *pcsuri=pacsaei[@"pcsuri"];
-                                                                                      if (pcsuri)
-                                                                                      {
-                                                                                          //remote... access through another PCS
-                                                                                          NSString *urlString;
-                                                                                          if (q) urlString=[NSString stringWithFormat:@"%@/%@",
-                                                                                                            pcsuri,
-                                                                                                            request.path];
-                                                                                          else    urlString=[NSString stringWithFormat:@"%@/%@",
-                                                                                                             pcsuri,
-                                                                                                             request.path];
-                                                                                          LOG_INFO(@"[QIDO] %@",urlString);
-                                                                                          return urlProxy(urlString,@"application/dicom+json");
-                                                                                      }
-                                                                                      
-                                                                                      return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-URI not available]",request.path];
-                                                                                      
-                                                                                  }(request));}];
+{
+    //LOG_DEBUG(@"client: %@",request.remoteAddressString);
 
+    
+    //using NSURLComponents instead of RSRequest
+    NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+    
+    
+    //find param custodianOID
+    NSInteger index=nextIndexForPredicateInQueryItems(urlComponents.queryItems, [NSPredicate predicateWithFormat:@"name=custodianOID"], 0);
+    if (index==NSNotFound) return [RSErrorResponse responseWithClientError:404 message:@"%@ [param custodianOID not found]",urlComponents.path];
+    NSString *custodianOID=urlComponents.queryItems[index].value;
+ 
+    
+    //find entityDict
+    NSDictionary *entityDict=entitiesDicts[custodianOID];
+    if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [custodianOID not known]",urlComponents.path];
+
+    
+    //first alternative (a) wado base uri for the entity defined in dict
+    NSString *wadouriBaseString=entityDict[@"wadouri"];
+    if (![wadouriBaseString isEqualToString:@""])
+    {
+      //local ... there exists an URL
+      NSString *wadouriString;
+      if (urlComponents.query) wadouriString=[NSMutableString stringWithFormat:@"%@?%@", wadouriBaseString, urlComponents.query];
+      [wadouriString stringByReplacingOccurrencesOfString:@"%22" withString:@""];
+      
+      LOG_INFO(@"[WADO-URI] %@",wadouriString);
+      //no se agrega ningún control para no enlentecer
+      //podría optimizarse con creación asíncrona de la data
+      //paquetes entran y salen sin esperar el fin de la entrada...
+      NSData *responseData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadouriString]];
+      if (!responseData) return
+      [RSErrorResponse
+       responseWithClientError:424
+       message:@"no reply"];//FailedDependency
+      
+      if (![responseData length]) return
+      [RSErrorResponse
+       responseWithClientError:404
+       message:@"empty reply"];//NotFound
+      return [RSDataResponse
+              responseWithData:responseData
+              contentType:@"application/dicom"
+              ];
+  }
+  
+    
+  //second alternative (b) redirect to a custodian
+  NSString *custodianbaseuri=entityDict[@"custodianbaseuri"];
+  if (custodianbaseuri)
+      return urlProxy(
+        [NSString stringWithFormat:@"%@/%@?%@",
+         custodianbaseuri,
+         urlComponents.path,
+         urlComponents.query
+         ],
+        @"application/dicom+json"
+      );
+    
+  
+  //(c) not available
+  return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-URI not available]",urlComponents.path];
+  
+}(request));}];
+        
+//-----------------------------------------------
         
 #pragma mark echo
         NSRegularExpression *echoRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/echo$" options:0 error:NULL];
@@ -542,6 +559,9 @@ int main(int argc, const char* argv[]) {
             return [RSDataResponse responseWithText:request.remoteAddressString];
             
         }(request));}];
+
+        
+//-----------------------------------------------
         
 
 #pragma mark custodians
@@ -550,11 +570,15 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request){
             
-            LOG_DEBUG(@"client: %@",request.remoteAddressString);
-            NSArray *pComponents=[request.path componentsSeparatedByString:@"/"];
-             NSUInteger pCount=[pComponents count];
+            //LOG_DEBUG(@"client: %@",request.remoteAddressString);
+
+            //using NSURLComponents instead of RSRequest
+            NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+
+            NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+            NSUInteger pCount=[pComponents count];
              
-             if (pCount<3) return [RSErrorResponse responseWithClientError:400 message:@"%@ [no handler]",request.path];
+            if (pCount<3) return [RSErrorResponse responseWithClientError:400 message:@"%@ [no handler]",urlComponents.path];
              
              if ([pComponents[2]isEqualToString:@"titles"])
              {
@@ -564,16 +588,16 @@ int main(int argc, const char* argv[]) {
                  NSUInteger p3Length = [pComponents[3] length];
                  if (  (p3Length>16)
                      ||![SHRegex numberOfMatchesInString:pComponents[3] options:0 range:NSMakeRange(0,p3Length)])
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{title} datatype should be DICOM SH]",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{title} datatype should be DICOM SH]",urlComponents.path];
                  
                  if (!custodiantitles[pComponents[3]])
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{title} not found]",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{title} not found]",urlComponents.path];
                  
                  //custodians/titles/{TITLE}
                  if (pCount==4) return [RSDataResponse responseWithData:[NSJSONSerialization dataWithJSONObject:[NSArray arrayWithObject:custodiantitles[pComponents[3]]] options:0 error:nil] contentType:@"application/json"];
                  
                  if (![pComponents[4]isEqualToString:@"aets"])
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{title} unique resource is 'aets']",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{title} unique resource is 'aets']",urlComponents.path];
                  
                  //custodians/titles/{title}/aets
                  if (pCount==5)
@@ -582,13 +606,13 @@ int main(int argc, const char* argv[]) {
                  NSUInteger p5Length = [pComponents[5]length];
                  if (  (p5Length>16)
                      ||![SHRegex numberOfMatchesInString:pComponents[5] options:0 range:NSMakeRange(0,p5Length)])
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{aet}datatype should be DICOM SH]",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{aet}datatype should be DICOM SH]",urlComponents.path];
                  
                  NSUInteger aetIndex=[[custodianTitlesaets objectForKey:pComponents[3]] indexOfObject:pComponents[5]];
                  if (aetIndex==NSNotFound)
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{aet} not found]",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{aet} not found]",urlComponents.path];
 
-                 if (pCount>6) return [RSErrorResponse responseWithClientError:400 message:@"%@ [no handler]",request.path];
+                 if (pCount>6) return [RSErrorResponse responseWithClientError:400 message:@"%@ [no handler]",urlComponents.path];
 
                  //custodians/titles/{title}/aets/{aet}
                      return [RSDataResponse responseWithData:
@@ -611,16 +635,16 @@ int main(int argc, const char* argv[]) {
                  if (  (p3Length>64)
                      ||![UIRegex numberOfMatchesInString:pComponents[3] options:0 range:NSMakeRange(0,p3Length)]
                      )
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{OID} datatype should be DICOM UI]",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{OID} datatype should be DICOM UI]",urlComponents.path];
                  
                  if (!custodianoids[pComponents[3]])
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{OID} not found]",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{OID} not found]",urlComponents.path];
                  
                  //custodian/oids/{OID}
                  if (pCount==4) return [RSDataResponse responseWithData:[NSJSONSerialization dataWithJSONObject:[NSArray arrayWithObject:custodianoids[pComponents[3]]] options:0 error:nil] contentType:@"application/json"];
                  
                  if (![pComponents[4]isEqualToString:@"aeis"])
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{OID} unique resource is 'aeis']",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{OID} unique resource is 'aeis']",urlComponents.path];
                  
                  //custodian/oids/{OID}/aeis
                  if (pCount==5)
@@ -630,27 +654,30 @@ int main(int argc, const char* argv[]) {
                  if (  (p5Length>64)
                      ||![UIRegex numberOfMatchesInString:pComponents[5] options:0 range:NSMakeRange(0,p5Length)]
                      )
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{aei}datatype should be DICOM UI]",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{aei}datatype should be DICOM UI]",urlComponents.path];
                  
                  NSUInteger aeiIndex=[[custodianOIDsaeis objectForKey:pComponents[3]] indexOfObject:pComponents[5]];
                  if (aeiIndex==NSNotFound)
-                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{aei} not found]",request.path];
+                     return [RSErrorResponse responseWithClientError:404 message:@"%@ [{aei} not found]",urlComponents.path];
                  
-                 if (pCount>6) return [RSErrorResponse responseWithClientError:400 message:@"%@ [no handler]",request.path];
+                 if (pCount>6) return [RSErrorResponse responseWithClientError:400 message:@"%@ [no handler]",urlComponents.path];
                  
                  //custodian/oids/{OID}/aeis/{aei}
                  return [RSDataResponse responseWithData:
                          [NSJSONSerialization dataWithJSONObject:
-                          [NSArray arrayWithObject:(pacsDictionaries[pComponents[5]])[@"dicomaet"]]
+                          [NSArray arrayWithObject:(entitiesDicts[pComponents[5]])[@"dicomaet"]]
                                                          options:0
                                                            error:nil
                           ]
                                                        contentType:@"application/json"
                          ];
              }
-             return [RSErrorResponse responseWithClientError:404 message:@"%@ [no handler]",request.path];
+             return [RSErrorResponse responseWithClientError:404 message:@"%@ [no handler]",urlComponents.path];
 
         }(request));}];
+
+        
+//-----------------------------------------------
 
         
 #pragma mark QIDO
@@ -664,15 +691,15 @@ int main(int argc, const char* argv[]) {
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
-             NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
-             if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
+             NSDictionary *entityDict=entitiesDicts[pComponents[2]];
+             if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
 
-             NSString *pcsuri=pacsaei[@"custodianbaseuri"];
+             NSString *pcsuri=entityDict[@"custodianbaseuri"];
 
              NSString *q=request.URL.query;//a same param may repeat
 
 //use case where sql exists in pacs (therefore pacs is local)
-             NSDictionary *destSql=sql[pacsaei[@"sqldictpath"]];
+             NSDictionary *destSql=sql[entityDict[@"sqldictpath"]];
              if (destSql)
              {
                  
@@ -704,7 +731,7 @@ int main(int argc, const char* argv[]) {
                  NSDictionary *qidoKeywordsDict=destSql[@"QidoAttrs"];
                  if ([queryItems count])
                  {
-                     NSDictionary *qidoTags=sqlWadoTags[pacsaei[@"sqldictpath"]];
+                     NSDictionary *qidoTags=sqlWadoTags[entityDict[@"sqldictpath"]];
                      
                      for (NSURLQueryItem *qi in queryItems) {
                          
@@ -759,7 +786,7 @@ int main(int argc, const char* argv[]) {
                  switch (level) {
                      case 1:
                          scriptString=[NSString stringWithFormat:@"%@%@%@%@",
-                                       pacsaei[@"sqlprolog"],
+                                       entityDict[@"sqlprolog"],
                                        destSql[@"QidoStudyProlog"],
                                        whereString,
                                        destSql[@"QidoStudyEpilog"]
@@ -767,7 +794,7 @@ int main(int argc, const char* argv[]) {
                          break;
                      case 2:
                          scriptString=[NSString stringWithFormat:@"%@%@%@%@",
-                                       pacsaei[@"sqlprolog"],
+                                       entityDict[@"sqlprolog"],
                                        destSql[@"QidoSeriesProlog"],
                                        whereString,
                                        destSql[@"QidoSeriesEpilog"]
@@ -775,7 +802,7 @@ int main(int argc, const char* argv[]) {
                          break;
                      case 3:
                          scriptString=[NSString stringWithFormat:@"%@%@%@%@",
-                                       pacsaei[@"sqlprolog"],
+                                       entityDict[@"sqlprolog"],
                                        destSql[@"QidoInstanceProlog"],
                                        whereString,
                                        destSql[@"QidoInstanceEpilog"]
@@ -790,7 +817,7 @@ int main(int argc, const char* argv[]) {
                      [RSErrorResponse responseWithClientError:404 message:@"%@",@"can not execute the script"];//NotFound
 
                  //db response may be in latin1
-                 NSStringEncoding charset=(NSStringEncoding)[pacsaei[@"sqlstringencoding"] longLongValue ];
+                 NSStringEncoding charset=(NSStringEncoding)[entityDict[@"sqlstringencoding"] longLongValue ];
                  if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
                  
                  if (charset==5) //latin1
@@ -839,13 +866,13 @@ int main(int argc, const char* argv[]) {
              //there is no destSql
 
 //use case where qido exists in pacs (pacs may be remote)
-             NSString *qidoBaseString=pacsaei[@"qido"];
+             NSString *qidoBaseString=entityDict[@"qido"];
              if (![qidoBaseString isEqualToString:@""])
              {
                  return qidoUrlProxy(
                                  [NSString stringWithFormat:@"%@/%@",qidoBaseString,pComponents.lastObject],
                                  q,
-                                     [pcsuri stringByAppendingString:request.path]
+                                     [pcsuri stringByAppendingString:urlComponents.path]
                                  );//application/dicom+json not accepted
              }
              
@@ -857,21 +884,23 @@ int main(int argc, const char* argv[]) {
                  NSString *urlString;
                  if (q) urlString=[NSString stringWithFormat:@"%@/%@?%@",
                                     pcsuri,
-                                    request.path,
+                                    urlComponents.path,
                                     q];
                  else    urlString=[NSString stringWithFormat:@"%@/%@?",
                                      pcsuri,
-                                     request.path];
+                                     urlComponents.path];
                  LOG_INFO(@"[QIDO] %@",urlString);
                  return urlProxy(urlString,@"application/dicom+json");
              }
              
              //otherwise
-             return [RSErrorResponse responseWithClientError:404 message:@"%@ [QIDO not available]",request.path];
+             return [RSErrorResponse responseWithClientError:404 message:@"%@ [QIDO not available]",urlComponents.path];
              
          }(request));}];
         
         
+//-----------------------------------------------
+
         
 #pragma mark WADO-RS
         // /pacs/{OID}/studies/{StudyInstanceUID}
@@ -887,10 +916,10 @@ int main(int argc, const char* argv[]) {
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
-             NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
-             if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
+             NSDictionary *entityDict=entitiesDicts[pComponents[2]];
+             if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
 
-             NSString *wadorsBaseString=pacsaei[@"wadors"];
+             NSString *wadorsBaseString=entityDict[@"wadors"];
              if (![wadorsBaseString isEqualToString:@""])
              {
                  //local ... there exists an URI that uses the PACS implementation
@@ -898,12 +927,12 @@ int main(int argc, const char* argv[]) {
                  if (pComponents.count==6) urlString=[NSString stringWithFormat:@"%@/studies/%@",wadorsBaseString,pComponents[5]];
                  else if (pComponents.count==8) urlString=[NSString stringWithFormat:@"%@/studies/%@/series/%@", wadorsBaseString,pComponents[5],pComponents[7]];
                  else if (pComponents.count==10) urlString=[NSString stringWithFormat:@"%@/studies/%@/series/%@/instances/%@", wadorsBaseString,pComponents[5],pComponents[7],pComponents[9]];
-                 else return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-RS studies and studies/series only]",request.path];
+                 else return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-RS studies and studies/series only]",urlComponents.path];
                  LOG_INFO(@"[WADO-RS] %@",urlString);
                  return urlProxy(urlString,@"multipart/related;type=application/dicom");
              }
              
-             NSString *sql=pacsaei[@"sqldictpath"];
+             NSString *sql=entityDict[@"sqldictpath"];
              if (sql)
              {
                  //local ... the PCS simulates wadors thanks to a combination of
@@ -911,18 +940,22 @@ int main(int argc, const char* argv[]) {
 #pragma mark TODO WADO-RS SQL
              }
              
-             NSString *pcsuri=pacsaei[@"pcsuri"];
+             NSString *pcsuri=entityDict[@"pcsuri"];
              if (pcsuri)
              {
                  //when there is neither direct access to pacs implementation nor sql access in order to simulate the function, then we use the proxying services of another PCS accessed through pcsuri
-                 NSString *urlString=[NSString stringWithFormat:@"%@/%@",pcsuri,request.path];
+                 NSString *urlString=[NSString stringWithFormat:@"%@/%@",pcsuri,urlComponents.path];
                  LOG_INFO(@"[WADO-RS] %@",urlString);
                  return urlProxy(urlString,@"multipart/related;type=application/dicom");
              }
-             return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-RS not available]",request.path];
+             return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-RS not available]",urlComponents.path];
              
          }(request));}];
+
         
+        
+//-----------------------------------------------
+
 #pragma mark dcm.zip
         ///pacs/{OID}/dcm.zip?
         //servicio de segundo nivel que llama a WADO-RS para su realización
@@ -935,14 +968,14 @@ int main(int argc, const char* argv[]) {
             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
-            NSDictionary *destPacs=pacsDictionaries[pComponents[2]];
-            if (!destPacs) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
+            NSDictionary *destPacs=entitiesDicts[pComponents[2]];
+            if (!destPacs) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
 
             LOG_VERBOSE(@"dcm.zip?%@",[urlComponents query]);
             
-            NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
+            NSDictionary *entityDict=entitiesDicts[pComponents[2]];
             //use case where sql exists in pacs (therefore pacs is local)
-            NSDictionary *destSql=sql[pacsaei[@"sqldictpath"]];
+            NSDictionary *destSql=sql[entityDict[@"sqldictpath"]];
 
 
 //          if (!destPacs[@"qido"] || [destPacs[@"qido"]isEqualToString:@""])
@@ -950,7 +983,7 @@ int main(int argc, const char* argv[]) {
             {
                 //sql + wado-uri
 
-                //return [RSErrorResponse responseWithClientError:404 message:@"%@ [qido not available]",request.path];
+                //return [RSErrorResponse responseWithClientError:404 message:@"%@ [qido not available]",urlComponents.path];
 
                 //sql instance level
                 NSString *WadoUrisSqlString;
@@ -1218,6 +1251,8 @@ int main(int argc, const char* argv[]) {
         }(request));}];
 
         
+        
+//-----------------------------------------------
 
         
 #pragma mark ot  doc  cda
@@ -1235,15 +1270,15 @@ int main(int argc, const char* argv[]) {
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
-             NSDictionary *destPacs=pacsDictionaries[pComponents[2]];
-             if (!destPacs) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
+             NSDictionary *destPacs=entitiesDicts[pComponents[2]];
+             if (!destPacs) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
              
              //buscar SERIES wadors URIs
-             if (!destPacs[@"qido"]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [qido not available]",request.path];
+             if (!destPacs[@"qido"]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [qido not available]",urlComponents.path];
 
              //AccessionNumber
              NSString *q=request.URL.query;
-             if (q.length>32 || ![q hasPrefix:@"AccessionNumber="]) [RSErrorResponse responseWithClientError:404 message:@"%@ [lacks parameter AccessionNumber]",request.path];
+             if (q.length>32 || ![q hasPrefix:@"AccessionNumber="]) [RSErrorResponse responseWithClientError:404 message:@"%@ [lacks parameter AccessionNumber]",urlComponents.path];
              NSString *accessionNumber=[q substringWithRange:NSMakeRange(16,q.length-16)];
              
              NSString *modality;
@@ -1256,7 +1291,7 @@ int main(int argc, const char* argv[]) {
                                 destPacs[@"qido"],
                                 accessionNumber,
                                 modality];
-             LOG_DEBUG(@"%@/r/n->%@",request.path,qidoString);
+             LOG_DEBUG(@"%@/r/n->%@",urlComponents.path,qidoString);
              NSData *instanceQidoData=[NSData dataWithContentsOfURL:
                                    [NSURL URLWithString:qidoString]];
 
@@ -1264,7 +1299,7 @@ int main(int argc, const char* argv[]) {
              //applicable, latest doc
              //6.7.1.2.3.2 JSON Results
              //If there are no matching results,the JSON message is empty.
-             if (!instanceQidoData || ![instanceQidoData length]) [RSErrorResponse responseWithClientError:404 message:@"%@ [not found]",request.path];
+             if (!instanceQidoData || ![instanceQidoData length]) [RSErrorResponse responseWithClientError:404 message:@"%@ [not found]",urlComponents.path];
              
              NSArray *instanceArray=[NSJSONSerialization JSONObjectWithData:instanceQidoData options:0 error:nil];
              NSUInteger instanceArrayCount=[instanceArray count];
@@ -1341,6 +1376,8 @@ int main(int argc, const char* argv[]) {
 
         
         
+//-----------------------------------------------
+
 #pragma mark /manifest/weasis/studies?
         NSRegularExpression *mwstudiesRegex = [NSRegularExpression regularExpressionWithPattern:@"^/manifest/weasis/studies" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:mwstudiesRegex processBlock:
@@ -1361,9 +1398,9 @@ int main(int argc, const char* argv[]) {
              NSDictionary *q=request.query;
 
 
-             NSDictionary *destPacs=pacsDictionaries[q[@"custodianOID"]];
+             NSDictionary *destPacs=entitiesDicts[q[@"custodianOID"]];
              NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
+             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              //db response may be in latin1
              NSStringEncoding charset=(NSStringEncoding)[destPacs[@"sqlstringencoding"] integerValue ];
              if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
@@ -1542,9 +1579,9 @@ int main(int argc, const char* argv[]) {
              
              //NSString *q=requestURL.query;
              NSDictionary *q=request.query;
-             NSDictionary *destPacs=pacsDictionaries[q[@"custodianOID"]];
+             NSDictionary *destPacs=entitiesDicts[q[@"custodianOID"]];
              NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
+             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              //db response may be in latin1
              NSStringEncoding charset=(NSStringEncoding)[destPacs[@"sqlstringencoding"] integerValue ];
              if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
@@ -1694,7 +1731,11 @@ int main(int argc, const char* argv[]) {
              return [RSDataResponse responseWithData:[weasisManifest dataUsingEncoding:NSUTF8StringEncoding] contentType:@"text/xml"];
              
          }(request));}];
+   
         
+        
+//-----------------------------------------------
+
         
 #pragma mark patient
         /*
@@ -1731,7 +1772,7 @@ int main(int argc, const char* argv[]) {
                      if ([qin isEqualToString:@"pacs"])
                      {
                          hasPacsQueryItem=true;
-                         NSString *sqlConnection=(pacsDictionaries[qi.value])[sql];
+                         NSString *sqlConnection=(entitiesDicts[qi.value])[sql];
                          if ([pacsOids containsObject:qi.value] && ![sqlConnection isEqualToString:@""])
                          {
                              [pacsOidsQueried addObject:qi.value];
@@ -1768,10 +1809,10 @@ int main(int argc, const char* argv[]) {
                  if (!hasPacsQueryItem) [pacsOidsQueried addObjectsFromArray:pacsOids];
                  
                  //error if bad pacs query item
-                 if ([pacsOids count]==0)   return [RSErrorResponse responseWithClientError:404 message:@"%@ [/patient? requires a valid pacs queryItem or no pacs queryItem to propagate the query to all the known pacs]",request.path];
+                 if ([pacsOids count]==0)   return [RSErrorResponse responseWithClientError:404 message:@"%@ [/patient? requires a valid pacs queryItem or no pacs queryItem to propagate the query to all the known pacs]",urlComponents.path];
                  
                  //error if no patient query item
-                 if ([otherQueryItems count]==0)  return [RSErrorResponse responseWithClientError:404 message:@"%@ [/patient? requires at least one filter]",request.path];
+                 if ([otherQueryItems count]==0)  return [RSErrorResponse responseWithClientError:404 message:@"%@ [/patient? requires at least one filter]",urlComponents.path];
                  
                  NSMutableDictionary *sqlsPatient = [NSMutableDictionary dictionary];
                  NSMutableDictionary *sqlsStudy = [NSMutableDictionary dictionary];
@@ -1844,25 +1885,25 @@ int main(int argc, const char* argv[]) {
                  
                  
                  //reply
-                 NSArray *pComponents=[request.path componentsSeparatedByString:@"/"];
-                 NSDictionary *pacsaei=pacsDictionaries[pComponents[2]];
-                 if (!pacsaei) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",request.path];
+                 NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+                 NSDictionary *entityDict=entitiesDicts[pComponents[2]];
+                 if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
                  
-                 NSString *pcsuri=pacsaei[@"pcsuri"];
+                 NSString *pcsuri=entityDict[@"pcsuri"];
                  
                  NSString *q=request.URL.query;//a same param may repeat
                  
-                 NSString *qidoBaseString=pacsaei[@"qido"];
+                 NSString *qidoBaseString=entityDict[@"qido"];
                  if (![qidoBaseString isEqualToString:@""])
                  {
                      return qidoUrlProxy(
                                          [NSString stringWithFormat:@"%@/%@",qidoBaseString,pComponents.lastObject],
                                          q,
-                                         [pcsuri stringByAppendingString:request.path]
+                                         [pcsuri stringByAppendingString:urlComponents.path]
                                          );//application/dicom+json not accepted
                  }
                  
-                 NSString *sql=pacsaei[@"sqldictpath"];
+                 NSString *sql=entityDict[@"sqldictpath"];
                  if (sql)
                  {
                      //local ... simulation qido through database access
@@ -1875,17 +1916,17 @@ int main(int argc, const char* argv[]) {
                      NSString *urlString;
                      if (q) urlString=[NSString stringWithFormat:@"%@/%@?%@",
                                        pcsuri,
-                                       request.path,
+                                       urlComponents.path,
                                        q];
                      else    urlString=[NSString stringWithFormat:@"%@/%@?",
                                         pcsuri,
-                                        request.path];
+                                        urlComponents.path];
                      LOG_INFO(@"[QIDO] %@",urlString);
                      return urlProxy(urlString,@"application/dicom+json");
                  }
                  
                  
-                 return [RSErrorResponse responseWithClientError:404 message:@"%@ [QIDO not available]",request.path];
+                 return [RSErrorResponse responseWithClientError:404 message:@"%@ [QIDO not available]",urlComponents.path];
              */
              
              
@@ -1894,6 +1935,11 @@ int main(int argc, const char* argv[]) {
 
          }(request));}];
 
+        
+        
+//-----------------------------------------------
+
+        
 #pragma mark datatables/studies
         /*
          query ajax with params:
@@ -1986,10 +2032,10 @@ int main(int argc, const char* argv[]) {
 #pragma mark reemplazar org por custodianTitle e institucion por aet
                  //find dest
                  NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
-                 NSDictionary *destPacs=pacsDictionaries[destOID];
+                 NSDictionary *destPacs=entitiesDicts[destOID];
                  
                  NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-                 if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
+                 if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
                  
                  //local ... simulation qido through database access
                  
@@ -2372,6 +2418,11 @@ int main(int argc, const char* argv[]) {
          }
                                                                                                                                           (request));}];
         
+        
+        
+//-----------------------------------------------
+
+        
 #pragma mark datatables/patient
         /*
          ventana emergente con todos los estudios del paciente
@@ -2399,10 +2450,10 @@ int main(int argc, const char* argv[]) {
              
              //find dest
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
-             NSDictionary *destPacs=pacsDictionaries[destOID];
+             NSDictionary *destPacs=entitiesDicts[destOID];
              
              NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
+             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              
              NSMutableString *studiesWhere=[NSMutableString stringWithString:destSql[@"studiesWhere"]];
              [studiesWhere appendString:
@@ -2453,6 +2504,10 @@ int main(int argc, const char* argv[]) {
                                                                                                                                           (request));}];
         
         
+        
+//-----------------------------------------------
+
+        
 #pragma mark datatables/series
         //"datatables/series?AccessionNumber=22&IssuerOfAccessionNumber.UniversalEntityID=NULL&StudyIUID=2.16.858.2.10000675.72769.20160411084701.1.100&session=1"
         NSRegularExpression *dtseriesRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/series" options:0 error:NULL];
@@ -2472,10 +2527,10 @@ int main(int argc, const char* argv[]) {
              
              //find dest
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
-             NSDictionary *destPacs=pacsDictionaries[destOID];
+             NSDictionary *destPacs=entitiesDicts[destOID];
              
              NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",request.path];
+             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              NSString *where;
              NSString *AccessionNumber=q[@"AccessionNumber"];
              NSString *StudyInstanceUID=q[@"StudyInstanceUID"];
@@ -2522,6 +2577,10 @@ int main(int argc, const char* argv[]) {
                      ];
          }
                                                                                                                                           (request));}];
+
+        
+        
+//-----------------------------------------------
 
         
 #pragma mark IHEInvokeImageDisplay
@@ -2571,9 +2630,9 @@ int main(int argc, const char* argv[]) {
              if (!q[@"custodianOID"]) return [RSDataResponse responseWithText:[NSString stringWithFormat:@"missing custodianOID param in %@%@?%@",b,p,requestURL.query]];
              
              NSString *custodianURI;
-             //if ((pacsDictionaries[q[@"custodianOID"]])[@"local"])
+             //if ((entitiesDicts[q[@"custodianOID"]])[@"local"])
              custodianURI=[NSString stringWithFormat:@"http://localhost:%lld",port];
-             //else custodianURI=(pacsDictionaries[q[@"custodianOID"]])[@"custodianbaseuri"];
+             //else custodianURI=(entitiesDicts[q[@"custodianOID"]])[@"custodianbaseuri"];
              //if (!@"custodianURI") return [RSDataResponse responseWithText:[NSString stringWithFormat:@"invalid custodianOID param in %@%@?%@",b,p,requestURL.query]];
              
              
@@ -2591,7 +2650,7 @@ int main(int argc, const char* argv[]) {
                  )
              {
                  [manifest appendString:@"<?xml version=\"1.0\" encoding=\"utf-8\"?>\r"];
-                 NSString *additionalParameters=(pacsDictionaries[q[@"custodianOID"]])[@"wadoadditionalparameters"];
+                 NSString *additionalParameters=(entitiesDicts[q[@"custodianOID"]])[@"wadoadditionalparameters"];
                  if (!additionalParameters)additionalParameters=@"";
                  [manifest appendFormat:@"<wado_query xmlns=\"http://www.weasis.org/xsd\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" wadoURL=\"%@\" requireOnlySOPInstanceUID=\"false\" additionnalParameters=\"%@&amp;session=%@&amp;custodianOID=%@\" overrideDicomTagsList=\"\">",
                   proxyURI,
