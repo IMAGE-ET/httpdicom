@@ -99,7 +99,11 @@
 -(NSString*)dcmDaFromDate
 {
     if ([self length]==8)return self;
-    
+    if ([self length]<10)
+    {
+        NSLog(@"strange DA: '%@'",self);
+        return @"";
+    }
     return [NSString stringWithFormat:@"%@%@%@",
             [self substringWithRange:NSMakeRange(0,4)],
             [self substringWithRange:NSMakeRange(5,2)],
@@ -153,20 +157,10 @@
         break;
     }
 
-    if([self hasSuffix:@"datetime"])
-    {
-        if (startLength==0) return [NSString stringWithFormat:@" AND %@ <= '%@ 23:59:59'", self, isoEnd];
-        else if (endLength==0) return [NSString stringWithFormat:@" AND %@ >= '%@ 00:00:00'", self, isoStart];
-        else return [NSString stringWithFormat:@" AND %@ >= '%@ 00:00:00' AND %@ <= '%@ 23:59:59'", self, isoStart, self, isoEnd];
-    }
-    
-    
-    if([self hasSuffix:@"date"])
-    {
-        if (startLength==0) return [NSString stringWithFormat:@" AND %@ <= '%@'", self, isoEnd];
-        else if (endLength==0) return [NSString stringWithFormat:@" AND %@ >= '%@'", self, isoStart];
-        else return [NSString stringWithFormat:@" AND %@ >= '%@' AND %@ <= '%@'", self, isoStart, self, isoEnd];
-    }
+    if (startLength==0) return [NSString stringWithFormat:@" AND DATE(%@) <= '%@'", self, isoEnd];
+    else if (endLength==0) return [NSString stringWithFormat:@" AND DATE(%@) >= '%@'", self, isoStart];
+    else if ([isoStart isEqualToString:isoEnd]) return [NSString stringWithFormat:@" AND DATE(%@) = '%@'", self, isoStart];
+    else return [NSString stringWithFormat:@" AND DATE(%@) >= '%@' AND DATE(%@) <= '%@'", self, isoStart, self, isoEnd];
     
     return @"";
 }

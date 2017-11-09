@@ -61,6 +61,7 @@ static NSData *contentType;
 static NSData *CDAOpeningTag;
 static NSData *CDAClosingTag;
 static NSData *ctad;
+static NSData *emptyJsonArray;
 
 //datatables caché [session]
 static NSMutableDictionary *Date;
@@ -344,6 +345,7 @@ int main(int argc, const char* argv[]) {
         CDAOpeningTag=[@"<ClinicalDocument" dataUsingEncoding:NSASCIIStringEncoding];
         CDAClosingTag=[@"</ClinicalDocument>" dataUsingEncoding:NSASCIIStringEncoding];
         ctad=[@"Content-Type: application/dicom\r\n\r\n" dataUsingEncoding:NSASCIIStringEncoding];
+        emptyJsonArray=[@"[]" dataUsingEncoding:NSASCIIStringEncoding];
         
         //datatables caché [session]
         Req=[NSMutableDictionary dictionary];
@@ -811,6 +813,10 @@ int main(int argc, const char* argv[]) {
                  NSMutableData *mutableData=[NSMutableData data];
                  if (!task(@"/bin/bash",@[@"-s"],[scriptString dataUsingEncoding:NSUTF8StringEncoding],mutableData))
                      [RSErrorResponse responseWithClientError:404 message:@"%@",@"can not execute the sql"];//NotFound
+                 
+                 //response can be almost empty
+                 //in this case we remove lost ']'
+                 if ([mutableData length]<10) return [RSDataResponse responseWithData:emptyJsonArray contentType:@"application/json"];
 
                  //db response may be in latin1
                  NSStringEncoding charset=(NSStringEncoding)[entityDict[@"sqlstringencoding"] longLongValue ];
@@ -1249,7 +1255,8 @@ int main(int argc, const char* argv[]) {
          [httpdicomServer addHandler:@"GET" regex:encapsulatedRegex processBlock:
           ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             LOG_DEBUG(@"client: %@",request.remoteAddressString);
+             //LOG_DEBUG(@"client: %@",request.remoteAddressString);
+             
              //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
