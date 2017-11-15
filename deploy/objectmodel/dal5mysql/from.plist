@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">-->
+<plist version="1.0">
+    <dict>
+        <key>studyqueryattrs</key>
+        <string>FROM study LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk </string>
+        <key>seriesqueryattrs</key>
+        <string>FROM series LEFT JOIN series_query_attrs ON series.pk=series_query_attrs.series_fk </string>
+        <key>seriesofstudy</key>
+        <string>FROM series LEFT JOIN study ON series.study_fk=study.pk</string>
+        <key>seriesqueryattrsofstudy</key>
+        <string>FROM series LEFT JOIN study ON series.study_fk=study.pk LEFT JOIN series_query_attrs ON series.pk=series_query_attrs.series_fk </string>
+        <key>instancesofseries</key>
+        <string>FROM instance LEFT JOIN series ON instance.series_fk=series.pk </string>
+        <key>instancesofstudy</key>
+        <string>FROM instance LEFT JOIN series ON instance.series_fk=series.pk LEFT JOIN study ON series.study_fk=study.pk </string>
+        <key>seriesstudypatient</key>
+        <key>studypatient</key>
+        <string>FROM study \
+LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk \
+LEFT JOIN issuer ioan ON study.accno_issuer_fk=ioan.pk \
+LEFT JOIN person_name rp ON study.ref_phys_name_fk=rp.pk \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+LEFT JOIN patient_id ON patient.patient_id_fk=patient_id.pk \
+LEFT JOIN issuer iopid ON patient_id.issuer_fk=iopid.pk \
+LEFT JOIN person_name p ON patient.pat_name_fk=p.pk \
+        </string>
+        <key>seriesstudypatient</key>
+        <string>FROM series \
+LEFT JOIN series_query_attrs ON series.pk=series_query_attrs.series_fk \
+LEFT JOIN study ON series.study_fk=study.pk \
+LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk \
+LEFT JOIN issuer ioan ON study.accno_issuer_fk=ioan.pk \
+LEFT JOIN person_name rp ON study.ref_phys_name_fk=rp.pk \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+LEFT JOIN patient_id ON patient.patient_id_fk=patient_id.pk \
+LEFT JOIN issuer iopid ON patient_id.issuer_fk=iopid.pk \
+LEFT JOIN person_name p ON patient.pat_name_fk=p.pk \
+        </string>
+        <key>instanceseriesstudypatient</key>
+        <string>FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+LEFT JOIN series_query_attrs ON series.pk=series_query_attrs.series_fk \
+LEFT JOIN study ON series.study_fk=study.pk \
+LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk \
+LEFT JOIN issuer ioan ON study.accno_issuer_fk=ioan.pk \
+LEFT JOIN person_name rp ON study.ref_phys_name_fk=rp.pk \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+LEFT JOIN patient_id ON patient.patient_id_fk=patient_id.pk \
+LEFT JOIN issuer iopid ON patient_id.issuer_fk=iopid.pk \
+LEFT JOIN person_name p ON patient.pat_name_fk=p.pk \
+        </string>
+    </dict>
+</plist>

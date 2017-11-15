@@ -24,8 +24,8 @@
             <string id="sqlprolog">sqlprolog</string>
             <key>sqlstringencoding</key>
             <string id="sqlstringencoding">5</string>
-            <key>sqldictpath</key>
-            <string id="sqldictpath">/Users/Shared/httpdicom/deploy/sql/dictionary/dcm4chee2147mysql.plist</string>
+            <key>sqlobjectmodel</key>
+            <string id="sqlobjectmodel">dal5mysql</string>
             <key>filesystembaseuri</key>
             <string id="filesystembaseuri">filesystembaseuri</string>
             <key>wadouri</key>

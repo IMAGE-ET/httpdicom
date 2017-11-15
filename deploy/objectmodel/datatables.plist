@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">-->
+<plist version="1.0">
+<dict>
+	<key>studycount</key>
+	<string>SELECT COUNT(*) </string>
+	<key>studycountformat</key>
+	<string>;&quot; | awk -F\\t &apos;{print $1}&apos;</string>
+	<key>studyselect</key>
+	<string>SELECT \
+study.accession_no,\
+ioan.entity_uid,\
+study.study_iuid,\
+study.study_custom3,\
+patient_id.pat_id,\
+iopid.entity_uid,\
+p.family_name,\
+p.given_name,\
+p.middle_name,\
+p.name_prefix,\
+p.name_suffix,\
+study.study_date,\
+study_query_attrs.mods_in_study,\
+study.study_desc,\
+rp.family_name,\
+rp.given_name,\
+rp.middle_name,\
+rp.name_prefix,\
+rp.name_suffix,\
+study.study_custom2,\
+iopid.entity_uid,\
+patient.pat_birthdate,\
+patient.pat_sex,\
+study.accession_no,\
+ioan.entity_uid,\
+study.study_id,\
+study.study_iuid,\
+study.study_time,\
+study.study_custom1 \
+</string>
+	<key>studyformat</key>
+	<string>\
+;&quot; \
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[\&quot;\&quot;,\&quot;datatables/series?AccessionNumber=&quot; \
+$1 &quot;&amp;IssuerOfAccessionNumber.UniversalEntityID=&quot; \
+$2 &quot;&amp;StudyInstanceUID=&quot; \
+$3 &quot;&amp;session=%@\&quot;,\&quot;&quot; \
+$4 &quot;\&quot;,\&quot;datatables/patient?PatientID=&quot; \
+$5 &quot;&amp;IssuerOfPatientID.UniversalEntityID=&quot; \
+$6 &quot;&amp;session=%@\&quot;,\&quot;&quot; \
+$7 &quot;^&quot; $8 &quot;^&quot; $9 &quot;^&quot; $10 &quot;^&quot; \
+$11 &quot;\&quot;,\&quot;&quot; \
+$12 &quot;\&quot;,\&quot;&quot; \
+$13 &quot;\&quot;,\&quot;&quot; \
+$14 &quot;\&quot;,\&quot;&quot; \
+$15 &quot;^&quot; $16 &quot;^&quot; $17 &quot;^&quot; $18 &quot;^&quot; $19 &quot;\&quot;,\&quot;&quot; \
+$20 &quot;\&quot;,\&quot;&quot; \
+$21 &quot;\&quot;,\&quot;&quot; \
+$22 &quot;\&quot;,\&quot;&quot; \
+$23 &quot;\&quot;,\&quot;&quot; \
+$24 &quot;\&quot;,\&quot;&quot; \
+$25 &quot;\&quot;,\&quot;&quot; \
+$26 &quot;\&quot;,\&quot;&quot; \
+$27 &quot;\&quot;,\&quot;&quot; \
+$28 &quot;\&quot;,\&quot;&quot; \
+$29 &quot;\&quot;]&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;</string>
+	<key>seriesselect</key>
+	<string>SELECT \
+series.series_iuid,\
+series.series_no,\
+series.modality,\
+series.pps_start_date,\
+series.pps_start_time,\
+series.series_desc \
+FROM series \
+LEFT JOIN study ON series.study_fk=study.pk</string>
+	<key>seriesformat</key>
+	<string>\
+;&quot; \
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[\&quot;\&quot;,\&quot;&quot; \
+$1 &quot;\&quot;,\&quot;&quot; \
+$2 &quot;\&quot;,\&quot;&quot; \
+$3 &quot;\&quot;,\&quot;&quot; \
+$4 &quot;\&quot;,\&quot;&quot; \
+$5 &quot;\&quot;,\&quot;&quot; \
+$6 &quot;\&quot;]&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;</string>
+</dict>
+</plist>

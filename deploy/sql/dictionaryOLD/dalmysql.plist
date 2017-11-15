@@ -8,11 +8,19 @@
 	<string> WHERE study.rejection_state != 2</string>
 	<key>seriesWhere</key>
 	<string> WHERE series.rejection_state != 2</string>
+	<key>instancesWhere</key>
+	<string> WHERE 1=1</string>
 	<key>studiesCountProlog</key>
 	<string>\
 SELECT COUNT(*) \
 FROM study \
-LEFT JOIN patient ON study.patient_fk=patient.pk
+LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk \
+LEFT JOIN issuer ioan ON study.accno_issuer_fk=ioan.pk \
+LEFT JOIN person_name rp ON study.ref_phys_name_fk=rp.pk \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+LEFT JOIN patient_id ON patient.patient_id_fk=patient_id.pk \
+LEFT JOIN issuer iopid ON patient_id.issuer_fk=iopid.pk \
+LEFT JOIN person_name p ON patient.pat_name_fk=p.pk\
 </string>
 	<key>studiesCountEpilog</key>
 	<string>;&quot; | awk -F\\t &apos;{print $1}&apos;</string>
@@ -22,14 +30,16 @@ SELECT study_query_attrs.num_instances \
 FROM study \
 LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk \
 WHERE study.study_iuid = %@;\
-&quot; | awk -F\\t &apos;{print $1}&apos;</string>
+&quot; | awk -F\\t &apos;{print $1}&apos;\
+</string>
 	<key>NumberOfSeriesRelatedInstances</key>
 	<string>\
 SELECT series_query_attrs.num_instances \
 FROM series \
 LEFT JOIN series_query_attrs ON series.pk=series_query_attrs.series_fk \
 WHERE series.series_iuid = %@;\
-&quot; | awk -F\\t &apos;{print $1}&apos;</string>
+&quot; | awk -F\\t &apos;{print $1}&apos;\
+</string>
 	<key>datatablesStudiesProlog</key>
 	<string>\
 SELECT \
@@ -73,8 +83,8 @@ LEFT JOIN person_name p ON patient.pat_name_fk=p.pk</string>
 	<key>datatablesStudiesEpilog</key>
 	<string>\
 ;&quot; \
-|  awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print \
-&quot;[\&quot;\&quot;,\&quot;datatables/series?AccessionNumber=&quot; \
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[\&quot;\&quot;,\&quot;datatables/series?AccessionNumber=&quot; \
 $1 &quot;&amp;IssuerOfAccessionNumber.UniversalEntityID=&quot; \
 $2 &quot;&amp;StudyInstanceUID=&quot; \
 $3 &quot;&amp;session=%@\&quot;,\&quot;&quot; \
@@ -96,7 +106,8 @@ $25 &quot;\&quot;,\&quot;&quot; \
 $26 &quot;\&quot;,\&quot;&quot; \
 $27 &quot;\&quot;,\&quot;&quot; \
 $28 &quot;\&quot;,\&quot;&quot; \
-$29 &quot;\&quot;]&quot;}&apos;  \
+$29 &quot;\&quot;]&quot;}\
+&apos; \
 | sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;</string>
 	<key>datatablesSeriesProlog</key>
 	<string>\
@@ -108,18 +119,19 @@ series.pps_start_date,\
 series.pps_start_time,\
 series.series_desc \
 FROM series \
-LEFT JOIN study ON series.study_fk=study.pk \
-LEFT JOIN issuer ioan ON study.accno_issuer_fk=ioan.pk</string>
+LEFT JOIN study ON series.study_fk=study.pk</string>
 	<key>datatablesSeriesEpilog</key>
 	<string>\
 ;&quot; \
-|  awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print &quot;[\&quot;\&quot;,\&quot;&quot; \
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;[\&quot;\&quot;,\&quot;&quot; \
 $1 &quot;\&quot;,\&quot;&quot; \
 $2 &quot;\&quot;,\&quot;&quot; \
 $3 &quot;\&quot;,\&quot;&quot; \
 $4 &quot;\&quot;,\&quot;&quot; \
 $5 &quot;\&quot;,\&quot;&quot; \
-$6 &quot;\&quot;]&quot;}&apos; \
+$6 &quot;\&quot;]&quot;}\
+&apos; \
 | sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;</string>
 	<key>manifestWeasisStudyAccessionNumber</key>
 	<string>%@\
@@ -404,7 +416,7 @@ study_query_attrs.mods_in_study,\
 study.study_desc,\
 study.study_id,\
 study.study_iuid,\
-study.accession_no \
+study.accession_no, \
 series.modality,\
 series.series_desc,\
 series.series_no,\
@@ -431,7 +443,7 @@ study_query_attrs.mods_in_study,\
 study.study_desc,\
 study.study_id,\
 study.study_iuid,\
-study.accession_no \
+study.accession_no, \
 series.modality,\
 series.series_desc,\
 series.series_no,\

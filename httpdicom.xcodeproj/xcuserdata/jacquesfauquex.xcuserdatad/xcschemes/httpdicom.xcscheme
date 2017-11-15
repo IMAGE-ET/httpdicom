@@ -65,7 +65,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/jacquesfauquex/opendicom/httpdicom/deploy/devices/sample.plist"
+            argument = "/Users/jacquesfauquex/opendicom/httpdicom/deploy/"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

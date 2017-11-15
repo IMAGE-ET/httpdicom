@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">-->
+<plist version="1.0">
+<dict>
+	<!-- patient -->
+	<key>PatientID</key>
+	<string>patient_id.pat_id</string>
+	<key>IssuerOfPatientID</key>
+	<string>iopid.entity_uid</string>
+	<key>PatientName</key>
+	<array>
+		<string>p.family_name</string>
+		<string>p.given_name</string>
+		<string>p.middle_name</string>
+		<string>p.name_prefix</string>
+		<string>p.name_suffix</string>
+	</array>
+	<key>PatientBirthDate</key>
+	<string>patient.pat_birthdate</string>
+	<key>PatientSex</key>
+	<string>patient.pat_sex</string>
+	<key>PatientInsurancePlanCodeSequence</key>
+	<string>study.study_custom2</string>
+	<!-- study -->
+	<key>StudyDate</key>
+	<string>study.study_date</string>
+	<key>StudyTime</key>
+	<string>study.study_time</string>
+	<key>ModalitiesInStudy</key>
+	<string>study_query_attrs.mods_in_study</string>
+	<key>StudyDescription</key>
+	<string>study.study_desc</string>
+	<key>StudyID</key>
+	<string>study.study_id</string>
+	<key>AccessionNumber</key>
+	<string>study.accession_no</string>
+	<key>IssuerOfAccessionNumber</key>
+	<string>ioan.entity_uid</string>
+	<key>Retrieve​AE​Title</key>
+	<string>study_query_attrs.retrieve_aets</string>
+	<key>StudyInstanceUID</key>
+	<string>study.study_iuid</string>
+	<key>NameOfPhysiciansReadingStudy</key>
+	<string>study.study_custom3</string>
+	<key>ReferingPhysicianName</key>
+	<array>
+		<string>rp.family_name</string>
+		<string>rp.given_name</string>
+		<string>rp.middle_name</string>
+		<string>rp.name_prefix</string>
+		<string>rp.name_suffix</string>
+	</array>
+	<key>StudyTime</key>
+	<string>study.study_time</string>
+	<key>accessControlId</key>
+	<string>study.access_control_id</string>
+	<key>NumberOfStudyRelatedInstances</key>
+	<string>study_query_attrs.num_instances</string>
+	<!--series-->
+	<key>NumberOfSeriesRelatedInstances</key>
+	<string>series_query_attrs.num_instances</string>
+	<key>Modality</key>
+	<string>series.modality</string>
+	<key>Series​Description</key>
+	<string>series.series_desc</string>
+	<key>Series​Number</key>
+	<string>series.series_no</string>
+	<key>SeriesInstanceUID</key>
+	<string>series.series_iuid</string>
+	<key>InstitutionName</key>
+	<string>study.study_custom1</string>
+	<!--instance-->
+	<key>SOPClassUID</key>
+	<string>instance.sop_cuid</string>
+	<key>SOPInstanceUID</key>
+	<string>instance.sop_iuid</string>
+	<key>InstanceNumber</key>
+	<string>instance.inst_no</string>
+</dict>
+</plist>

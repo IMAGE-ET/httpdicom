@@ -7,6 +7,13 @@
 //
 #import <Foundation/Foundation.h>
 
+//DEBUG          sql query + sql answer
+//VERBOSE        sql query
+//INFO           service invocación
+//WARNING        outside normal behaviour
+//ERROR          service not completed
+//EXCEPTION      aplication needs restart
+
 typedef NS_ENUM(int, ODLogLevelEnum) {
     ODLogLevel_Debug = 0,
     ODLogLevel_Verbose,

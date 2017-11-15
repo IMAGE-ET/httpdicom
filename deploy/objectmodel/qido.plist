@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">-->
+<plist version="1.0">
+<dict>	
+	<key>studyselect</key>
+	<array>
+		<string>PatientID</string>
+		<string>IssuerOfPatientID</string>
+		<string>PatientName</string>
+		<string>PatientBirthDate</string>
+		<string>PatientSex</string>
+		<string>StudyDate</string>
+		<string>ModalitiesInStudy</string>
+		<string>StudyDescription</string>
+		<string>StudyID</string>
+		<string>StudyInstanceUID</string>
+		<string>AccessionNumber</string>
+	</array>
+	<key>studyformat</key>
+	<string>\
+;&quot; |  awk -F\\t \
+&apos;\
+BEGIN{\
+OFS=&quot;&quot;;\
+ORS=&quot;&quot;;\
+print &quot;[&quot;;\
+ORS=&quot;,&quot;\
+}\
+{print &quot;{\&quot;PatientID\&quot;:\&quot;&quot; $1 \
+&quot;\&quot;,\&quot;IssuerOfPatientID\&quot;:\&quot;&quot; $2 \
+&quot;\&quot;,\&quot;PatientName\&quot;:\&quot;&quot;$3&quot;^&quot;$4 \
+&quot;\&quot;,\&quot;PatientBirthDate\&quot;:\&quot;&quot; $5 \
+&quot;\&quot;,\&quot;PatientSex\&quot;:\&quot;&quot; $6 \
+&quot;\&quot;,\&quot;StudyDate\&quot;:\&quot;&quot; $7 \
+&quot;\&quot;,\&quot;ModalitiesInStudy\&quot;:\&quot;&quot; $8 \
+&quot;\&quot;,\&quot;StudyDescription\&quot;:\&quot;&quot; $9 \
+&quot;\&quot;,\&quot;StudyID\&quot;:\&quot;&quot; $10 \
+&quot;\&quot;,\&quot;StudyInstanceUID\&quot;:\&quot;&quot; $11 \
+&quot;\&quot;,\&quot;AccessionNumber\&quot;:\&quot;&quot; $12 \
+&quot;\&quot;}&quot;}\
+&apos;  \
+| sed \
+-e &apos;s/.$/]/&apos; \
+-e &apos;s/\\/\\\\/g&apos; \
+-e &apos;s/\^NULL//g&apos;\
+</string>
+	
+	<key>seriesselect</key>
+	<string>\
+SELECT \
+patient_id.pat_id,\
+issuer.entity_uid,\
+person_name.family_name,\
+person_name.given_name,\
+patient.pat_birthdate,\
+patient.pat_sex,\
+study.study_date,\
+study_query_attrs.mods_in_study,\
+study.study_desc,\
+study.study_id,\
+study.study_iuid,\
+study.accession_no, \
+series.modality,\
+series.series_desc,\
+series.series_no,\
+series.series_iuid \
+</string>
+	
+	<key>seriesformat</key>
+<string>;&quot; |  awk -F\\t \
+&apos;\
+BEGIN{\
+OFS=&quot;&quot;;\
+ORS=&quot;&quot;;\
+print &quot;[&quot;;\
+ORS=&quot;,&quot;\
+}\
+{print &quot;{\&quot;PatientID\&quot;:\&quot;&quot; $1 \
+&quot;\&quot;,\&quot;IssuerOfPatientID\&quot;:\&quot;&quot; $2 \
+&quot;\&quot;,\&quot;PatientName\&quot;:\&quot;&quot;$3&quot;^&quot;$4 \
+&quot;\&quot;,\&quot;PatientBirthDate\&quot;:\&quot;&quot; $5 \
+&quot;\&quot;,\&quot;PatientSex\&quot;:\&quot;&quot; $6 \
+&quot;\&quot;,\&quot;StudyDate\&quot;:\&quot;&quot; $7 \
+&quot;\&quot;,\&quot;ModalitiesInStudy\&quot;:\&quot;&quot; $8 \
+&quot;\&quot;,\&quot;StudyDescription\&quot;:\&quot;&quot; $9 \
+&quot;\&quot;,\&quot;StudyID\&quot;:\&quot;&quot; $10 \
+&quot;\&quot;,\&quot;StudyInstanceUID\&quot;:\&quot;&quot; $11 \
+&quot;\&quot;,\&quot;AccessionNumber\&quot;:\&quot;&quot; $12 \
+&quot;\&quot;,\&quot;Modality\&quot;:\&quot;&quot; $13 \
+&quot;\&quot;,\&quot;SeriesDescription\&quot;:\&quot;&quot; $14 \
+&quot;\&quot;,\&quot;SeriesNumber\&quot;:\&quot;&quot; $15 \
+&quot;\&quot;,\&quot;SeriesInstanceUID\&quot;:\&quot;&quot; $16 \
+&quot;\&quot;}&quot;}\
+&apos;  \
+| sed \
+-e &apos;s/.$/]/&apos; \
+-e &apos;s/\\/\\\\/g&apos; \
+-e &apos;s/\^NULL//g&apos;\
+</string>
+	
+	<key>instanceselect</key>
+	<string>\
+SELECT \
+patient_id.pat_id,\
+issuer.entity_uid,\
+person_name.family_name,\
+person_name.given_name,\
+patient.pat_birthdate,\
+patient.pat_sex,\
+study.study_date,\
+study_query_attrs.mods_in_study,\
+study.study_desc,\
+study.study_id,\
+study.study_iuid,\
+study.accession_no, \
+series.modality,\
+series.series_desc,\
+series.series_no,\
+series.series_iuid,\
+instance.sop_cuid,\
+instance.sop_iuid,\
+instance.inst_no \
+</string>
+	<key>instanceformat</key>
+	<string>;&quot; |  awk -F\\t \
+&apos;\
+BEGIN{\
+OFS=&quot;&quot;;\
+ORS=&quot;&quot;;\
+print &quot;[&quot;;\
+ORS=&quot;,&quot;\
+}\
+{print &quot;{\&quot;PatientID\&quot;:\&quot;&quot; $1 \
+&quot;\&quot;,\&quot;IssuerOfPatientID\&quot;:\&quot;&quot; $2 \
+&quot;\&quot;,\&quot;PatientName\&quot;:\&quot;&quot;$3&quot;^&quot;$4 \
+&quot;\&quot;,\&quot;PatientBirthDate\&quot;:\&quot;&quot; $5 \
+&quot;\&quot;,\&quot;PatientSex\&quot;:\&quot;&quot; $6 \
+&quot;\&quot;,\&quot;StudyDate\&quot;:\&quot;&quot; $7 \
+&quot;\&quot;,\&quot;ModalitiesInStudy\&quot;:\&quot;&quot; $8 \
+&quot;\&quot;,\&quot;StudyDescription\&quot;:\&quot;&quot; $9 \
+&quot;\&quot;,\&quot;StudyID\&quot;:\&quot;&quot; $10 \
+&quot;\&quot;,\&quot;StudyInstanceUID\&quot;:\&quot;&quot; $11 \
+&quot;\&quot;,\&quot;AccessionNumber\&quot;:\&quot;&quot; $12 \
+&quot;\&quot;,\&quot;Modality\&quot;:\&quot;&quot; $13 \
+&quot;\&quot;,\&quot;SeriesDescription\&quot;:\&quot;&quot; $14 \
+&quot;\&quot;,\&quot;SeriesNumber\&quot;:\&quot;&quot; $15 \
+&quot;\&quot;,\&quot;SeriesInstanceUID\&quot;:\&quot;&quot; $16 \
+&quot;\&quot;,\&quot;SOPClassUID\&quot;:\&quot;&quot; $17 \
+&quot;\&quot;,\&quot;SOPInstanceUID\&quot;:\&quot;&quot; $18 \
+&quot;\&quot;,\&quot;InstanceNumber\&quot;:\&quot;&quot; $19 \
+&quot;\&quot;}&quot;}\
+&apos;  \
+| sed \
+-e &apos;s/.$/]/&apos; \
+-e &apos;s/\\/\\\\/g&apos; \
+-e &apos;s/\^NULL//g&apos;\
+</string>
+</dict>
+</plist>

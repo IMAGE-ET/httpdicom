@@ -90,12 +90,12 @@
                                         <xs:element ref="string" id="sqlstringencoding"/>
 
 
-                                        <xs:element name="key" fixed="sqldictpath">
+                                        <xs:element name="key" fixed="sqlobjectmodel">
                                             <xs:annotation>
                                                 <xs:documentation>path al diccionario que lista las traducciones en lenguaje sql de los queries usados por httpdicom</xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element ref="string" id="sqldictpath"/>
+                                        <xs:element ref="string" id="sqlobjectmodel"/>
 
 
                                         <xs:element name="key" fixed="filesystembaseuri">

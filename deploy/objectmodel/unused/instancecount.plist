@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">-->
+<plist version="1.0">
+<dict>
+	<key>NumberOfStudyRelatedInstances</key>
+	<string>\
+SELECT study_query_attrs.num_instances \
+FROM study \
+LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk \
+WHERE study.study_iuid = %@;\
+&quot; | awk -F\\t &apos;{print $1}&apos;\
+</string>
+	<key>NumberOfSeriesRelatedInstances</key>
+	<string>\
+SELECT series_query_attrs.num_instances \
+FROM series \
+LEFT JOIN series_query_attrs ON series.pk=series_query_attrs.series_fk \
+WHERE series.series_iuid = %@;\
+&quot; | awk -F\\t &apos;{print $1}&apos;\
+</string>
+</dict>
+</plist>

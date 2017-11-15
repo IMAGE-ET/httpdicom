@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">-->
+<plist version="1.0">
+<dict>
+	<key>studyselect</key>
+	<array>
+		<string>PatientName</string>
+		<string>PatientID</string>
+		<string>IssuerOfPatientID</string>
+		<string>PatientBirthDate</string>
+		<string>PatientSex</string>
+		<!--<string>PatientInsurancePlanCodeSequence</string>-->
+		<string>StudyInstanceUID</string>
+		<string>AccessionNumber</string>
+		<string>IssuerOfAccessionNumber</string>
+		<string>Retrieve​AE​Title</string>
+		<string>StudyID</string>
+		<string>StudyDescription</string>
+		<string>StudyDate</string>
+		<string>StudyTime</string>
+		<string>NumberOfStudyRelatedInstances</string>
+	</array>
+	<key>studyformat</key>
+	<string>\
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print &quot;[\&quot;\
+&quot; $1 &quot;^&quot; $2 &quot;^&quot; $3 &quot;^&quot; $4 &quot;^&quot; $5 &quot;\&quot;,\&quot;\
+&quot; $6 &quot;\&quot;,\&quot;\
+&quot; $7 &quot;\&quot;,\&quot;\
+&quot; $8 &quot;\&quot;,\&quot;\
+&quot; $9 &quot;\&quot;,\&quot;\
+&quot; $10 &quot;\&quot;,\&quot;\
+&quot; $11 &quot;\&quot;,\&quot;\
+&quot; $12 &quot;\&quot;,\&quot;\
+&quot; $13 &quot;\&quot;,\&quot;\
+&quot; $14 &quot;\&quot;,\&quot;\
+&quot; $15 &quot;\&quot;,\&quot;\
+&quot; $16 &quot;\&quot;,\&quot;\
+&quot; $17 &quot;\&quot;,\&quot;\
+&quot; $18 &quot;\
+\&quot;]&quot;}&apos;  \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;\
+</string>
+	<key>seriesselect</key>
+	<array>
+		<string>SeriesInstanceUID</string>
+		<string>Series​Description</string>
+		<string>Series​Number</string>
+		<string>Modality</string>
+		<string>NumberOfSeriesRelatedInstances</string>
+	</array>
+	<key>seriesformat</key>
+	<string>\
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print &quot;[\&quot;\
+&quot; $1 &quot;\&quot;,\&quot;\
+&quot; $2 &quot;\&quot;,\&quot;\
+&quot; $3 &quot;\&quot;,\&quot;\
+&quot; $4 &quot;\&quot;,\&quot;\
+&quot; $5 &quot;\
+\&quot;]&quot;}&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;\
+</string>
+	<key>instanceselect</key>
+	<array>
+		<string>SOPInstanceUID</string>
+		<string>InstanceNumber</string>
+		<string>SOPClassUID</string>
+	</array>
+	<key>instanceformat</key>
+	<string>\
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print &quot;[\&quot;\
+&quot; $1 &quot;\&quot;,\&quot;\
+&quot; $2 &quot;\&quot;,\&quot;\
+&quot; $3 &quot;\
+\&quot;]&quot;}&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;\
+</string>
+</dict>
+</plist>

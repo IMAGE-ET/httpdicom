@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">-->
+<plist version="1.0">
+<dict>
+	<key>NumberOfStudyRelatedInstances</key>
+	<string>\
+SELECT study_query_attrs.num_instances \
+FROM study \
+LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk \
+WHERE study.study_iuid = %@;\
+&quot; | awk -F\\t &apos;{print $1}&apos;\
+</string>
+	<key>NumberOfSeriesRelatedInstances</key>
+	<string>\
+SELECT series_query_attrs.num_instances \
+FROM series \
+LEFT JOIN series_query_attrs ON series.pk=series_query_attrs.series_fk \
+WHERE series.series_iuid = %@;\
+&quot; | awk -F\\t &apos;{print $1}&apos;\
+</string>
+	<key>manifestWeasisStudyAccessionNumber</key>
+	<string>%@\
+SELECT p.family_name,\
+p.given_name,\
+p.middle_name,\
+p.name_prefix,\
+p.name_suffix,\
+patient_id.pat_id,\
+iopid.entity_uid,\
+patient.pat_birthdate,\
+patient.pat_sex,\
+study.study_iuid,\
+study.accession_no,\
+ioan.entity_uid,\
+study_query_attrs.retrieve_aets,\
+study.study_id,\
+study.study_desc,\
+study.study_date,\
+study.study_time,\
+study_query_attrs.num_instances \
+FROM study \
+LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk \
+LEFT JOIN issuer ioan ON study.accno_issuer_fk=ioan.pk \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+LEFT JOIN patient_id ON patient.patient_id_fk=patient_id.pk \
+LEFT JOIN issuer iopid ON patient_id.issuer_fk=iopid.pk \
+LEFT JOIN person_name p ON patient.pat_name_fk=p.pk  \
+WHERE study.rejection_state != 2 AND study.accession_no = &apos;%@&apos;;&quot; \
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print &quot;[\&quot;\
+&quot; $1 &quot;^&quot; $2 &quot;^&quot; $3 &quot;^&quot; $4 &quot;^&quot; $5 &quot;\&quot;,\&quot;\
+&quot; $6 &quot;\&quot;,\&quot;\
+&quot; $7 &quot;\&quot;,\&quot;\
+&quot; $8 &quot;\&quot;,\&quot;\
+&quot; $9 &quot;\&quot;,\&quot;\
+&quot; $10 &quot;\&quot;,\&quot;\
+&quot; $11 &quot;\&quot;,\&quot;\
+&quot; $12 &quot;\&quot;,\&quot;\
+&quot; $13 &quot;\&quot;,\&quot;\
+&quot; $14 &quot;\&quot;,\&quot;\
+&quot; $15 &quot;\&quot;,\&quot;\
+&quot; $16 &quot;\&quot;,\&quot;\
+&quot; $17 &quot;\&quot;,\&quot;\
+&quot; $18 &quot;\
+\&quot;]&quot;}&apos;  \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;</string>
+	<key>manifestWeasisStudyStudyInstanceUID</key>
+	<string>%@\
+SELECT \
+p.family_name,\
+p.given_name,\
+p.middle_name,\
+p.name_prefix,\
+p.name_suffix,\
+patient_id.pat_id,\
+iopid.entity_uid,\
+patient.pat_birthdate,\
+patient.pat_sex,\
+study.study_iuid,\
+study.accession_no,\
+ioan.entity_uid,\
+study_query_attrs.retrieve_aets,\
+study.study_id,\
+study.study_desc,\
+study.study_date,\
+study.study_time,\
+study_query_attrs.num_instances \
+FROM study \
+LEFT JOIN study_query_attrs ON study.pk=study_query_attrs.study_fk \
+LEFT JOIN issuer ioan ON study.accno_issuer_fk=ioan.pk \
+LEFT JOIN patient ON study.patient_fk=patient.pk \
+LEFT JOIN patient_id ON patient.patient_id_fk=patient_id.pk \
+LEFT JOIN issuer iopid ON patient_id.issuer_fk=iopid.pk \
+LEFT JOIN person_name p ON patient.pat_name_fk=p.pk  \
+WHERE study.rejection_state != 2 AND study.study_iuid = &apos;%@&apos;;&quot; \
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print &quot;[\&quot;\
+&quot; $1 &quot;^&quot; $2 &quot;^&quot; $3 &quot;^&quot; $4 &quot;^&quot; $5 &quot;\&quot;,\&quot;\
+&quot; $6 &quot;\&quot;,\&quot;\
+&quot; $7 &quot;\&quot;,\&quot;\
+&quot; $8 &quot;\&quot;,\&quot;\
+&quot; $9 &quot;\&quot;,\&quot;\
+&quot; $10 &quot;\&quot;,\&quot;\
+&quot; $11 &quot;\&quot;,\&quot;\
+&quot; $12 &quot;\&quot;,\&quot;\
+&quot; $13 &quot;\&quot;,\&quot;\
+&quot; $14 &quot;\&quot;,\&quot;\
+&quot; $15 &quot;\&quot;,\&quot;\
+&quot; $16 &quot;\&quot;,\&quot;\
+&quot; $17 &quot;\&quot;,\&quot;\
+&quot; $18 &quot;\
+\&quot;]&quot;}&apos;  \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos; -e &apos;s/\^NULL//g&apos;</string>
+	<key>manifestWeasisSeriesStudyInstanceUID</key>
+	<string>%@\
+SELECT \
+series.series_iuid,\
+series.series_desc,\
+series.series_no,\
+series.modality,\
+series_query_attrs.num_instances \
+FROM series \
+LEFT JOIN study ON series.study_fk=study.pk \
+LEFT JOIN series_query_attrs ON series.pk=series_query_attrs.series_fk \
+WHERE series.rejection_state != 2 AND study.study_iuid = &apos;%@&apos;;&quot; \
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print &quot;[\&quot;\
+&quot; $1 &quot;\&quot;,\&quot;\
+&quot; $2 &quot;\&quot;,\&quot;\
+&quot; $3 &quot;\&quot;,\&quot;\
+&quot; $4 &quot;\&quot;,\&quot;\
+&quot; $5 &quot;\
+\&quot;]&quot;}&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;</string>
+	<key>manifestWeasisInstanceSeriesInstanceUID</key>
+	<string>%@\
+SELECT \
+instance.sop_iuid,\
+instance.inst_no,\
+instance.sop_cuid \
+FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+WHERE instance.reject_code_fk IS NULL AND series.series_iuid = &apos;%@&apos;;&quot; \
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print &quot;[\&quot;\
+&quot; $1 &quot;\&quot;,\&quot;\
+&quot; $2 &quot;\&quot;,\&quot;\
+&quot; $3 &quot;\
+\&quot;]&quot;}&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;</string>
+	<key>manifestWeasisSeriesStudyInstanceUIDSeriesInstanceUID</key>
+	<string>%@\
+SELECT \
+series.series_iuid,\
+series.series_desc,\
+series.series_no,\
+series.modality,\
+series_query_attrs.num_instances \
+FROM series \
+LEFT JOIN study ON series.study_fk=study.pk \
+LEFT JOIN series_query_attrs ON series.pk=series_query_attrs.series_fk \
+WHERE series.rejection_state != 2 AND study.study_iuid = &apos;%@&apos; AND series.series_iuid = &apos;%@&apos;;&quot; \
+| awk -F\\t &apos;BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}{print &quot;[\&quot;\
+&quot; $1 &quot;\&quot;,\&quot;\
+&quot; $2 &quot;\&quot;,\&quot;\
+&quot; $3 &quot;\&quot;,\&quot;\
+&quot; $4 &quot;\&quot;,\&quot;\
+&quot; $5 &quot;\
+\&quot;]&quot;}&apos; | sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;</string>
+	<key>studyAccessionNumberWadosUris</key>
+	<string>%@\
+SELECT study.study_iuid, series.series_iuid, instance.sop_iuid \
+FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+LEFT JOIN study ON series.study_fk=study.pk \
+WHERE study.accession_no = &apos;%@&apos;\
+;&quot; \
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;\&quot;?requestType=WADO&amp;contentType=application/dicom&amp;studyUID=&quot; $1 &quot;&amp;seriesUID=&quot; $2 &quot;&amp;objectUID=&quot; $3 &quot;\&quot;&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+	<key>studyUIDWadosUris</key>
+	<string>%@\
+SELECT study.study_iuid, series.series_iuid, instance.sop_iuid \
+FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+LEFT JOIN study ON series.study_fk=study.pk \
+WHERE study.study_iuid = &apos;%@&apos;;\
+&quot; \
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;\&quot;?requestType=WADO&amp;contentType=application/dicom&amp;studyUID=&quot; $1 &quot;&amp;seriesUID=&quot; $2 &quot;&amp;objectUID=&quot; $3 &quot;\&quot;&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+	<key>seriesUIDWadosUris</key>
+	<string>%@\
+SELECT study.study_iuid, series.series_iuid, instance.sop_iuid \
+FROM instance \
+LEFT JOIN series ON instance.series_fk=series.pk \
+LEFT JOIN study ON series.study_fk=study.pk \
+WHERE series.series_iuid = &apos;%@&apos;;\
+&quot; \
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;\&quot;?requestType=WADO&amp;contentType=application/dicom&amp;studyUID=&quot; $1 &quot;&amp;seriesUID=&quot; $2 &quot;&amp;objectUID=&quot; $3 &quot;\&quot;&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+</dict>
+</plist>

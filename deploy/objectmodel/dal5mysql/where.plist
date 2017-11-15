@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">-->
+<plist version="1.0">
+<dict>
+	<key>patient</key>
+	<string>WHERE 1=1 </string>
+	<key>study</key>
+	<string>WHERE study.rejection_state != 2</string>
+	<key>series</key>
+	<string>WHERE series.rejection_state != 2</string>
+	<key>instance</key>
+	<string>WHERE 1=1</string>
+</dict>
+</plist>

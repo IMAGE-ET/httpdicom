@@ -301,14 +301,14 @@ int main(int argc, const char* argv[]) {
         /*
          syntax:
          [0] httpdicom
-         [1] devicesplistpath
+         [1] deploypath
          [2] httpdicomport
          [3] loglevel [ DEBUG | VERBOSE | INFO | WARNING | ERROR | EXCEPTION]
          */
         NSArray *args=[[NSProcessInfo processInfo] arguments];
         if ([args count]!=4)
         {
-            LOG_WARNING(@"syntax: httpdicom devicesplist httpdicomport loglevel");
+            LOG_WARNING(@"syntax: httpdicom deploypath httpdicomport loglevel");
             return 1;
         }
         
@@ -336,6 +336,7 @@ int main(int argc, const char* argv[]) {
         [dicomDTFormatter setDateFormat:@"yyyyMMddHHmmss"];
         NSRegularExpression *UIRegex = [NSRegularExpression regularExpressionWithPattern:@"^[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*$" options:0 error:NULL];
         NSRegularExpression *SHRegex = [NSRegularExpression regularExpressionWithPattern:@"^(?:\\s*)([^\\r\\n\\f\\t]*[^\\r\\n\\f\\t\\s])(?:\\s*)$" options:0 error:NULL];
+        NSArray *levels=@[@"patients",@"studies",@"series",@"instances"];
         
         //static immutable
         rn=[@"/r/n" dataUsingEncoding:NSASCIIStringEncoding];//0x0A0D;
@@ -360,30 +361,80 @@ int main(int argc, const char* argv[]) {
         sStudyDescription=[NSMutableDictionary dictionary];
         
 
-        //[1] devicesplist (pacs is another name synonym of devices)
-        NSDictionary *entitiesDicts=[NSDictionary dictionaryWithContentsOfFile:[args[1]stringByExpandingTildeInPath]];
-        if (!entitiesDicts)
+        //[1] deploypath
+        NSString *deployPath=[args[1]stringByExpandingTildeInPath];
+        BOOL isDirectory=FALSE;
+        if (![[NSFileManager defaultManager]fileExistsAtPath:deployPath isDirectory:&isDirectory] || !isDirectory)
         {
-            LOG_ERROR(@"could not get contents of pacs.plist");
+            LOG_ERROR(@"deploy folder does not exist");
             return 1;
         }
+        
+        //1.1 devices (pacs is another name synonym of devices)
+
         //initialization of custodian and sql dictionaries based on properties of entitiesDicts
         NSMutableDictionary *custodianoids=[NSMutableDictionary dictionary];
         NSMutableDictionary *custodiantitles=[NSMutableDictionary dictionary];
         NSMutableSet *sqlset=[NSMutableSet set];
-        
-        NSArray *pacsOids = [entitiesDicts allValues];
-        for (NSDictionary *d in pacsOids)
+
+        NSDictionary *entitiesDicts=[NSDictionary dictionaryWithContentsOfFile:[deployPath stringByAppendingPathComponent:@"devices/devices.plist"]];
+        if (!entitiesDicts)
         {
-            [custodianoids setObject:d[@"custodiantitle"] forKey:d[@"custodianoid"]];
-            [custodiantitles setObject:d[@"custodianoid"] forKey:d[@"custodiantitle"]];
-            NSString *s=[d objectForKey:@"sqldictpath"];
-            if (s) [sqlset addObject:s];
+            LOG_ERROR(@"could not get contents of devices/devices.plist");
+            return 1;
+        }
+        for (NSDictionary *d in [entitiesDicts allValues])
+        {
+            NSString *newcustodiantitle=d[@"custodiantitle"];
+            if (
+                   !newcustodiantitle
+                || ![newcustodiantitle length]
+                || ![SHRegex numberOfMatchesInString:newcustodiantitle options:0 range:NSMakeRange(0,[newcustodiantitle length])]
+                )
+            {
+                LOG_ERROR(@"bad custodiantitle");
+                return 1;
+            }
+
+            NSString *newcustodianoid=d[@"custodianoid"];
+            if (
+                   !newcustodianoid
+                || ![newcustodianoid length]
+                || ![UIRegex numberOfMatchesInString:newcustodianoid options:0 range:NSMakeRange(0,[newcustodianoid length])]
+                )
+            {
+                LOG_ERROR(@"bad custodianoid");
+                return 1;
+            }
+            
+            if ( custodianoids[newcustodianoid] || custodiantitles[newcustodiantitle])
+            {
+                //verify if there is no incoherence
+                if (
+                       ![newcustodiantitle isEqualToString:custodianoids[newcustodianoid]]
+                    || ![newcustodianoid isEqualToString:custodiantitles[newcustodiantitle]]
+                    )
+                {
+                    LOG_ERROR(@"devices incoherence in custodian oid and title ");
+                    return 1;
+                }
+
+            }
+            else
+            {
+                //add custodian
+                [custodianoids setObject:newcustodiantitle forKey:newcustodianoid];
+                [custodiantitles setObject:newcustodianoid forKey:newcustodiantitle];
+            }
+            
+            //sql
+            if (d[@"sqlobjectmodel"]) [sqlset addObject:d[@"sqlobjectmodel"]];
         }
         //response data for root queries custodians/titles and custodians/oids
         NSData *custodianOIDsData = [NSJSONSerialization dataWithJSONObject:[custodianoids allKeys] options:0 error:nil];
         NSData *custodianTitlesData = [NSJSONSerialization dataWithJSONObject:[custodiantitles allKeys] options:0 error:nil];
 
+        
         //devices OID classified by custodian
         NSMutableDictionary *custodianOIDsaeis=[NSMutableDictionary dictionary];
         for (NSString *custodianOID in [custodianoids allKeys])
@@ -422,41 +473,59 @@ int main(int argc, const char* argv[]) {
             [custodianTitlesaetsStrings setObject:s forKey:custodianTitle];
         }
         LOG_VERBOSE(@"known devices aet classified by corresponding custodian title:\r\n%@",[custodianTitlesaets description]);
-        //LOG_VERBOSE(@"%@",custodianTitlesaetsStrings);
 
         NSMutableDictionary *pacsTitlesDictionary=[NSMutableDictionary dictionary];
         for (NSString *key in [entitiesDicts allKeys])
         {
             [pacsTitlesDictionary setObject:key forKey:[(entitiesDicts[key])[@"custodiantitle"] stringByAppendingPathExtension:(entitiesDicts[key])[@"dicomaet"]]];
         }
-        //LOG_VERBOSE(@"%@",[pacsTitlesDictionary description]);
         
         
         
-        //sql queries and sql qido filters
+        //1.2 sql queries and sql qido filters
+        NSDictionary *datatables=[NSDictionary dictionaryWithContentsOfFile:[deployPath stringByAppendingPathComponent:@"objectmodel/datatables.plist"]];
+        NSDictionary *qido=[NSDictionary dictionaryWithContentsOfFile:[deployPath stringByAppendingPathComponent:@"objectmodel/qido.plist"]];
+        NSDictionary *qidokey=[NSDictionary dictionaryWithContentsOfFile:[deployPath stringByAppendingPathComponent:@"objectmodel/qidokey.plist"]];
+        NSDictionary *wadouris=[NSDictionary dictionaryWithContentsOfFile:[deployPath stringByAppendingPathComponent:@"objectmodel/wadouris.plist"]];
+        NSDictionary *weasis=[NSDictionary dictionaryWithContentsOfFile:[deployPath stringByAppendingPathComponent:@"objectmodel/weasis.plist"]];
+        if (
+               !datatables
+            || !qido
+            || !qidokey
+            || !wadouris
+            || !weasis
+            )
+        {
+            LOG_ERROR(@"lacks of one or more objectmodel plist");
+            return 1;
+        }
+
+        //create qido attribute index by tags
+        NSMutableDictionary *qidotag=[NSMutableDictionary dictionary];
+        for (NSString *key in qidokey)
+        {
+            [qidotag setObject:key forKey:(qidokey[@"key"])[@"tag"]];
+        }
+        
         LOG_VERBOSE(@"sqls:\r\n%@",[sqlset description]);
         NSMutableDictionary *sql=[NSMutableDictionary dictionary];
-        NSMutableDictionary *sqlWadoTags=[NSMutableDictionary dictionary];
-        for (NSString *s in sqlset)
+        
+        for (NSString *sqlname in sqlset)
         {
-            NSDictionary *sqldict=[NSDictionary dictionaryWithContentsOfFile:[s stringByExpandingTildeInPath]];
-            if (!sqldict)
+            NSString *sqlpath=[deployPath stringByAppendingPathComponent:sqlname];
+            NSDictionary *attribute=[NSDictionary dictionaryWithContentsOfFile:[sqlpath stringByAppendingPathComponent:@"attribute.plist"]];
+            NSDictionary *from=[NSDictionary dictionaryWithContentsOfFile:[sqlpath stringByAppendingPathComponent:@"from.plist"]];
+            NSDictionary *where=[NSMutableDictionary dictionaryWithContentsOfFile:[sqlpath stringByAppendingPathComponent:@"where.plist"]];
+            if (
+                   !attribute
+                && !from
+                && !where
+                )
             {
-                LOG_ERROR(@"could not get contents of %@",s);
+                LOG_ERROR(@"%@ sql configuration incomplete",sqlname);
                 return 1;
             }
-            [sql setObject:sqldict forKey:s];
-            //sql-qido dictionary tag -> keyword
-            NSDictionary *wadoKeyword=(sql[s])[@"QidoAttrs"];
-            if (wadoKeyword)
-            {
-                NSMutableDictionary *tagKeyword=[NSMutableDictionary dictionary];
-                for (NSString *keyword in [wadoKeyword allKeys])
-                {
-                    [tagKeyword setObject:keyword forKey:(wadoKeyword[keyword])[@"tag"]];
-                }
-                [sqlWadoTags setObject:tagKeyword forKey:s];
-            }
+            [sql setObject:@{@"attribute":attribute, @"from":from, @"where":where} forKey:sqlname];
         }
 
         
@@ -501,20 +570,18 @@ int main(int argc, const char* argv[]) {
     if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [custodianOID not known]",urlComponents.path];
 
     
-    //first alternative (a) wado base uri for the entity defined in dict
+    //first alternative (a) wadouri base string defined for the entity
     NSString *wadouriBaseString=entityDict[@"wadouri"];
     if (![wadouriBaseString isEqualToString:@""])
     {
       //local ... there exists an URL
-      NSString *wadouriString;
-      if (urlComponents.query) wadouriString=[NSMutableString stringWithFormat:@"%@?%@", wadouriBaseString, urlComponents.query];
-      [wadouriString stringByReplacingOccurrencesOfString:@"%22" withString:@""];
-      
+      NSString *wadouriString=[NSMutableString stringWithFormat:@"%@?%@", wadouriBaseString, urlComponents.query];
       LOG_INFO(@"[WADO-URI] %@",wadouriString);
       //no se agrega ningún control para no enlentecer
       //podría optimizarse con creación asíncrona de la data
       //paquetes entran y salen sin esperar el fin de la entrada...
       NSData *responseData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadouriString]];
+        
       if (!responseData) return
       [RSErrorResponse
        responseWithClientError:424
@@ -524,6 +591,7 @@ int main(int argc, const char* argv[]) {
       [RSErrorResponse
        responseWithClientError:404
        message:@"empty reply"];//NotFound
+        
       return [RSDataResponse
               responseWithData:responseData
               contentType:@"application/dicom"
@@ -703,57 +771,49 @@ int main(int argc, const char* argv[]) {
 
              NSString *custodianbaseuri=entityDict[@"custodianbaseuri"];
 
-             //NSString *q=request.URL.query;//a same param may repeat
-
+             
 //alternative (a) sql available
-             NSDictionary *destSql=sql[entityDict[@"sqldictpath"]];
-             if (destSql)
+             NSDictionary *sqlobjectmodel=sql[entityDict[@"sqlobjectmodel"]];
+             if (sqlobjectmodel)
              {
                  //alternative (a) local ... simulation qido through database access
                  
                  //create where
-                 NSUInteger level=[@[@"patients",@"studies",@"series",@"instances"] indexOfObject:pComponents[4]];
+                 NSUInteger level=[levels indexOfObject:pComponents[4]];
                  NSMutableString *whereString = [NSMutableString string];
                  switch (level) {
                      case 1:
-                         [whereString appendString:destSql[@"studiesWhere"]];
+                         [whereString appendFormat:@" %@ ",(sqlobjectmodel[@"where"])[@"study"]];
                          break;
                      case 2:
-                         [whereString appendString:destSql[@"seriesWhere"]];
+                         [whereString appendFormat:@" %@ ",(sqlobjectmodel[@"where"])[@"series"]];
                          break;
                      case 3:
-                         [whereString appendString:destSql[@"instancesWhere"]];
+                         [whereString appendFormat:@" %@ ",(sqlobjectmodel[@"where"])[@"instance"]];
                          break;
                      default:
                          return [RSErrorResponse responseWithClientError:404 message:@"level %@ not accepted. Should be study, series or instance",pComponents[4]];
                          break;
                  }
                  
-                 NSDictionary *qidoKeywordsDict=destSql[@"QidoAttrs"];
-                 NSDictionary *qidoTags=sqlWadoTags[entityDict[@"sqldictpath"]];
-                 
-                 for (NSURLQueryItem *qi in urlComponents.queryItems) {
-                     
-                     //keyword, keywordProperties
-                     NSString *keyword=qidoTags[qi.name];//by tags
-                     NSDictionary *keywordProperties=nil;
-                     if (keyword) keywordProperties=qidoKeywordsDict[keyword];
-                     else if (qidoKeywordsDict[qi.name])
-                     {
-                         keyword=qi.name;
-                         keywordProperties=qidoKeywordsDict[qi.name];
-                     }
-                     else return [RSErrorResponse responseWithClientError:404 message:@"%@ [not a valid qido filter for this PACS]",qi.name];
+                 for (NSURLQueryItem *qi in urlComponents.queryItems)
+                 {
+                     NSString *key=qidotag[@"qi.name"];
+                     if (!key) key=@"qi.name";
+
+                     NSDictionary *keyProperties=nil;
+                     if (key) keyProperties=qidokey[key];
+                     if (!keyProperties) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not a valid qido filter for this PACS]",qi.name];
                      
                      //level check
-                     if ( level < [keywordProperties[@"level"] unsignedIntegerValue]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not available at level %@]",qi.name,pComponents[4]];
+                     if ( level < [keyProperties[@"level"] unsignedIntegerValue]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not available at level %@]",key,pComponents[4]];
                      
                      //string compare
-                     if ([@[@"LO",@"PN",@"CS",@"UI"] indexOfObject:keywordProperties[@"vr"]]!=NSNotFound)
+                     if ([@[@"LO",@"PN",@"CS",@"UI"] indexOfObject:keyProperties[@"vr"]]!=NSNotFound)
                      {
                          [whereString appendString:
                           [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                                           fieldString:destSql[keyword]
+                                           fieldString:(sqlobjectmodel[@"attribute"])[key]
                                            valueString:qi.value
                            ]
                           ];
@@ -762,15 +822,27 @@ int main(int argc, const char* argv[]) {
                      
                      
                      //date compare
-                     if ([@[@"DA"] indexOfObject:keywordProperties[@"vr"]]!=NSNotFound)
+                     if ([@[@"DA"] indexOfObject:keyProperties[@"vr"]]!=NSNotFound)
                      {
                          NSArray *startEnd=[qi.value componentsSeparatedByString:@"-"];
                          switch ([startEnd count]) {
                              case 1:;
-                             [whereString appendString:[destSql[keyword] sqlFilterWithStart:startEnd[0] end:startEnd[0]]];
+                                 [whereString appendString:
+                                  [
+                                   (sqlobjectmodel[@"attribute"])[key]
+                                        sqlFilterWithStart:startEnd[0]
+                                        end:startEnd[0]
+                                   ]
+                                  ];
                              break;
                              case 2:;
-                                [whereString appendString:[destSql[keyword] sqlFilterWithStart:startEnd[0] end:startEnd[1]]];
+                                 [whereString appendString:
+                                  [
+                                   (sqlobjectmodel[@"attribute"])[key]
+                                        sqlFilterWithStart:startEnd[0]
+                                        end:startEnd[1]
+                                   ]
+                                  ];
                              break;
                          }
                          continue;
@@ -779,39 +851,59 @@ int main(int argc, const char* argv[]) {
                  }//end loop
                  
                  //join parts of sql select
-                 NSString *scriptString=nil;
+                 NSString *sqlScriptString=nil;
+                 NSMutableString *select=[NSMutableString stringWithString:@" SELECT "];
                  switch (level) {
-                     case 1:
-                         scriptString=[NSString stringWithFormat:@"%@%@%@%@",
+                     case 1:;
+                         for (NSString* key in qido[@"studyselect"])
+                         {
+                             [select appendFormat:@"%@,",(sqlobjectmodel[@"attribute"])[key]];
+                         }
+                         [select deleteCharactersInRange:NSMakeRange([select length]-1,1)];
+                         sqlScriptString=[NSString stringWithFormat:@"%@%@%@%@%@",
                                        entityDict[@"sqlprolog"],
-                                       destSql[@"QidoStudyProlog"],
+                                       select,
+                                       (sqlobjectmodel[@"from"])[@"studypatient"],
                                        whereString,
-                                       destSql[@"QidoStudyEpilog"]
+                                       qido[@"studyformat"]
                                        ];
                          break;
-                     case 2:
-                         scriptString=[NSString stringWithFormat:@"%@%@%@%@",
+                     case 2:;
+                         for (NSString* key in qido[@"seriesselect"])
+                         {
+                             [select appendFormat:@"%@,",(sqlobjectmodel[@"attribute"])[key]];
+                         }
+                         [select deleteCharactersInRange:NSMakeRange([select length]-1,1)];
+
+                         sqlScriptString=[NSString stringWithFormat:@"%@%@%@%@%@",
                                        entityDict[@"sqlprolog"],
-                                       destSql[@"QidoSeriesProlog"],
+                                          select,
+                                       (sqlobjectmodel[@"from"])[@"seriesstudypatient"],
                                        whereString,
-                                       destSql[@"QidoSeriesEpilog"]
+                                       qido[@"seriesformat"]
                                        ];
                          break;
-                     case 3:
-                         scriptString=[NSString stringWithFormat:@"%@%@%@%@",
+                     case 3:;
+                         for (NSString* key in qido[@"instanceselect"])
+                         {
+                             [select appendFormat:@"%@,",(sqlobjectmodel[@"attribute"])[key]];
+                         }
+                         [select deleteCharactersInRange:NSMakeRange([select length]-1,1)];
+                         sqlScriptString=[NSString stringWithFormat:@"%@%@%@%@%@",
                                        entityDict[@"sqlprolog"],
-                                       destSql[@"QidoInstanceProlog"],
+                                          select,
+                                       (sqlobjectmodel[@"from"])[@"instansceseriesstudypatient"],
                                        whereString,
-                                       destSql[@"QidoInstanceEpilog"]
+                                       qido[@"instanceformat"]
                                        ];
                          break;
                  }
-                 LOG_DEBUG(@"%@",scriptString);
+                 LOG_DEBUG(@"%@",sqlScriptString);
 
                  
                  //execute sql select
                  NSMutableData *mutableData=[NSMutableData data];
-                 if (!task(@"/bin/bash",@[@"-s"],[scriptString dataUsingEncoding:NSUTF8StringEncoding],mutableData))
+                 if (!task(@"/bin/bash",@[@"-s"],[sqlScriptString dataUsingEncoding:NSUTF8StringEncoding],mutableData))
                      [RSErrorResponse responseWithClientError:404 message:@"%@",@"can not execute the sql"];//NotFound
                  
                  //response can be almost empty
@@ -839,7 +931,7 @@ int main(int argc, const char* argv[]) {
                      NSMutableDictionary *object=[NSMutableDictionary dictionary];
                      for (NSString *key in dict)
                      {
-                         NSDictionary *attrDesc=qidoKeywordsDict[key];
+                         NSDictionary *attrDesc=qidokey[key];
                          NSMutableDictionary *attrInst=[NSMutableDictionary dictionary];
                          if ([attrDesc[@"vr"] isEqualToString:@"PN"])
                              [attrInst setObject:@[@{@"Alphabetic":dict[key]}] forKey:@"Value"];
@@ -856,7 +948,7 @@ int main(int argc, const char* argv[]) {
                          [NSJSONSerialization dataWithJSONObject:qidoResponseArray options:0 error:nil] contentType:@"application/json"];
              }
              
-//alternative (b) there is no destSql, but entity has its own qidoBaseString
+//alternative (b) there is no sqlobjectmodel, but entity has its own qidoBaseString
              NSString *qidoBaseString=entityDict[@"qido"];
              if ([qidoBaseString length]>0)
              {
@@ -909,8 +1001,8 @@ int main(int argc, const char* argv[]) {
              if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
 
 //alternative (a) sql available
-             NSString *destSql=entityDict[@"sqldictpath"];
-             if (destSql)
+             NSString *sqlobjectmodel=entityDict[@"sqldictpath"];
+             if (sqlobjectmodel)
              {
                  //local ... the PCS simulates WADO-RS thanks to a combination of
                  //database access and wado-url
@@ -918,7 +1010,7 @@ int main(int argc, const char* argv[]) {
                  //return...
              }
 
-//alternative (b) there is no destSql, but entity has its own wadorsBaseString
+//alternative (b) there is no sqlobjectmodel, but entity has its own wadorsBaseString
              NSString *wadorsBaseString=entityDict[@"wadors"];
              if ([wadorsBaseString length]>0)
              {
@@ -971,8 +1063,8 @@ int main(int argc, const char* argv[]) {
             
 
 //unique implementation uses sql
-            NSDictionary *destSql=sql[entityDict[@"sqldictpath"]];
-            if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs sql} not accessible]",urlComponents.path];
+            NSDictionary *sqlobjectmodel=sql[entityDict[@"sqldictpath"]];
+            if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs sql} not accessible]",urlComponents.path];
             
                 NSString *WadoUrisSqlString;
                 NSString *AccessionNumber=request.query[@"AccessionNumber"];
@@ -981,8 +1073,8 @@ int main(int argc, const char* argv[]) {
             
                 if (AccessionNumber || StudyInstanceUID)
                 {
-                    if (AccessionNumber) WadoUrisSqlString=[NSString stringWithFormat:destSql[@"studyAccessionNumberWadosUris"],entityDict[@"sqlprolog"],AccessionNumber];
-                    else if (StudyInstanceUID) WadoUrisSqlString=[NSString stringWithFormat:destSql[@"studyUIDWadosUris"],entityDict[@"sqlprolog"],StudyInstanceUID];
+                    if (AccessionNumber) WadoUrisSqlString=[NSString stringWithFormat:sqlobjectmodel[@"studyAccessionNumberWadosUris"],entityDict[@"sqlprolog"],AccessionNumber];
+                    else if (StudyInstanceUID) WadoUrisSqlString=[NSString stringWithFormat:sqlobjectmodel[@"studyUIDWadosUris"],entityDict[@"sqlprolog"],StudyInstanceUID];
                     else return [RSErrorResponse responseWithClientError:404 message:
                                  @"shouldn´t be here..."];
 
@@ -1091,7 +1183,7 @@ int main(int argc, const char* argv[]) {
                 }
                 else if (SeriesInstanceUID)
                 {
-                    WadoUrisSqlString=[NSString stringWithFormat:destSql[@"seriesUIDWadosUris"],entityDict[@"sqlprolog"],SeriesInstanceUID];
+                    WadoUrisSqlString=[NSString stringWithFormat:sqlobjectmodel[@"seriesUIDWadosUris"],entityDict[@"sqlprolog"],SeriesInstanceUID];
                     //series wadors
                     NSArray *seriesArray=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/series?%@",entityDict[@"qido"],request.URL.query]]] options:0 error:nil];
 
@@ -1250,6 +1342,9 @@ int main(int argc, const char* argv[]) {
         {proxy}/ot?
         {proxy}/doc?
         {proxy}/cda?
+         ot
+         sr
+         doc
          */
         NSRegularExpression *encapsulatedRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/(ot|doc|cda)$" options:NSRegularExpressionCaseInsensitive error:NULL];
          [httpdicomServer addHandler:@"GET" regex:encapsulatedRegex processBlock:
@@ -1390,19 +1485,19 @@ int main(int argc, const char* argv[]) {
 
 
              NSDictionary *destPacs=entitiesDicts[q[@"custodianOID"]];
-             NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
+             NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+             if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              //db response may be in latin1
              NSStringEncoding charset=(NSStringEncoding)[destPacs[@"sqlstringencoding"] integerValue ];
              if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
 
              NSString *sqlString;
              NSString *AccessionNumber=request.query[@"AccessionNumber"];
-             if (AccessionNumber)sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisStudyAccessionNumber"],destPacs[@"sqlprolog"],AccessionNumber];
+             if (AccessionNumber)sqlString=[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisStudyAccessionNumber"],destPacs[@"sqlprolog"],AccessionNumber];
              else
              {
                  NSString *StudyInstanceUID=request.query[@"StudyInstanceUID"];
-                 if (StudyInstanceUID)sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisStudyStudyInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID];
+                 if (StudyInstanceUID)sqlString=[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisStudyStudyInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID];
                  else return [RSErrorResponse responseWithClientError:404 message:
                               @"parameter AccessionNumber or StudyInstanceUID required in %@%@?%@",b,p,q];
              }
@@ -1489,7 +1584,7 @@ int main(int argc, const char* argv[]) {
                              NSMutableData *seriesData=[NSMutableData data];
                              int seriesResult=task(@"/bin/bash",
                                                     @[@"-s"],
-                                                    [[NSString stringWithFormat:destSql[@"manifestWeasisSeriesStudyInstanceUID"],destPacs[@"sqlprolog"],studyInstance[5]]
+                                                    [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisSeriesStudyInstanceUID"],destPacs[@"sqlprolog"],studyInstance[5]]
                                                      dataUsingEncoding:NSUTF8StringEncoding],
                                                     seriesData
                                                     );
@@ -1516,7 +1611,7 @@ int main(int argc, const char* argv[]) {
                                  NSMutableData *instanceData=[NSMutableData data];
                                  int instanceResult=task(@"/bin/bash",
                                                        @[@"-s"],
-                                                       [[NSString stringWithFormat:destSql[@"manifestWeasisInstanceSeriesInstanceUID"],destPacs[@"sqlprolog"],seriesInstance[0]]
+                                                       [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisInstanceSeriesInstanceUID"],destPacs[@"sqlprolog"],seriesInstance[0]]
                                                         dataUsingEncoding:NSUTF8StringEncoding],
                                                        instanceData
                                                        );
@@ -1571,13 +1666,13 @@ int main(int argc, const char* argv[]) {
              //NSString *q=requestURL.query;
              NSDictionary *q=request.query;
              NSDictionary *destPacs=entitiesDicts[q[@"custodianOID"]];
-             NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
+             NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+             if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              //db response may be in latin1
              NSStringEncoding charset=(NSStringEncoding)[destPacs[@"sqlstringencoding"] integerValue ];
              if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
 
-             NSString *sqlString=[NSString stringWithFormat:destSql[@"manifestWeasisSeriesStudyInstanceUIDSeriesInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID,SeriesInstanceUID];
+             NSString *sqlString=[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisSeriesStudyInstanceUIDSeriesInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID,SeriesInstanceUID];
  
              //LOG_INFO(@"%@",sqlString);
             
@@ -1608,7 +1703,7 @@ int main(int argc, const char* argv[]) {
              NSMutableData *studiesData=[NSMutableData data];
              int studiesResult=task(@"/bin/bash",
                                     @[@"-s"],
-                                    [[NSString stringWithFormat:destSql[@"manifestWeasisStudyStudyInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID] dataUsingEncoding:NSUTF8StringEncoding],
+                                    [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisStudyStudyInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID] dataUsingEncoding:NSUTF8StringEncoding],
                                     studiesData
                                     );
              if (charset==5) //latin1
@@ -1693,7 +1788,7 @@ int main(int argc, const char* argv[]) {
                              NSMutableData *instanceData=[NSMutableData data];
                              int instanceResult=task(@"/bin/bash",
                                                      @[@"-s"],
-                                                     [[NSString stringWithFormat:destSql[@"manifestWeasisInstanceSeriesInstanceUID"],destPacs[@"sqlprolog"],seriesInstance[0]]
+                                                     [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisInstanceSeriesInstanceUID"],destPacs[@"sqlprolog"],seriesInstance[0]]
                                                       dataUsingEncoding:NSUTF8StringEncoding],
                                                      instanceData
                                                      );
@@ -1723,214 +1818,10 @@ int main(int argc, const char* argv[]) {
              
          }(request));}];
    
-        
-        
-//-----------------------------------------------
 
-        
-#pragma mark patient
-        /*
-         patient?{PatientID, IssuerOfPatientID, PatientName(family^given^middle^prefix^suffix), PatientBirthDate, PatientSex} [&pacs="oid" [...]]
-         -> array of object patient (which include pacs, issuer data table patient, first and last study, number of studies, modalities found)
-         */
-        NSRegularExpression *patientRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/patient$" options:NSRegularExpressionCaseInsensitive error:NULL];
-         [httpdicomServer addHandler:@"GET" regex:patientRegex processBlock:
-          ^(RSRequest* request, RSCompletionBlock completionBlock)
-          {completionBlock(^RSResponse* (RSRequest* request)
-          {
-              LOG_DEBUG(@"client: %@",request.remoteAddressString);
-              //using NSURLComponents instead of RSRequest
-              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+// ------------------------------------------------
 
-              //get query part
-                 NSArray *queryItems=[urlComponents queryItems];
-                 
-                 //filter queryItems to find the once with name pacs
-                 //create duplicate of pacs array or subselection of it based on selection(eventually multiple
-                 NSMutableArray *pacsOidsQueried = [NSMutableArray array];
-                 NSMutableDictionary *otherQueryItems = [NSMutableDictionary dictionary];
-                 NSMutableSet *sqlConnectionSet = [NSMutableSet set];
-                 BOOL hasPacsQueryItem=false;
-                 BOOL hasPatientID=false;
-                 BOOL hasIssuerOfPatientID=false;
-                 BOOL hasPatientName=false;
-                 BOOL hasPatientBirthDate=false;
-                 BOOL hasPatientSex=false;
-                 NSLog(@"queryItems: %@",[queryItems description]);
-             
-                 for (NSURLQueryItem *qi in queryItems) {
-                     NSString *qin=qi.name;
-                     if ([qin isEqualToString:@"pacs"])
-                     {
-                         hasPacsQueryItem=true;
-                         NSString *sqlConnection=(entitiesDicts[qi.value])[sql];
-                         if ([pacsOids containsObject:qi.value] && ![sqlConnection isEqualToString:@""])
-                         {
-                             [pacsOidsQueried addObject:qi.value];
-                             [sqlConnectionSet addObject:sqlConnection];
-                         }
-                     }
-                     else if (!hasPatientID && [qin isEqualToString:@"PatientID"])
-                     {
-                         [otherQueryItems setObject:qi.value forKey:qin];
-                         hasPatientID=true;
-                     }
-                     else if (!hasIssuerOfPatientID && [qin isEqualToString:@"IssuerOfPatientID"])
-                     {
-                         [otherQueryItems setObject:qi.value forKey:qin];
-                         hasIssuerOfPatientID=true;
-                     }
-                     else if (!hasPatientName && [qin isEqualToString:@"PatientName"])
-                     {
-                         [otherQueryItems setObject:qi.value forKey:qin];
-                         hasPatientName=true;
-                     }
-                     else if (!hasPatientBirthDate && [qin isEqualToString:@"PatientBirthDate"])
-                     {
-                         [otherQueryItems setObject:qi.value forKey:qin];
-                         hasPatientBirthDate=true;
-                     }
-                     else if (!hasPatientSex && [qin isEqualToString:@"PatientSex"])
-                     {
-                         [otherQueryItems setObject:qi.value forKey:qin];
-                         hasPatientSex=true;
-                     }
-                 }
-                 //if no specific then all
-                 if (!hasPacsQueryItem) [pacsOidsQueried addObjectsFromArray:pacsOids];
-                 
-                 //error if bad pacs query item
-                 if ([pacsOids count]==0)   return [RSErrorResponse responseWithClientError:404 message:@"%@ [/patient? requires a valid pacs queryItem or no pacs queryItem to propagate the query to all the known pacs]",urlComponents.path];
-                 
-                 //error if no patient query item
-                 if ([otherQueryItems count]==0)  return [RSErrorResponse responseWithClientError:404 message:@"%@ [/patient? requires at least one filter]",urlComponents.path];
-                 
-                 NSMutableDictionary *sqlsPatient = [NSMutableDictionary dictionary];
-                 NSMutableDictionary *sqlsStudy = [NSMutableDictionary dictionary];
-                 for (NSString *sqlConnectionPath in sqlConnectionSet)
-                 {
-                     NSDictionary *sqlDict = sql[sqlConnectionPath];
-                     //create sql patient query based on otherQueryItems
-                     NSMutableString *patientWhere=[NSMutableString stringWithString:sqlDict[@"patientWhere"]];
-                     if (hasPatientID)
-                         [patientWhere appendString:
-                          [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                                           fieldString:sqlDict[@"PatientID"]
-                                           valueString:otherQueryItems[@"PatientID"]
-                           ]
-                          ];
-                     if (hasIssuerOfPatientID)
-                         [patientWhere appendString:
-                          [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                                           fieldString:sqlDict[@"IssuerOfPatientID"]
-                                           valueString:otherQueryItems[@"IssuerOfPatientID"]
-                           ]
-                          ];
-                     //for now, only first name
-                     if (hasPatientName)
-                         [patientWhere appendString:
-                          [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                                           fieldString:(sqlDict[@"PatientName"])[0]
-                                           valueString:otherQueryItems[@"PatientName"]
-                           ]
-                          ];
-                     if (hasPatientBirthDate)
-                         [patientWhere appendString:
-                          [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                                           fieldString:sqlDict[@"PatientBirthDate"]
-                                           valueString:otherQueryItems[@"PatientBirthDate"]
-                           ]
-                          ];
-                     if (hasPatientSex)
-                         [patientWhere appendString:
-                          [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                                           fieldString:sqlDict[@"PatientSex"]
-                                           valueString:otherQueryItems[@"PatientSex"]
-                           ]
-                          ];
-                     
-                     LOG_INFO(@"WHERE %@",patientWhere);
-                 }
-                     /*
-                     
-                     NSString *sqlDataQuery=
-                     [[sqlDict[@"patientProlog"]
-                       stringByAppendingString:patientWhere]
-                      stringByAppendingFormat:sqlDict[@"patientEpilog"],session,session];
-                     
-                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, (NSStringEncoding) [destPacs[@"sqlstringencoding"]integerValue]);
-                     
-                     //sorted study date (5) desc
-                     [studiesArray sortWithOptions:0 usingComparator:^NSComparisonResult(id obj1, id obj2) {
-                         return [obj2[5] caseInsensitiveCompare:obj1[5]];
-                     }];
-                     
-                     
-                     //create sql study based on pk patient
-                 }
-                 //apply to pacs patient sql and for each result the corresponding sql query and for any merge the corresponding sql study. Keep the results in a big json
-                 for (NSString *pacsOid in pacsOids)
-                 {
-                     
-                 }
-                 
-                 
-                 //reply
-                 NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
-                 NSDictionary *entityDict=entitiesDicts[pComponents[2]];
-                 if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
-                 
-                 NSString *pcsuri=entityDict[@"pcsuri"];
-                 
-                 NSString *q=request.URL.query;//a same param may repeat
-                 
-                 NSString *qidoBaseString=entityDict[@"qido"];
-                 if (![qidoBaseString isEqualToString:@""])
-                 {
-                     return qidoUrlProxy(
-                                         [NSString stringWithFormat:@"%@/%@",qidoBaseString,pComponents.lastObject],
-                                         q,
-                                         [pcsuri stringByAppendingString:urlComponents.path]
-                                         );//application/dicom+json not accepted
-                 }
-                 
-                 NSString *sql=entityDict[@"sqldictpath"];
-                 if (sql)
-                 {
-                     //local ... simulation qido through database access
-#pragma mark TODO QIDO SQL
-                 }
-                 
-                 if (pcsuri)
-                 {
-                     //remote... access through another PCS
-                     NSString *urlString;
-                     if (q) urlString=[NSString stringWithFormat:@"%@/%@?%@",
-                                       pcsuri,
-                                       urlComponents.path,
-                                       q];
-                     else    urlString=[NSString stringWithFormat:@"%@/%@?",
-                                        pcsuri,
-                                        urlComponents.path];
-                     LOG_INFO(@"[QIDO] %@",urlString);
-                     return urlProxy(urlString,@"application/dicom+json");
-                 }
-                 
-                 
-                 return [RSErrorResponse responseWithClientError:404 message:@"%@ [QIDO not available]",urlComponents.path];
-             */
-             
-             
-             //mockup return
-             return [RSDataResponse responseWithText:[NSString stringWithFormat:@"user IP:port [%@]",request.remoteAddressString]];
 
-         }(request));}];
-
-        
-        
-//-----------------------------------------------
-
-        
 #pragma mark datatables/studies
         /*
          query ajax with params:
@@ -2025,8 +1916,8 @@ int main(int argc, const char* argv[]) {
                  NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
                  NSDictionary *destPacs=entitiesDicts[destOID];
                  
-                 NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-                 if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
+                 NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+                 if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
                  
                  //local ... simulation qido through database access
                  
@@ -2065,7 +1956,7 @@ int main(int argc, const char* argv[]) {
                  
                  //WHERE study.rejection_state!=2    (or  1=1)
                  //following filters use formats like " AND a like 'b'"
-                 NSMutableString *studiesWhere=[NSMutableString stringWithString:destSql[@"studiesWhere"]];
+                 NSMutableString *studiesWhere=[NSMutableString stringWithString:sqlobjectmodel[@"studiesWhere"]];
 
                  //PEP por aet or custodian
                  if ([q[@"aet"] isEqualToString:q[@"custodiantitle"]])
@@ -2073,7 +1964,7 @@ int main(int argc, const char* argv[]) {
                      /*
                      [studiesWhere appendFormat:
                       @" AND %@ in %@",
-                      destSql[@"accessControlId"],
+                      sqlobjectmodel[@"accessControlId"],
                       custodianTitlesaetsStrings[q[@"custodiantitle"]]
                       ];
                       */
@@ -2083,7 +1974,7 @@ int main(int argc, const char* argv[]) {
                      /*
                      [studiesWhere appendFormat:
                       @" AND %@ in ('%@','%@')",
-                      destSql[@"accessControlId"],
+                      sqlobjectmodel[@"accessControlId"],
                       q[@"aet"],
                       q[@"custodiantitle"]
                       ];
@@ -2095,7 +1986,7 @@ int main(int argc, const char* argv[]) {
                      //AccessionNumber q[@"search[value]"]
                      [studiesWhere appendString:
                       [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                                       fieldString:destSql[@"AccessionNumber"]
+                                       fieldString:sqlobjectmodel[@"AccessionNumber"]
                                        valueString:q[@"search[value]"]
                        ]
                       ];
@@ -2106,7 +1997,7 @@ int main(int argc, const char* argv[]) {
                      {
                          [studiesWhere appendString:
                           [NSString mysqlEscapedFormat:@" AND %@ like '%@%%'"
-                                           fieldString:destSql[@"PatientID"]
+                                           fieldString:sqlobjectmodel[@"PatientID"]
                                            valueString:qPatientID
                            ]
                           ];
@@ -2120,7 +2011,7 @@ int main(int argc, const char* argv[]) {
                          
                          [studiesWhere appendString:
                           [NSString mysqlEscapedFormat:@" AND %@ like '%@%%'"
-                                           fieldString:(destSql[@"PatientName"])[0]
+                                           fieldString:(sqlobjectmodel[@"PatientName"])[0]
                                            valueString:patientNameComponents[0]
                            ]
                           ];
@@ -2129,7 +2020,7 @@ int main(int argc, const char* argv[]) {
                          {
                              [studiesWhere appendString:
                               [NSString mysqlEscapedFormat:@" AND %@ like '%@%%'"
-                                               fieldString:(destSql[@"PatientName"])[1]
+                                               fieldString:(sqlobjectmodel[@"PatientName"])[1]
                                                valueString:patientNameComponents[1]
                                ]
                               ];
@@ -2138,7 +2029,7 @@ int main(int argc, const char* argv[]) {
                              {
                                  [studiesWhere appendString:
                                   [NSString mysqlEscapedFormat:@" AND %@ like '%@%%'"
-                                                   fieldString:(destSql[@"PatientName"])[2]
+                                                   fieldString:(sqlobjectmodel[@"PatientName"])[2]
                                                    valueString:patientNameComponents[2]
                                    ]
                                   ];
@@ -2147,7 +2038,7 @@ int main(int argc, const char* argv[]) {
                                  {
                                      [studiesWhere appendString:
                                       [NSString mysqlEscapedFormat:@" AND %@ like '%@%%'"
-                                                       fieldString:(destSql[@"PatientName"])[3]
+                                                       fieldString:(sqlobjectmodel[@"PatientName"])[3]
                                                        valueString:patientNameComponents[3]
                                        ]
                                       ];
@@ -2156,7 +2047,7 @@ int main(int argc, const char* argv[]) {
                                      {
                                          [studiesWhere appendString:
                                           [NSString mysqlEscapedFormat:@" AND %@ like '%@%%'"
-                                                           fieldString:(destSql[@"PatientName"])[4]
+                                                           fieldString:(sqlobjectmodel[@"PatientName"])[4]
                                                            valueString:patientNameComponents[4]
                                            ]
                                           ];
@@ -2177,18 +2068,18 @@ int main(int argc, const char* argv[]) {
                          NSString *e=nil;
                          if (qDate_end && [qDate_end length]) e=qDate_end;
                          else e=@"";
-                         [studiesWhere appendString:[destSql[@"StudyDate"] sqlFilterWithStart:s end:e]];
+                         [studiesWhere appendString:[sqlobjectmodel[@"StudyDate"] sqlFilterWithStart:s end:e]];
                      }
                      
                      //qModality contains ONE modality or joker %%
-                     [studiesWhere appendFormat:@" AND %@ like '%%%@%%'", destSql[@"ModalitiesInStudy"], qModality];
+                     [studiesWhere appendFormat:@" AND %@ like '%%%@%%'", sqlobjectmodel[@"ModalitiesInStudy"], qModality];
                      
                      if(qStudyDescription && [qStudyDescription length])
                      {
                          //StudyDescription _00081030 Descripción
                          [studiesWhere appendString:
                           [NSString mysqlEscapedFormat:@" AND %@ like '%@%%'"
-                                           fieldString:destSql[@"StudyDescription"]
+                                           fieldString:sqlobjectmodel[@"StudyDescription"]
                                            valueString:qStudyDescription
                            ]
                           ];
@@ -2200,9 +2091,9 @@ int main(int argc, const char* argv[]) {
 //2 count
                  NSString *sqlCountQuery=[NSString stringWithFormat:@"%@%@%@%@",
                                           destPacs[@"sqlprolog"],
-                                          destSql[@"studiesCountProlog"],
+                                          sqlobjectmodel[@"studiesCountProlog"],
                                           studiesWhere,
-                                          destSql[@"studiesCountEpilog"]
+                                          sqlobjectmodel[@"studiesCountEpilog"]
                                           ];
                  LOG_DEBUG(@"%@",sqlCountQuery);
                  NSMutableData *countData=[NSMutableData data];
@@ -2230,9 +2121,9 @@ int main(int argc, const char* argv[]) {
 //3 select
                      NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
                                              destPacs[@"sqlprolog"],
-                                             destSql[@"datatablesStudiesProlog"],
+                                             sqlobjectmodel[@"datatablesStudiesProlog"],
                                              studiesWhere,
-                                             [NSString stringWithFormat: destSql[@"datatablesStudiesEpilog"],session,
+                                             [NSString stringWithFormat: sqlobjectmodel[@"datatablesStudiesEpilog"],session,
                                                  session
                                               ]
                                              ];
@@ -2443,13 +2334,13 @@ int main(int argc, const char* argv[]) {
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
              NSDictionary *destPacs=entitiesDicts[destOID];
              
-             NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
+             NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+             if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              
-             NSMutableString *studiesWhere=[NSMutableString stringWithString:destSql[@"studiesWhere"]];
+             NSMutableString *studiesWhere=[NSMutableString stringWithString:sqlobjectmodel[@"studiesWhere"]];
              [studiesWhere appendString:
               [NSString mysqlEscapedFormat:@" AND %@ like '%@'"
-                               fieldString:destSql[@"PatientID"]
+                               fieldString:sqlobjectmodel[@"PatientID"]
                                valueString:q[@"PatientID"]
                ]
               ];
@@ -2457,7 +2348,7 @@ int main(int argc, const char* argv[]) {
              /*
              [studiesWhere appendFormat:
               @" AND %@ in ('%@')",
-              destSql[@"accessControlId"],
+              sqlobjectmodel[@"accessControlId"],
               [custodianTitlesaets[q[@"custodiantitle"]] componentsJoinedByString:@"','"]
               ];
 */
@@ -2466,9 +2357,9 @@ int main(int argc, const char* argv[]) {
 
              NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
                                      destPacs[@"sqlprolog"],
-                                     destSql[@"datatablesStudiesProlog"],
+                                     sqlobjectmodel[@"datatablesStudiesProlog"],
                                      studiesWhere,
-                                     [NSString stringWithFormat: destSql[@"datatablesStudiesEpilog"],session,
+                                     [NSString stringWithFormat: sqlobjectmodel[@"datatablesStudiesEpilog"],session,
                                       session
                                       ]
                                      ];
@@ -2520,8 +2411,8 @@ int main(int argc, const char* argv[]) {
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
              NSDictionary *destPacs=entitiesDicts[destOID];
              
-             NSDictionary *destSql=sql[destPacs[@"sqldictpath"]];
-             if (!destSql) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
+             NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+             if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              NSString *where;
              NSString *AccessionNumber=q[@"AccessionNumber"];
              NSString *StudyInstanceUID=q[@"StudyInstanceUID"];
@@ -2531,12 +2422,12 @@ int main(int argc, const char* argv[]) {
                  && ![AccessionNumber isEqualToString:@"NULL"])
              {
                  NSString *IssuerOfAccessionNumber=q[@"IssuerOfAccessionNumber.UniversalEntityID"];
-                 if (IssuerOfAccessionNumber && ![IssuerOfAccessionNumber isEqualToString:@"NULL"]) where=[NSString stringWithFormat:@"%@ AND %@='%@' AND %@='%@'", destSql[@"seriesWhere"],destSql[@"AccessionNumber"],AccessionNumber,destSql[@"IssuerOfAccessionNumber"],IssuerOfAccessionNumber];
-                 else where=[NSString stringWithFormat:@"%@ AND %@='%@'",destSql[@"seriesWhere"],destSql[@"AccessionNumber"],AccessionNumber];
+                 if (IssuerOfAccessionNumber && ![IssuerOfAccessionNumber isEqualToString:@"NULL"]) where=[NSString stringWithFormat:@"%@ AND %@='%@' AND %@='%@'", sqlobjectmodel[@"seriesWhere"],sqlobjectmodel[@"AccessionNumber"],AccessionNumber,sqlobjectmodel[@"IssuerOfAccessionNumber"],IssuerOfAccessionNumber];
+                 else where=[NSString stringWithFormat:@"%@ AND %@='%@'",sqlobjectmodel[@"seriesWhere"],sqlobjectmodel[@"AccessionNumber"],AccessionNumber];
                  
              }
              else if (StudyInstanceUID && ![StudyInstanceUID isEqualToString:@"NULL"])
-                 where=[NSString stringWithFormat:@"%@ AND %@='%@'",destSql[@"seriesWhere"],destSql[@"StudyInstanceUID"],StudyInstanceUID];
+                 where=[NSString stringWithFormat:@"%@ AND %@='%@'",sqlobjectmodel[@"seriesWhere"],sqlobjectmodel[@"StudyInstanceUID"],StudyInstanceUID];
              else return [RSDataResponse responseWithData:[NSData jsonpCallback:q[@"callback"] forDraw:q[@"draw"] withErrorString:@"query without required 'AccessionNumber' or 'StudyInstanceUID' parameter"] contentType:@"application/dicom+json"];
              
              
@@ -2544,10 +2435,10 @@ int main(int argc, const char* argv[]) {
 
              NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
                                      destPacs[@"sqlprolog"],
-                                     destSql[@"datatablesSeriesProlog"],
+                                     sqlobjectmodel[@"datatablesSeriesProlog"],
                                      where,
                                      [NSString stringWithFormat:
-                                      destSql[@"datatablesSeriesEpilog"],
+                                      sqlobjectmodel[@"datatablesSeriesEpilog"],
                                       session,
                                       session
                                       ]
