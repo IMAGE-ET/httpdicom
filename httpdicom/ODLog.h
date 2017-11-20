@@ -7,7 +7,7 @@
 //
 #import <Foundation/Foundation.h>
 
-//DEBUG          sql query + sql answer
+//DEBUG          sql query + sql answer + client ip:port
 //VERBOSE        sql query
 //INFO           service invocación
 //WARNING        outside normal behaviour

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">-->
+<plist version="1.0">
+<dict>
+	<key>select</key>
+	<array>
+		<string>StudyInstanceUID</string>
+		<string>SeriesInstanceUID</string>
+		<string>SOPInstanceUID</string>
+	</array>
+	<key>format</key>
+	<string>\
+| awk -F\\t &apos;\
+BEGIN{OFS=&quot;&quot;;ORS=&quot;&quot;;print &quot;[&quot;;ORS=&quot;,&quot;}\
+{print &quot;\&quot;?requestType=WADO&amp;contentType=application/dicom&amp;studyUID=&quot; $1 &quot;&amp;seriesUID=&quot; $2 &quot;&amp;objectUID=&quot; $3 &quot;\&quot;&quot;}\
+&apos; \
+| sed -e &apos;s/.$/]/&apos; -e &apos;s/\\/\\\\/g&apos;
+</string>
+</dict>
+</plist>

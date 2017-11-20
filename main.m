@@ -53,6 +53,11 @@ static uint32 zipFileHeader=0x02014B50;
 static uint32 zipEndOfCentralDirectory=0x06054B50;
 static NSTimeInterval timeout=300;
 
+static NSDateFormatter *dicomDTFormatter=nil;
+static NSRegularExpression *UIRegex=nil;
+static NSRegularExpression *SHRegex=nil;
+static NSArray *levels=nil;
+
 //static immutable find within NSData
 static NSData *rn;
 static NSData *rnrn;
@@ -293,6 +298,44 @@ NSInteger nextIndexForPredicateInQueryItems(NSArray *queryItems, NSPredicate *pr
     return NSNotFound;
 }
 
+//?requestType=WADO
+//&contentType=application/dicom
+//&studyUID={studyUID}
+//&seriesUID={seriesUID}
+//&objectUID={objectUID}
+BOOL queryitemsvalidwadodicom(NSArray *qi){
+    BOOL requestType=false;
+    BOOL contentType=false;
+    BOOL studyUID=false;
+    BOOL seriesUID=false;
+    BOOL objectUID=false;
+
+    for (NSURLQueryItem* i in qi)
+    {
+            if (!requestType)
+        {
+            if ([i.name isEqualToString:@"requestType"] && [i.value isEqualToString:@"WADO"]) requestType=true;
+        }
+        else if (!contentType)
+        {
+            if ([i.name isEqualToString:@"contentType"] && [i.value isEqualToString:@"application/dicom"]) requestType=true;
+        }
+        else if (!studyUID)
+        {
+            if ([i.name isEqualToString:@"studyUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) studyUID=true;
+        }
+        else if (!seriesUID)
+        {
+            if ([i.name isEqualToString:@"seriesUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) seriesUID=true;
+        }
+        else if (!objectUID)
+        {
+            if ([i.name isEqualToString:@"objectUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) objectUID=true;
+        }
+
+    }
+    return (requestType && contentType && studyUID && seriesUID && objectUID);
+}
 
 int main(int argc, const char* argv[]) {
     @autoreleasepool {
@@ -332,11 +375,11 @@ int main(int argc, const char* argv[]) {
         }
         
         //util formatters
-        NSDateFormatter *dicomDTFormatter = [[NSDateFormatter alloc] init];
+        dicomDTFormatter = [[NSDateFormatter alloc] init];
         [dicomDTFormatter setDateFormat:@"yyyyMMddHHmmss"];
-        NSRegularExpression *UIRegex = [NSRegularExpression regularExpressionWithPattern:@"^[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*$" options:0 error:NULL];
-        NSRegularExpression *SHRegex = [NSRegularExpression regularExpressionWithPattern:@"^(?:\\s*)([^\\r\\n\\f\\t]*[^\\r\\n\\f\\t\\s])(?:\\s*)$" options:0 error:NULL];
-        NSArray *levels=@[@"patients",@"studies",@"series",@"instances"];
+        UIRegex = [NSRegularExpression regularExpressionWithPattern:@"^[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*$" options:0 error:NULL];
+        SHRegex = [NSRegularExpression regularExpressionWithPattern:@"^(?:\\s*)([^\\r\\n\\f\\t]*[^\\r\\n\\f\\t\\s])(?:\\s*)$" options:0 error:NULL];
+        levels=@[@"patients",@"studies",@"series",@"instances"];
         
         //static immutable
         rn=[@"/r/n" dataUsingEncoding:NSASCIIStringEncoding];//0x0A0D;
@@ -375,8 +418,8 @@ int main(int argc, const char* argv[]) {
         //initialization of custodian and sql dictionaries based on properties of entitiesDicts
         NSMutableDictionary *custodianoids=[NSMutableDictionary dictionary];
         NSMutableDictionary *custodiantitles=[NSMutableDictionary dictionary];
+        
         NSMutableSet *sqlset=[NSMutableSet set];
-
         NSDictionary *entitiesDicts=[NSDictionary dictionaryWithContentsOfFile:[deployPath stringByAppendingPathComponent:@"devices/devices.plist"]];
         if (!entitiesDicts)
         {
@@ -426,7 +469,7 @@ int main(int argc, const char* argv[]) {
                 [custodianoids setObject:newcustodiantitle forKey:newcustodianoid];
                 [custodiantitles setObject:newcustodianoid forKey:newcustodiantitle];
             }
-            
+
             //sql
             if (d[@"sqlobjectmodel"]) [sqlset addObject:d[@"sqlobjectmodel"]];
         }
@@ -475,9 +518,17 @@ int main(int argc, const char* argv[]) {
         LOG_VERBOSE(@"known devices aet classified by corresponding custodian title:\r\n%@",[custodianTitlesaets description]);
 
         NSMutableDictionary *pacsTitlesDictionary=[NSMutableDictionary dictionary];
+        NSMutableArray *localOIDs=[NSMutableArray array];
+        NSDictionary *custodianDictionary=nil;
         for (NSString *key in [entitiesDicts allKeys])
         {
             [pacsTitlesDictionary setObject:key forKey:[(entitiesDicts[key])[@"custodiantitle"] stringByAppendingPathExtension:(entitiesDicts[key])[@"dicomaet"]]];
+            
+            if ([(entitiesDicts[key])[@"local"] boolValue])
+            {
+                [localOIDs addObject:key];
+                if ([(entitiesDicts[key])[@"custodianoid"] isEqualToString:key]) custodianDictionary=entitiesDicts[key];
+            }
         }
         
         
@@ -536,8 +587,13 @@ int main(int argc, const char* argv[]) {
 //-----------------------------------------------
         
 #pragma mark any
-#pragma mark WADO-URI
-//default
+#pragma mark wado
+//default handler
+        
+//does support transitive (to other PCS) operation
+//does support distributive (to inner devices) operation
+//does not support response consolidation (wado uri always return one object only)
+        
         
 //http://{ip}:{port}/wado
 //?requestType=WADO
@@ -546,73 +602,86 @@ int main(int argc, const char* argv[]) {
 //&seriesUID={seriesUID}
 //&objectUID={objectUID}
         
-//&custodianOID={custodianOID} (added, mandatory)
+//&pacs={pacsOID} (added, optional)
+        
+//alternative processing:
+//(a) proxy custodian
+//(b) local entity wado
+//(c) local entity sql, filesystem
+//(d) not available
         
         NSRegularExpression *wadouriRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
 {
-    //LOG_DEBUG(@"client: %@",request.remoteAddressString);
+    LOG_DEBUG(@"client: %@",request.remoteAddressString);
 
-    
-    //using NSURLComponents instead of RSRequest
     NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
-    if ([urlComponents.queryItems count]<6) return [RSErrorResponse responseWithClientError:404 message:@"%@ [is not wado-uri query + custodianOID]",urlComponents.query];
-    
-    //find param custodianOID
-    NSInteger index=nextIndexForPredicateInQueryItems(urlComponents.queryItems, [NSPredicate predicateWithFormat:@"name=custodianOID"], 0);
-    if (index==NSNotFound) return [RSErrorResponse responseWithClientError:404 message:@"%@ [param custodianOID not found]",urlComponents.path];
-    NSString *custodianOID=urlComponents.queryItems[index].value;
- 
+
+    //valid params syntax?
+    if (!queryitemsvalidwadodicom(urlComponents.queryItems)) return [RSErrorResponse responseWithClientError:404 message:@"[wado] not valid application/dicom content request: %@",urlComponents.query];
+
+    //param pacs
+    NSInteger index=nextIndexForPredicateInQueryItems(urlComponents.queryItems, [NSPredicate predicateWithFormat:@"name=pacs"], 0);
+    if (index==NSNotFound)
+    {
+        LOG_DEBUG(@"[wado]: no param pacs: %@",urlComponents.query);
+        //Find wado in any of the local device (recursive)
+        for (NSString *oid in localOIDs)
+        {
+            NSData *wadoResp=[NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://127.0.0.1:%lld/%@?%@&pacs=%@", port, urlComponents.path, urlComponents.query, oid]]];
+            if (wadoResp && [wadoResp length] > 512) return [RSDataResponse responseWithData:wadoResp contentType:@"application/dicom"];
+        }
+        return [RSErrorResponse responseWithClientError:404 message:@"[wado] not found locally: %@",urlComponents.query];
+    }
     
     //find entityDict
-    NSDictionary *entityDict=entitiesDicts[custodianOID];
-    if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [custodianOID not known]",urlComponents.path];
-
+    NSString *entity=urlComponents.queryItems[index].value;
+    NSDictionary *entityDict=entitiesDicts[entity];
+    if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [pacs not known]",urlComponents.path];
     
-    //first alternative (a) wadouri base string defined for the entity
-    NSString *wadouriBaseString=entityDict[@"wadouri"];
+    //not local ... forward
+    if (![entityDict[@"local"]boolValue])
+    {
+        NSString *custodianbaseuri=entityDict[@"custodianglobaluri"];
+        if (custodianbaseuri && [custodianbaseuri length])
+            return urlProxy(
+                            [NSString stringWithFormat:@"%@/%@?%@",
+                             custodianbaseuri,
+                             urlComponents.path,
+                             urlComponents.query
+                             ],
+                            @"application/dicom+json"
+                            );
+        return [RSErrorResponse responseWithClientError:404 message:@"%@ [custodianbaseuri not known]",urlComponents.path];
+    }
+    
+    //wadouri base string defined for the entity
+    NSString *wadouriBaseString=entityDict[@"wadolocaluri"];
     if (![wadouriBaseString isEqualToString:@""])
     {
-      //local ... there exists an URL
-      NSString *wadouriString=[NSMutableString stringWithFormat:@"%@?%@", wadouriBaseString, urlComponents.query];
-      LOG_INFO(@"[WADO-URI] %@",wadouriString);
-      //no se agrega ningún control para no enlentecer
-      //podría optimizarse con creación asíncrona de la data
-      //paquetes entran y salen sin esperar el fin de la entrada...
-      NSData *responseData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadouriString]];
-        
-      if (!responseData) return
-      [RSErrorResponse
-       responseWithClientError:424
-       message:@"no reply"];//FailedDependency
-      
-      if (![responseData length]) return
-      [RSErrorResponse
-       responseWithClientError:404
-       message:@"empty reply"];//NotFound
-        
-      return [RSDataResponse
-              responseWithData:responseData
-              contentType:@"application/dicom"
-              ];
+        return urlProxy(
+                        [NSString stringWithFormat:@"%@/%@?%@",
+                         wadouriBaseString,
+                         urlComponents.path,
+                         urlComponents.query
+                         ],
+                        @"application/dicom+json"
+                        );
   }
   
-    
-  //second alternative (b) redirect to a custodian
-  NSString *custodianbaseuri=entityDict[@"custodianbaseuri"];
-  if (custodianbaseuri)
-      return urlProxy(
-        [NSString stringWithFormat:@"%@/%@?%@",
-         custodianbaseuri,
-         urlComponents.path,
-         urlComponents.query
-         ],
-        @"application/dicom+json"
-      );
-    
+ 
   
-  //(c) not available
+  //(c) sql+filesystem
+  NSString *filesystembaseuri=entityDict[@"filesystembaseuri"];
+  NSString *sqlobjectmodel=entityDict[@"sqlobjectmodel"];
+
+  if ([filesystembaseuri length] && [sqlobjectmodel length])
+  {
+      return [RSErrorResponse responseWithClientError:404 message:@"%@ [wado] not available]",urlComponents.path];
+  }
+
+  //(d) not available
   return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-URI not available]",urlComponents.path];
   
 }(request));}];
@@ -758,7 +827,6 @@ int main(int argc, const char* argv[]) {
          {
              //LOG_DEBUG(@"client: %@",request.remoteAddressString);
              
-             //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              if ([urlComponents.queryItems count] < 1)
                  return [RSErrorResponse responseWithClientError:404
@@ -769,7 +837,7 @@ int main(int argc, const char* argv[]) {
              NSDictionary *entityDict=entitiesDicts[pComponents[2]];
              if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not known]",urlComponents.path];
 
-             NSString *custodianbaseuri=entityDict[@"custodianbaseuri"];
+             NSString *custodianbaseuri=entityDict[@"custodianglobaluri"];
 
              
 //alternative (a) sql available
@@ -861,12 +929,12 @@ int main(int argc, const char* argv[]) {
                          }
                          [select deleteCharactersInRange:NSMakeRange([select length]-1,1)];
                          sqlScriptString=[NSString stringWithFormat:@"%@%@%@%@%@",
-                                       entityDict[@"sqlprolog"],
-                                       select,
-                                       (sqlobjectmodel[@"from"])[@"studypatient"],
-                                       whereString,
-                                       qido[@"studyformat"]
-                                       ];
+                                          entityDict[@"sqlprolog"],
+                                          select,
+                                          (sqlobjectmodel[@"from"])[@"studypatient"],
+                                          whereString,
+                                          qido[@"studyformat"]
+                                          ];
                          break;
                      case 2:;
                          for (NSString* key in qido[@"seriesselect"])
@@ -876,12 +944,12 @@ int main(int argc, const char* argv[]) {
                          [select deleteCharactersInRange:NSMakeRange([select length]-1,1)];
 
                          sqlScriptString=[NSString stringWithFormat:@"%@%@%@%@%@",
-                                       entityDict[@"sqlprolog"],
+                                          entityDict[@"sqlprolog"],
                                           select,
-                                       (sqlobjectmodel[@"from"])[@"seriesstudypatient"],
-                                       whereString,
-                                       qido[@"seriesformat"]
-                                       ];
+                                          (sqlobjectmodel[@"from"])[@"seriesstudypatient"],
+                                          whereString,
+                                          qido[@"seriesformat"]
+                                          ];
                          break;
                      case 3:;
                          for (NSString* key in qido[@"instanceselect"])
@@ -890,12 +958,12 @@ int main(int argc, const char* argv[]) {
                          }
                          [select deleteCharactersInRange:NSMakeRange([select length]-1,1)];
                          sqlScriptString=[NSString stringWithFormat:@"%@%@%@%@%@",
-                                       entityDict[@"sqlprolog"],
+                                          entityDict[@"sqlprolog"],
                                           select,
-                                       (sqlobjectmodel[@"from"])[@"instansceseriesstudypatient"],
-                                       whereString,
-                                       qido[@"instanceformat"]
-                                       ];
+                                          (sqlobjectmodel[@"from"])[@"instansceseriesstudypatient"],
+                                          whereString,
+                                          qido[@"instanceformat"]
+                                          ];
                          break;
                  }
                  LOG_DEBUG(@"%@",sqlScriptString);
@@ -949,7 +1017,7 @@ int main(int argc, const char* argv[]) {
              }
              
 //alternative (b) there is no sqlobjectmodel, but entity has its own qidoBaseString
-             NSString *qidoBaseString=entityDict[@"qido"];
+             NSString *qidoBaseString=entityDict[@"qidolocaluri"];
              if ([qidoBaseString length]>0)
              {
                  return qidoUrlProxy(
@@ -983,17 +1051,16 @@ int main(int argc, const char* argv[]) {
 
         
 #pragma mark WADO-RS
-        // /pacs/{OID}/studies/{StudyInstanceUID}
-        // /pacs/{OID}/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}
-        // /pacs/{OID}/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}/instances/{SOPInstanceUID}
+        // /pacs/{OID}/rs/studies/{StudyInstanceUID}
+        // /pacs/{OID}/rs/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}
+        // /pacs/{OID}/rs/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}/instances/{SOPInstanceUID}
         //Accept: multipart/related;type="application/dicom"
-        NSRegularExpression *wadorsRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/rs\\/studies\\/" options:NSRegularExpressionCaseInsensitive error:NULL];
+        NSRegularExpression *wadorsRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/rs\\/studies\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:wadorsRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
              //LOG_DEBUG(@"client: %@",request.remoteAddressString);
              
-             //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
@@ -1001,23 +1068,42 @@ int main(int argc, const char* argv[]) {
              if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
 
 //alternative (a) sql available
-             NSString *sqlobjectmodel=entityDict[@"sqldictpath"];
+             /*
+             NSString *sqlobjectmodel=entityDict[@"sqlobjectmodel"];
              if (sqlobjectmodel)
              {
+                  return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} wadors sql not implemented yet]",urlComponents.path];
                  //local ... the PCS simulates WADO-RS thanks to a combination of
                  //database access and wado-url
 #pragma mark TODO WADO-RS SQL
                  //return...
              }
-
+              */
+             
 //alternative (b) there is no sqlobjectmodel, but entity has its own wadorsBaseString
-             NSString *wadorsBaseString=entityDict[@"wadors"];
+             NSString *wadorsBaseString=entityDict[@"wadorslocaluri"];
              if ([wadorsBaseString length]>0)
              {
                  NSString *urlString;
                  if (pComponents.count==6) urlString=[NSString stringWithFormat:@"%@/studies/%@",wadorsBaseString,pComponents[5]];
-                 else if (pComponents.count==8) urlString=[NSString stringWithFormat:@"%@/studies/%@/series/%@", wadorsBaseString,pComponents[5],pComponents[7]];
-                 else if (pComponents.count==10) urlString=[NSString stringWithFormat:@"%@/studies/%@/series/%@/instances/%@", wadorsBaseString,pComponents[5],pComponents[7],pComponents[9]];
+                 else if (
+                             (pComponents.count==8)
+                          && [pComponents[6] isEqualToString:@"series"]
+                          && [UIRegex numberOfMatchesInString:pComponents[7] options:0 range:NSMakeRange(0,[pComponents[7] length])]
+                          )
+                 {
+                     urlString=[NSString stringWithFormat:@"%@/studies/%@/series/%@", wadorsBaseString,pComponents[5],pComponents[7]];
+                 }
+                 else if (
+                          (pComponents.count==10)
+                          && [pComponents[6] isEqualToString:@"series"]
+                          && [UIRegex numberOfMatchesInString:pComponents[7] options:0 range:NSMakeRange(0,[pComponents[7] length])]
+                          && [pComponents[8] isEqualToString:@"instances"]
+                          && [UIRegex numberOfMatchesInString:pComponents[9] options:0 range:NSMakeRange(0,[pComponents[9] length])]
+                          )
+                 {
+                     urlString=[NSString stringWithFormat:@"%@/studies/%@/series/%@/instances/%@", wadorsBaseString,pComponents[5],pComponents[7],pComponents[9]];
+                 }
                  else return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-RS studies and studies/series only]",urlComponents.path];
                  LOG_INFO(@"[WADO-RS] %@",urlString);
                  return urlProxy(urlString,@"multipart/related;type=application/dicom");
@@ -1025,7 +1111,7 @@ int main(int argc, const char* argv[]) {
              
 
 //alternative (c) qido should be forwarded to its custodian
-             NSString *custodianbaseuri=entityDict[@"custodianbaseuri"];
+             NSString *custodianbaseuri=entityDict[@"custodianglobaluri"];
              if (custodianbaseuri)
              {
                  NSString *urlString=[NSString stringWithFormat:@"%@/%@",custodianbaseuri,urlComponents.path];
@@ -1045,7 +1131,10 @@ int main(int argc, const char* argv[]) {
 #pragma mark dcm.zip
         // /pacs/{OID}/dcm.zip?StudyInstanceUID={UID}
         // option AccessionNumber, StudyInstanceUID, SeriesInstanceUID
-        //servicio de segundo nivel que llama a WADO-RS para su realización
+        
+        // servicio de segundo nivel que llama a filesystembaseuri, wadouri o wadors para su realización
+        
+        
         NSRegularExpression *dcmzipRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/dcm\\.zip\\?\(StudyInstanceUID|SeriesInstanceUID|AccessionNumber)=[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*$" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:dcmzipRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
@@ -1059,277 +1148,328 @@ int main(int argc, const char* argv[]) {
             NSDictionary *entityDict=entitiesDicts[pComponents[2]];
             if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
 
-            LOG_VERBOSE(@"dcm.zip? %@",[urlComponents query]);
-            
-
-//unique implementation uses sql
-            NSDictionary *sqlobjectmodel=sql[entityDict[@"sqldictpath"]];
+            //using sql
+            NSDictionary *sqlobjectmodel=sql[entityDict[@"sqlobjectmodel"]];
             if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs sql} not accessible]",urlComponents.path];
             
-                NSString *WadoUrisSqlString;
-                NSString *AccessionNumber=request.query[@"AccessionNumber"];
-                NSString *StudyInstanceUID=request.query[@"StudyInstanceUID"];
-                NSString *SeriesInstanceUID=request.query[@"SeriesInstanceUID"];
-            
-                if (AccessionNumber || StudyInstanceUID)
-                {
-                    if (AccessionNumber) WadoUrisSqlString=[NSString stringWithFormat:sqlobjectmodel[@"studyAccessionNumberWadosUris"],entityDict[@"sqlprolog"],AccessionNumber];
-                    else if (StudyInstanceUID) WadoUrisSqlString=[NSString stringWithFormat:sqlobjectmodel[@"studyUIDWadosUris"],entityDict[@"sqlprolog"],StudyInstanceUID];
-                    else return [RSErrorResponse responseWithClientError:404 message:
-                                 @"shouldn´t be here..."];
+            NSString *sqlScriptString;
+            NSString *AccessionNumber=request.query[@"AccessionNumber"];
+            NSString *StudyInstanceUID=request.query[@"StudyInstanceUID"];
+            NSString *SeriesInstanceUID=request.query[@"SeriesInstanceUID"];
 
-                    LOG_DEBUG(@"%@",WadoUrisSqlString);
-                    
-                    
-                    //pipeline
-                    NSMutableData *wadoUrisData=[NSMutableData data];
-                    int studiesResult=task(@"/bin/bash",
-                                           @[@"-s"],
-                                           [WadoUrisSqlString dataUsingEncoding:NSUTF8StringEncoding],
-                                           wadoUrisData
-                                           );
-                    __block NSMutableArray *wados=[NSJSONSerialization JSONObjectWithData:wadoUrisData options:NSJSONReadingMutableContainers error:nil];
-                    __block NSMutableData *directory=[NSMutableData data];
-                    __block uint32 entryPointer=0;
-                    __block uint16 entriesCount=0;
+            //implementaciones:
+            //(a) filesystembaseuri (no implementado)
+            //(b) wadors (no implementado)
+            //(c) wadouri
 
-                     // The RSAsyncStreamBlock works like the RSStreamBlock
-                     // The block must call "completionBlock" passing the new chunk of data when ready, an empty NSData when done, or nil on error and pass a NSError.
-                     // The block cannot call "completionBlock" more than once per invocation.
-                    RSStreamedResponse* response = [RSStreamedResponse responseWithContentType:@"application/octet-stream" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
-                    {
-                        if (wados.count>0)
-                        {
-                            //request, response and error
-                            NSString *wadoString=[NSString stringWithFormat:@"%@%@%@",
-                                                  entityDict[@"wadouri"],
-                                                  wados[0],
-                                                  entityDict[@"wadouriadditionalparameters"]];
-                            __block NSData *wadoData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadoString]];
-                            if (!wadoData)
-                            {
-                                NSLog(@"could not retrive: %@",wadoString);
-                                completionBlock([NSData data], nil);
-                            }
-                            else
-                            {
-                                [wados removeObjectAtIndex:0];
-                                unsigned long wadoLength=(unsigned long)[wadoData length];
-                                NSString *dcmUUID=[[[NSUUID UUID]UUIDString]stringByAppendingPathExtension:@"dcm"];
-                                NSData *dcmName=[dcmUUID dataUsingEncoding:NSUTF8StringEncoding];
-                                //LOG_INFO(@"dcm (%lu bytes):%@",dcmLength,dcmUUID);
-                            
-                                __block NSMutableData *entry=[NSMutableData data];
-                                [entry appendBytes:&zipLocalFileHeader length:4];//0x04034B50
-                                [entry appendBytes:&zipVersion length:2];//0x000A
-                                [entry increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
-                                uint32 zipCrc32=[wadoData crc32];
-                                [entry appendBytes:&zipCrc32 length:4];
-                                [entry appendBytes:&wadoLength length:4];//zipCompressedSize
-                                [entry appendBytes:&wadoLength length:4];//zipUncompressedSize
-                                [entry appendBytes:&zipNameLength length:4];//0x28
-                                [entry appendData:dcmName];
-                                //extra param
-                                [entry appendData:wadoData];
-                            
-                                completionBlock(entry, nil);
-                                
-                                //directory
-                                [directory appendBytes:&zipFileHeader length:4];//0x02014B50
-                                [directory appendBytes:&zipVersion length:2];//0x000A
-                                [directory appendBytes:&zipVersion length:2];//0x000A
-                                [directory increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
-                                [directory appendBytes:&zipCrc32 length:4];
-                                [directory appendBytes:&wadoLength length:4];//zipCompressedSize
-                                [directory appendBytes:&wadoLength length:4];//zipUncompressedSize
-                                [directory appendBytes:&zipNameLength length:4];//0x28
-                                /*
-                                 uint16 zipFileCommLength=0x0;
-                                 uint16 zipDiskStart=0x0;
-                                 uint16 zipInternalAttr=0x0;
-                                 uint32 zipExternalAttr=0x0;
-                                 */
-                                [directory increaseLengthBy:10];
-                                
-                                [directory appendBytes:&entryPointer length:4];//offsetOfLocalHeader
-                                entryPointer+=wadoLength+70;
-                                entriesCount++;
-                                [directory appendData:dcmName];
-                                //extra param
-                            }
-                        }
-                        else if (directory.length) //chunk with directory
-                        {
-                            //ZIP "end of central directory record"
-                        
-                            //uint32 zipEndOfCentralDirectory=0x06054B50;
-                            [directory appendBytes:&zipEndOfCentralDirectory length:4];
-                            [directory increaseLengthBy:4];//zipDiskNumber
-                            [directory appendBytes:&entriesCount length:2];//disk zipEntries
-                            [directory appendBytes:&entriesCount length:2];//total zipEntries
-                            uint32 directorySize=86 * entriesCount;
-                            [directory appendBytes:&directorySize length:4];
-                            [directory appendBytes:&entryPointer length:4];
-                            [directory increaseLengthBy:2];//zipCommentLength
-                            completionBlock(directory, nil);
-                            [directory setData:[NSData data]];
-                        }
-                        else completionBlock([NSData data], nil);//last chunck
-                        
-                    }];
-
-                    return response;
+            if ([entityDict[@"filesystembaseuri"] length])
+            {
+                LOG_VERBOSE(@"(filesystembaseuri) dcm.zip?%@",[urlComponents query]);
+                 return [RSErrorResponse responseWithClientError:404 message:@"not available"];
+            }
+            else if ([entityDict[@"wadorslocaluri"] length])
+            {
+                LOG_VERBOSE(@"(wadors) dcm.zip?%@",[urlComponents query]);
+                return [RSErrorResponse responseWithClientError:404 message:@"not available"];
+                /*
+                 
+                 //series wadors
+                 NSArray *seriesArray=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/series?%@",entityDict[@"qidolocaluri"],request.URL.query]]] options:0 error:nil];
+                 
+                 
+                 __block NSMutableArray *wados=[NSMutableArray array];
+                 for (NSDictionary *dictionary in seriesArray)
+                 {
+                 //download series
+                 //00081190 UR RetrieveURL
+                 [wados addObject:((dictionary[@"00081190"])[@"Value"])[0]];
+                 #pragma mark TODO correct proxy wadors...
+                 }
+                 LOG_DEBUG(@"%@",[wados description]);
+                 
+                 
+                 __block NSMutableData *wadors=[NSMutableData data];
+                 __block NSMutableData *boundary=[NSMutableData data];
+                 __block NSMutableData *directory=[NSMutableData data];
+                 __block NSRange wadorsRange=NSMakeRange(0,0);
+                 __block uint32 entryPointer=0;
+                 __block uint16 entriesCount=0;
+                 __block NSRange ctadRange=NSMakeRange(0,0);
+                 __block NSRange boundaryRange=NSMakeRange(0,0);
+                 
+                 //  The RSAsyncStreamBlock works like the RSStreamBlock
+                 //  except the streamed data can be returned at a later time allowing for
+                 //  truly asynchronous generation of the data.
+                 //
+                 //  The block must call "completionBlock" passing the new chunk of data when ready,
+                 //  an empty NSData when done, or nil on error and pass a NSError.
+                 //
+                 //  The block cannot call "completionBlock" more than once per invocation.
                 
+                RSStreamedResponse* response = [RSStreamedResponse responseWithContentType:@"application/octet-stream" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
+                                                {
+                                                    if (wadorsRange.length<1000)
+                                                    {
+                                                        LOG_INFO(@"need data. Remaining wadors:%lu",(unsigned long)wados.count);
+                                                        if (wados.count>0)
+                                                        {
+                                                            //request, response and error
+                                                            NSMutableURLRequest *wadorsRequest=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:wados[0]] cachePolicy:NSURLRequestReturnCacheDataElseLoad timeoutInterval:timeout];
+                                                            //https://developer.apple.com/reference/foundation/nsurlrequestcachepolicy?language=objc
+                                                            //NSURLRequestReloadIgnoringCacheData
+                                                            [wadorsRequest setHTTPMethod:@"GET"];
+                                                            [wadorsRequest setValue:@"multipart/related;type=application/dicom" forHTTPHeaderField:@"Accept"];
+                                                            NSHTTPURLResponse *response=nil;
+                                                            //URL properties: expectedContentLength, MIMEType, textEncodingName
+                                                            //HTTP properties: statusCode, allHeaderFields
+                                                            
+                                                            NSError *error=nil;
+                                                            [wadors setData:[NSURLConnection sendSynchronousRequest:wadorsRequest returningResponse:&response error:&error]];
+                                                            if (response.statusCode==200)
+                                                            {
+                                                                wadorsRange.location=0;
+                                                                wadorsRange.length=[wadors length];
+                                                                NSString *ctString=response.allHeaderFields[@"Content-Type"];
+                                                                NSString *boundaryString=[@"\r\n--" stringByAppendingString:[ctString substringFromIndex:ctString.length-36]];
+                                                                [boundary setData:[boundaryString dataUsingEncoding:NSUTF8StringEncoding]];
+                                                                LOG_INFO(@"%@\r\n(%lu,%lu) boundary:%@",wados[0],(unsigned long)wadorsRange.location,(unsigned long)wadorsRange.length,boundaryString);
+                                                            }
+                                                            [wados removeObjectAtIndex:0];
+                                                        }
+                                                    }
+                                                    ctadRange=[wadors rangeOfData:ctad options:0 range:wadorsRange];
+                                                    boundaryRange=[wadors rangeOfData:boundary options:0 range:wadorsRange];
+                                                    if ((ctadRange.length>0) && (boundaryRange.length>0)) //chunk with new entry
+                                                    {
+                                                        //dcm
+                                                        unsigned long dcmLocation=ctadRange.location+ctadRange.length;
+                                                        unsigned long dcmLength=boundaryRange.location-dcmLocation;
+                                                        wadorsRange.location=boundaryRange.location+boundaryRange.length;
+                                                        wadorsRange.length=wadors.length-wadorsRange.location;
+                                                        
+                                                        NSString *dcmUUID=[[[NSUUID UUID]UUIDString]stringByAppendingPathExtension:@"dcm"];
+                                                        NSData *dcmName=[dcmUUID dataUsingEncoding:NSUTF8StringEncoding];
+                                                        //LOG_INFO(@"dcm (%lu bytes):%@",dcmLength,dcmUUID);
+                                                        
+                                                        __block NSMutableData *entry=[NSMutableData data];
+                                                        [entry appendBytes:&zipLocalFileHeader length:4];//0x04034B50
+                                                        [entry appendBytes:&zipVersion length:2];//0x000A
+                                                        [entry increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
+                                                        
+                                                        NSData *dcmData=[wadors subdataWithRange:NSMakeRange(dcmLocation,dcmLength)];
+                                                        uint32 zipCrc32=[dcmData crc32];
+                                                        
+                                                        [entry appendBytes:&zipCrc32 length:4];
+                                                        [entry appendBytes:&dcmLength length:4];//zipCompressedSize
+                                                        [entry appendBytes:&dcmLength length:4];//zipUncompressedSize
+                                                        [entry appendBytes:&zipNameLength length:4];//0x28
+                                                        [entry appendData:dcmName];
+                                                        //extra param
+                                                        [entry appendData:dcmData];
+                                                        
+                                                        completionBlock(entry, nil);
+                                                        
+                                                        //directory
+                                                        [directory appendBytes:&zipFileHeader length:4];//0x02014B50
+                                                        [directory appendBytes:&zipVersion length:2];//0x000A
+                                                        [directory appendBytes:&zipVersion length:2];//0x000A
+                                                        [directory increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
+                                                        [directory appendBytes:&zipCrc32 length:4];
+                                                        [directory appendBytes:&dcmLength length:4];//zipCompressedSize
+                                                        [directory appendBytes:&dcmLength length:4];//zipUncompressedSize
+                                                        [directory appendBytes:&zipNameLength length:4];//0x28
+                                                        //uint16 zipFileCommLength=0x0;
+                                                        //uint16 zipDiskStart=0x0;
+                                                        //uint16 zipInternalAttr=0x0;
+                                                        //uint32 zipExternalAttr=0x0;
+
+                                                        [directory increaseLengthBy:10];
+                                                        
+                                                        [directory appendBytes:&entryPointer length:4];//offsetOfLocalHeader
+                                                        entryPointer+=dcmLength+70;
+                                                        entriesCount++;
+                                                        [directory appendData:dcmName];
+                                                        //extra param
+                                                    }
+                                                    else if (directory.length) //chunk with directory
+                                                    {
+                                                        //ZIP "end of central directory record"
+                                                        
+                                                        //uint32 zipEndOfCentralDirectory=0x06054B50;
+                                                        [directory appendBytes:&zipEndOfCentralDirectory length:4];
+                                                        [directory increaseLengthBy:4];//zipDiskNumber
+                                                        [directory appendBytes:&entriesCount length:2];//disk zipEntries
+                                                        [directory appendBytes:&entriesCount length:2];//total zipEntries
+                                                        uint32 directorySize=86 * entriesCount;
+                                                        [directory appendBytes:&directorySize length:4];
+                                                        [directory appendBytes:&entryPointer length:4];
+                                                        [directory increaseLengthBy:2];//zipCommentLength
+                                                        completionBlock(directory, nil);
+                                                        [directory setData:[NSData data]];
+                                                    }
+                                                    else completionBlock([NSData data], nil);//last chunck
+                                                    
+                                                }];
+                
+                return response;
+
+                 
+                 */
+
+            }
+            else if ([entityDict[@"wadolocaluri"] length])
+            {
+                LOG_VERBOSE(@"(wadouri) dcm.zip?%@",[urlComponents query]);
+                
+                //select relative to sql mapping
+                NSMutableString *select=[NSMutableString stringWithString:@" SELECT "];
+                for (NSString* key in wadouris[@"select"])
+                {
+                    [select appendFormat:@"%@,",(sqlobjectmodel[@"attribute"])[key]];
+                }
+                [select deleteCharactersInRange:NSMakeRange([select length]-1,1)];
+                
+                if (AccessionNumber)
+                {
+                    sqlScriptString=[NSString stringWithFormat:@"%@%@%@ WHERE %@='%@'\" %@",
+                                     entityDict[@"sqlprolog"],
+                                     select,
+                                     (sqlobjectmodel[@"from"])[@"instancesofstudy"],
+                                     (sqlobjectmodel[@"attribute"])[@"AccessionNumber"],
+                                     AccessionNumber,
+                                     wadouris[@"format"]
+                                     ];
+                }
+                else if (StudyInstanceUID)
+                {
+                    sqlScriptString=[NSString stringWithFormat:@"%@%@%@ WHERE %@='%@'\" %@",
+                                     entityDict[@"sqlprolog"],
+                                     select,
+                                     (sqlobjectmodel[@"from"])[@"instancesofstudy"],
+                                     (sqlobjectmodel[@"attribute"])[@"StudyInstanceUID"],
+                                     StudyInstanceUID,
+                                     wadouris[@"format"]
+                                     ];
                 }
                 else if (SeriesInstanceUID)
                 {
-                    WadoUrisSqlString=[NSString stringWithFormat:sqlobjectmodel[@"seriesUIDWadosUris"],entityDict[@"sqlprolog"],SeriesInstanceUID];
-                    //series wadors
-                    NSArray *seriesArray=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/series?%@",entityDict[@"qido"],request.URL.query]]] options:0 error:nil];
-
-                    
-                    __block NSMutableArray *wados=[NSMutableArray array];
-                    for (NSDictionary *dictionary in seriesArray)
-                    {
-                        //download series
-                        //00081190 UR RetrieveURL
-                        [wados addObject:((dictionary[@"00081190"])[@"Value"])[0]];
-        #pragma mark TODO correct proxy wadors...
-                    }
-                    LOG_DEBUG(@"%@",[wados description]);
-
-                    
-                    __block NSMutableData *wadors=[NSMutableData data];
-                    __block NSMutableData *boundary=[NSMutableData data];
-                    __block NSMutableData *directory=[NSMutableData data];
-                    __block NSRange wadorsRange=NSMakeRange(0,0);
-                    __block uint32 entryPointer=0;
-                    __block uint16 entriesCount=0;
-                    __block NSRange ctadRange=NSMakeRange(0,0);
-                    __block NSRange boundaryRange=NSMakeRange(0,0);
-
-                    /**
-                     *  The RSAsyncStreamBlock works like the RSStreamBlock
-                     *  except the streamed data can be returned at a later time allowing for
-                     *  truly asynchronous generation of the data.
-                     *
-                     *  The block must call "completionBlock" passing the new chunk of data when ready,
-                     *  an empty NSData when done, or nil on error and pass a NSError.
-                     *
-                     *  The block cannot call "completionBlock" more than once per invocation.
-                     */
-                    
-                    RSStreamedResponse* response = [RSStreamedResponse responseWithContentType:@"application/octet-stream" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
-                    {
-                        if (wadorsRange.length<1000)
-                        {
-                            LOG_INFO(@"need data. Remaining wadors:%lu",(unsigned long)wados.count);
-                            if (wados.count>0)
-                            {
-                                //request, response and error
-                                NSMutableURLRequest *wadorsRequest=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:wados[0]] cachePolicy:NSURLRequestReturnCacheDataElseLoad timeoutInterval:timeout];
-                                //https://developer.apple.com/reference/foundation/nsurlrequestcachepolicy?language=objc
-                                //NSURLRequestReloadIgnoringCacheData
-                                [wadorsRequest setHTTPMethod:@"GET"];
-                                [wadorsRequest setValue:@"multipart/related;type=application/dicom" forHTTPHeaderField:@"Accept"];
-                                NSHTTPURLResponse *response=nil;
-                                //URL properties: expectedContentLength, MIMEType, textEncodingName
-                                //HTTP properties: statusCode, allHeaderFields
-                                
-                                NSError *error=nil;
-                                [wadors setData:[NSURLConnection sendSynchronousRequest:wadorsRequest returningResponse:&response error:&error]];
-                                if (response.statusCode==200)
-                                {
-                                    wadorsRange.location=0;
-                                    wadorsRange.length=[wadors length];
-                                    NSString *ctString=response.allHeaderFields[@"Content-Type"];
-                                    NSString *boundaryString=[@"\r\n--" stringByAppendingString:[ctString substringFromIndex:ctString.length-36]];
-                                    [boundary setData:[boundaryString dataUsingEncoding:NSUTF8StringEncoding]];
-                                    LOG_INFO(@"%@\r\n(%lu,%lu) boundary:%@",wados[0],(unsigned long)wadorsRange.location,(unsigned long)wadorsRange.length,boundaryString);
-                                }
-                                [wados removeObjectAtIndex:0];
-                            }
-                        }
-                        ctadRange=[wadors rangeOfData:ctad options:0 range:wadorsRange];
-                        boundaryRange=[wadors rangeOfData:boundary options:0 range:wadorsRange];
-                        if ((ctadRange.length>0) && (boundaryRange.length>0)) //chunk with new entry
-                        {
-                            //dcm
-                            unsigned long dcmLocation=ctadRange.location+ctadRange.length;
-                            unsigned long dcmLength=boundaryRange.location-dcmLocation;
-                            wadorsRange.location=boundaryRange.location+boundaryRange.length;
-                            wadorsRange.length=wadors.length-wadorsRange.location;
-                            
-                            NSString *dcmUUID=[[[NSUUID UUID]UUIDString]stringByAppendingPathExtension:@"dcm"];
-                            NSData *dcmName=[dcmUUID dataUsingEncoding:NSUTF8StringEncoding];
-                            //LOG_INFO(@"dcm (%lu bytes):%@",dcmLength,dcmUUID);
-                            
-                            __block NSMutableData *entry=[NSMutableData data];
-                            [entry appendBytes:&zipLocalFileHeader length:4];//0x04034B50
-                            [entry appendBytes:&zipVersion length:2];//0x000A
-                            [entry increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
-                            
-                            NSData *dcmData=[wadors subdataWithRange:NSMakeRange(dcmLocation,dcmLength)];
-                            uint32 zipCrc32=[dcmData crc32];
-                            
-                            [entry appendBytes:&zipCrc32 length:4];
-                            [entry appendBytes:&dcmLength length:4];//zipCompressedSize
-                            [entry appendBytes:&dcmLength length:4];//zipUncompressedSize
-                            [entry appendBytes:&zipNameLength length:4];//0x28
-                            [entry appendData:dcmName];
-                            //extra param
-                            [entry appendData:dcmData];
-                            
-                            completionBlock(entry, nil);
-                            
-                            //directory
-                            [directory appendBytes:&zipFileHeader length:4];//0x02014B50
-                            [directory appendBytes:&zipVersion length:2];//0x000A
-                            [directory appendBytes:&zipVersion length:2];//0x000A
-                            [directory increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
-                            [directory appendBytes:&zipCrc32 length:4];
-                            [directory appendBytes:&dcmLength length:4];//zipCompressedSize
-                            [directory appendBytes:&dcmLength length:4];//zipUncompressedSize
-                            [directory appendBytes:&zipNameLength length:4];//0x28
-                            /*
-                             uint16 zipFileCommLength=0x0;
-                             uint16 zipDiskStart=0x0;
-                             uint16 zipInternalAttr=0x0;
-                             uint32 zipExternalAttr=0x0;
-                             */
-                            [directory increaseLengthBy:10];
-                            
-                            [directory appendBytes:&entryPointer length:4];//offsetOfLocalHeader
-                            entryPointer+=dcmLength+70;
-                            entriesCount++;
-                            [directory appendData:dcmName];
-                            //extra param
-                        }
-                        else if (directory.length) //chunk with directory
-                        {
-                            //ZIP "end of central directory record"
-                            
-                            //uint32 zipEndOfCentralDirectory=0x06054B50;
-                            [directory appendBytes:&zipEndOfCentralDirectory length:4];
-                            [directory increaseLengthBy:4];//zipDiskNumber
-                            [directory appendBytes:&entriesCount length:2];//disk zipEntries
-                            [directory appendBytes:&entriesCount length:2];//total zipEntries
-                            uint32 directorySize=86 * entriesCount;
-                            [directory appendBytes:&directorySize length:4];
-                            [directory appendBytes:&entryPointer length:4];
-                            [directory increaseLengthBy:2];//zipCommentLength
-                            completionBlock(directory, nil);
-                            [directory setData:[NSData data]];
-                        }
-                        else completionBlock([NSData data], nil);//last chunck
-                        
-                    }];
-
-                    return response;
+                    sqlScriptString=[NSString stringWithFormat:@"%@%@%@ WHERE %@='%@'\" %@",
+                                     entityDict[@"sqlprolog"],
+                                     select,
+                                     (sqlobjectmodel[@"from"])[@"instancesofstudy"],
+                                     (sqlobjectmodel[@"attribute"])[@"SeriesInstanceUID"],
+                                     SeriesInstanceUID,
+                                     wadouris[@"format"]
+                                     ];
                 }
-                else  return [RSErrorResponse responseWithClientError:404 message:
-                              @"shouldn´t be here..."];
-            
+                else return [RSErrorResponse responseWithClientError:404 message:
+                             @"shouldn´t be here..."];
+                
+                LOG_DEBUG(@"%@",sqlScriptString);
+                
+                
+                //pipeline
+                NSMutableData *wadoUrisData=[NSMutableData data];
+                int studiesResult=task(@"/bin/bash",
+                                       @[@"-s"],
+                                       [sqlScriptString dataUsingEncoding:NSUTF8StringEncoding],
+                                       wadoUrisData
+                                       );
+                __block NSMutableArray *wados=[NSJSONSerialization JSONObjectWithData:wadoUrisData options:NSJSONReadingMutableContainers error:nil];
+                __block NSMutableData *directory=[NSMutableData data];
+                __block uint32 entryPointer=0;
+                __block uint16 entriesCount=0;
+                
+                // The RSAsyncStreamBlock works like the RSStreamBlock
+                // The block must call "completionBlock" passing the new chunk of data when ready, an empty NSData when done, or nil on error and pass a NSError.
+                // The block cannot call "completionBlock" more than once per invocation.
+                RSStreamedResponse* response = [RSStreamedResponse responseWithContentType:@"application/octet-stream" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
+                                                {
+                                                    if (wados.count>0)
+                                                    {
+                                                        //request, response and error
+                                                        NSString *wadoString=[NSString stringWithFormat:@"%@%@%@",
+                                                                              entityDict[@"wadolocaluri"],
+                                                                              wados[0],
+                                                                              entityDict[@"wadoadditionalparameters"]];
+                                                        __block NSData *wadoData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadoString]];
+                                                        if (!wadoData)
+                                                        {
+                                                            NSLog(@"could not retrive: %@",wadoString);
+                                                            completionBlock([NSData data], nil);
+                                                        }
+                                                        else
+                                                        {
+                                                            [wados removeObjectAtIndex:0];
+                                                            unsigned long wadoLength=(unsigned long)[wadoData length];
+                                                            NSString *dcmUUID=[[[NSUUID UUID]UUIDString]stringByAppendingPathExtension:@"dcm"];
+                                                            NSData *dcmName=[dcmUUID dataUsingEncoding:NSUTF8StringEncoding];
+                                                            //LOG_INFO(@"dcm (%lu bytes):%@",dcmLength,dcmUUID);
+                                                            
+                                                            __block NSMutableData *entry=[NSMutableData data];
+                                                            [entry appendBytes:&zipLocalFileHeader length:4];//0x04034B50
+                                                            [entry appendBytes:&zipVersion length:2];//0x000A
+                                                            [entry increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
+                                                            uint32 zipCrc32=[wadoData crc32];
+                                                            [entry appendBytes:&zipCrc32 length:4];
+                                                            [entry appendBytes:&wadoLength length:4];//zipCompressedSize
+                                                            [entry appendBytes:&wadoLength length:4];//zipUncompressedSize
+                                                            [entry appendBytes:&zipNameLength length:4];//0x28
+                                                            [entry appendData:dcmName];
+                                                            //extra param
+                                                            [entry appendData:wadoData];
+                                                            
+                                                            completionBlock(entry, nil);
+                                                            
+                                                            //directory
+                                                            [directory appendBytes:&zipFileHeader length:4];//0x02014B50
+                                                            [directory appendBytes:&zipVersion length:2];//0x000A
+                                                            [directory appendBytes:&zipVersion length:2];//0x000A
+                                                            [directory increaseLengthBy:8];//uint32 flagCompression,zipTimeDate
+                                                            [directory appendBytes:&zipCrc32 length:4];
+                                                            [directory appendBytes:&wadoLength length:4];//zipCompressedSize
+                                                            [directory appendBytes:&wadoLength length:4];//zipUncompressedSize
+                                                            [directory appendBytes:&zipNameLength length:4];//0x28
+                                                            /*
+                                                             uint16 zipFileCommLength=0x0;
+                                                             uint16 zipDiskStart=0x0;
+                                                             uint16 zipInternalAttr=0x0;
+                                                             uint32 zipExternalAttr=0x0;
+                                                             */
+                                                            [directory increaseLengthBy:10];
+                                                            
+                                                            [directory appendBytes:&entryPointer length:4];//offsetOfLocalHeader
+                                                            entryPointer+=wadoLength+70;
+                                                            entriesCount++;
+                                                            [directory appendData:dcmName];
+                                                            //extra param
+                                                        }
+                                                    }
+                                                    else if (directory.length) //chunk with directory
+                                                    {
+                                                        //ZIP "end of central directory record"
+                                                        
+                                                        //uint32 zipEndOfCentralDirectory=0x06054B50;
+                                                        [directory appendBytes:&zipEndOfCentralDirectory length:4];
+                                                        [directory increaseLengthBy:4];//zipDiskNumber
+                                                        [directory appendBytes:&entriesCount length:2];//disk zipEntries
+                                                        [directory appendBytes:&entriesCount length:2];//total zipEntries
+                                                        uint32 directorySize=86 * entriesCount;
+                                                        [directory appendBytes:&directorySize length:4];
+                                                        [directory appendBytes:&entryPointer length:4];
+                                                        [directory increaseLengthBy:2];//zipCommentLength
+                                                        completionBlock(directory, nil);
+                                                        [directory setData:[NSData data]];
+                                                    }
+                                                    else completionBlock([NSData data], nil);//last chunck
+                                                    
+                                                }];
+                
+                return response;
+
+            }
+            else return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} no filesystembaseuri, no wadors, no wadouri]",urlComponents.path];
+
         }(request));}];
 
         
@@ -1337,127 +1477,225 @@ int main(int argc, const char* argv[]) {
 //-----------------------------------------------
 
         
-#pragma mark ot  doc  cda
-        /*
-        {proxy}/ot?
-        {proxy}/doc?
-        {proxy}/cda?
-         ot
-         sr
-         doc
-         */
-        NSRegularExpression *encapsulatedRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/(ot|doc|cda)$" options:NSRegularExpressionCaseInsensitive error:NULL];
+#pragma mark ot doc cda sr
+        //pacs/{oid}/ot?
+        //pacs/{oid}/doc?
+        //pacs/{oid}/cda?
+        //pacs/{oid}/sr?
+/*
+        NSRegularExpression *encapsulatedRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/(ot|doc|cda|sr|OT|DOC|CDA|SR)$" options:NSRegularExpressionCaseInsensitive error:NULL];
          [httpdicomServer addHandler:@"GET" regex:encapsulatedRegex processBlock:
           ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
              //LOG_DEBUG(@"client: %@",request.remoteAddressString);
              
-             //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
-             NSDictionary *destPacs=entitiesDicts[pComponents[2]];
-             if (!destPacs) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
-             
-             //buscar SERIES wadors URIs
-             if (!destPacs[@"qido"]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [qido not available]",urlComponents.path];
-
-             //AccessionNumber
-             NSString *q=request.URL.query;
-             if (q.length>32 || ![q hasPrefix:@"AccessionNumber="]) [RSErrorResponse responseWithClientError:404 message:@"%@ [lacks parameter AccessionNumber]",urlComponents.path];
-             NSString *accessionNumber=[q substringWithRange:NSMakeRange(16,q.length-16)];
-             
+             NSDictionary *entityDict=entitiesDicts[pComponents[2]];
+             if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
+ 
+             //modality
              NSString *modality;
-                  if ([pComponents[3] isEqualToString:@"doc"]) modality=@"DOC";
+             if (
+                 [pComponents[3] isEqualToString:@"doc"]) modality=@"DOC";
              else if ([pComponents[3] isEqualToString:@"cda"]) modality=@"DOC";
+             else if ([pComponents[3] isEqualToString:@"CDA"]) modality=@"DOC";
              else if ([pComponents[3] isEqualToString:@"ot"]) modality=@"OT";
-             
-             //instances?AccessionNumber={AccessionNumber}&Modality=DOC
-             NSString *qidoString=[NSString stringWithFormat:@"%@/instances?AccessionNumber=%@&Modality=%@",
-                                destPacs[@"qido"],
-                                accessionNumber,
-                                modality];
-             LOG_DEBUG(@"%@/r/n->%@",urlComponents.path,qidoString);
-             NSData *instanceQidoData=[NSData dataWithContentsOfURL:
-                                   [NSURL URLWithString:qidoString]];
+             else if ([pComponents[3] isEqualToString:@"sr"]) modality=@"SR";
 
              
-             //applicable, latest doc
-             //6.7.1.2.3.2 JSON Results
-             //If there are no matching results,the JSON message is empty.
-             if (!instanceQidoData || ![instanceQidoData length]) [RSErrorResponse responseWithClientError:404 message:@"%@ [not found]",urlComponents.path];
-             
-             NSArray *instanceArray=[NSJSONSerialization JSONObjectWithData:instanceQidoData options:0 error:nil];
-             NSUInteger instanceArrayCount=[instanceArray count];
-             if (instanceArrayCount==0) [RSErrorResponse responseWithClientError:404 message:@"dev0 /applicable not found"];//NotFound
-             
-             NSDictionary *instance;
-             NSInteger i=0;
-             NSInteger index=0;
-             NSInteger date=0;
-             NSInteger time=0;
-             if (instanceArrayCount==1) instance=instanceArray[0];
-             else
+             //requires AccessionNumber or StudyInstanceUID
+             NSString *AccessionNumber=nil;
+             NSString *StudyInstanceUID=nil;
+             NSString *SeriesInstanceUID=nil;
+             NSString *SOPInstanceUID=nil;
+
+             for (NSURLQueryItem *qi in urlComponents.queryItems)
              {
-                 for (i=0;  i<instanceArrayCount; i++)
+                 NSString *key=qidotag[@"qi.name"];
+                 if (!key) key=@"qi.name";
+                 
+                 if ([key isEqualToString:@"preferredstudyidentificator"])
                  {
-                     NSInteger PPSSD=[(((instanceArray[i])[@"00400244"])[@"Value"])[0] longValue];
-                     NSInteger PPSST=[(((instanceArray[i])[@"00400245"])[@"Value"])[0] longValue];
-                     if ((PPSSD > date) || ((PPSSD==date)&&(PPSST>time)))
+                     AccessionNumber=[NSString stringWithString:qi.value];
+                     if ([entityDict[@"preferredstudyidentificator"]isEqualToString:@"preferredstudyidentificator"]) break;
+                 }
+                 else if ([key isEqualToString:@"StudyInstanceUID"])
+                 {
+                     StudyInstanceUID=[NSString stringWithString:qi.value];
+                     if ([entityDict[@"preferredstudyidentificator"]isEqualToString:@"StudyInstanceUID"]) break;
+                 }
+             }
+
+//getting StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID of encapsulated
+
+//sql or qido
+             if ([entityDict[@"sqlobjectmodel"] length])
+             {
+                 //create wado request
+                 //select relative to sql mapping
+                 NSMutableString *select=[NSMutableString stringWithString:@" SELECT "];
+                 for (NSString* key in wadouris[@"select"])
+                 {
+                     [select appendFormat:@"%@,",(sqlobjectmodel[@"attribute"])[key]];
+                 }
+                 [select deleteCharactersInRange:NSMakeRange([select length]-1,1)];
+                 
+                 if (AccessionNumber)
+                 {
+                     sqlScriptString=[NSString stringWithFormat:@"%@%@%@ WHERE %@='%@'\" %@",
+                                      entityDict[@"sqlprolog"],
+                                      select,
+                                      (sqlobjectmodel[@"from"])[@"instancesofstudy"],
+                                      (sqlobjectmodel[@"attribute"])[@"AccessionNumber"],
+                                      AccessionNumber,
+                                      wadouris[@"format"]
+                                      ];
+                 }
+                 else if (StudyInstanceUID)
+                 {
+                     sqlScriptString=[NSString stringWithFormat:@"%@%@%@ WHERE %@='%@'\" %@",
+                                      entityDict[@"sqlprolog"],
+                                      select,
+                                      (sqlobjectmodel[@"from"])[@"instancesofstudy"],
+                                      (sqlobjectmodel[@"attribute"])[@"StudyInstanceUID"],
+                                      StudyInstanceUID,
+                                      wadouris[@"format"]
+                                      ];
+                 }
+                 else if (SeriesInstanceUID)
+                 {
+                     sqlScriptString=[NSString stringWithFormat:@"%@%@%@ WHERE %@='%@'\" %@",
+                                      entityDict[@"sqlprolog"],
+                                      select,
+                                      (sqlobjectmodel[@"from"])[@"instancesofstudy"],
+                                      (sqlobjectmodel[@"attribute"])[@"SeriesInstanceUID"],
+                                      SeriesInstanceUID,
+                                      wadouris[@"format"]
+                                      ];
+                 }
+                 else return [RSErrorResponse responseWithClientError:404 message:
+                              @"shouldn´t be here..."];
+
+                 
+                 //NSData *instanceData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadoRsString]];
+                 
+             }
+             else if ([entityDict[@"qidolocaluri"] length])
+             {
+                 NSString *qidoString=nil;
+                 if (StudyInstanceUID) [NSString stringWithFormat:@"%@/instances?StudyInstanceUID=%@&Modality=%@",
+                                       entityDict[@"qidolocaluri"],
+                                       StudyInstanceUID,
+                                       modality];
+                 else if (AccessionNumber) [NSString stringWithFormat:@"%@/instances?AccessionNumber=%@&Modality=%@",
+                                              entityDict[@"qidolocaluri"],
+                                              AccessionNumber,
+                                              modality];
+                 NSMutableData *mutableData=[NSMutableData dataWithContentsOfURL:
+                                           [NSURL URLWithString:qidoString]];
+                 
+                 
+                 //applicable, latest doc
+                 //6.7.1.2.3.2 JSON Results
+                 //If there are no matching results,the JSON message is empty.
+                 if (!mutableData || ![mutableData length]) [RSErrorResponse responseWithClientError:404 message:@"no displayable match"];
+                 
+                 if ([entityDict[@"sqlstringencoding"]intValue]==5) //latin1
+                 {
+                     NSString *latin1String=[[NSString alloc]initWithData:mutableData encoding:NSISOLatin1StringEncoding];
+                     [mutableData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+                 }
+                 NSArray *instanceArray=[NSJSONSerialization JSONObjectWithData:mutableData options:0 error:nil];
+                 NSUInteger instanceArrayCount=[instanceArray count];
+                 if (instanceArrayCount==0) [RSErrorResponse responseWithClientError:404 message:@"no match"];
+                 
+                 //Find latest matching
+                 NSDictionary *instance;
+                 NSInteger i=0;
+                 NSInteger index=0;
+                 NSInteger date=0;
+                 NSInteger time=0;
+                 if (instanceArrayCount==1) instance=instanceArray[0];
+                 else
+                 {
+                     for (i=0;  i<instanceArrayCount; i++)
                      {
-                         date=PPSSD;
-                         time=PPSST;
-                         index=i;
+                         NSInteger PPSSD=[(((instanceArray[i])[@"00400244"])[@"Value"])[0] longValue];
+                         NSInteger PPSST=[(((instanceArray[i])[@"00400245"])[@"Value"])[0] longValue];
+                         if ((PPSSD > date) || ((PPSSD==date)&&(PPSST>time)))
+                         {
+                             date=PPSSD;
+                             time=PPSST;
+                             index=i;
+                         }
+                     }
+                     instance=instanceArray[index];
+                 }
+             }
+             else return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} sql or qido needed]",urlComponents.path];
+
+             
+//wadouri or wadors
+             if ([entityDict[@"wadolocaluri"] length])
+             {
+                 //create wado request
+                 
+                 
+                 NSData *instanceData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadoRsString]];
+
+             }
+             else if ([entityDict[@"wadorslocaluri"] length])
+             {
+                 //wadors returns bytestream with 00420010
+                 NSString *wadoRsString=(((instanceArray[index])[@"00081190"])[@"Value"])[0];
+                 LOG_INFO(@"applicable wadors %@",wadoRsString);
+                 
+                 
+                 //get instance
+                 NSData *applicableData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadoRsString]];
+                 if (!applicableData || ![applicableData length]) return [RSErrorResponse responseWithClientError:404 message:@"applicable %@ notFound",request.URL.path];
+                 
+                 NSUInteger applicableDataLength=[applicableData length];
+                 
+                 NSUInteger valueLocation;
+                 //between "Content-Type: " and "\r\n"
+                 NSRange ctRange  = [applicableData rangeOfData:contentType options:0 range:NSMakeRange(0, applicableDataLength)];
+                 valueLocation=ctRange.location+ctRange.length;
+                 NSRange rnRange  = [applicableData rangeOfData:rn options:0 range:NSMakeRange(valueLocation, applicableDataLength-valueLocation)];
+                 NSData *contentTypeData=[applicableData subdataWithRange:NSMakeRange(valueLocation,rnRange.location-valueLocation)];
+                 NSString *ctString=[[NSString alloc]initWithData:contentTypeData encoding:NSUTF8StringEncoding];
+                 LOG_INFO(@"%@",ctString);
+                 
+                 
+                 //between "\r\n\r\n" and "\r\n--"
+                 NSRange rnrnRange=[applicableData rangeOfData:rnrn options:0 range:NSMakeRange(0, applicableDataLength)];
+                 valueLocation=rnrnRange.location+rnrnRange.length;
+                 NSRange rnhhRange=[applicableData rangeOfData:rnhh options:0 range:NSMakeRange(valueLocation, applicableDataLength-valueLocation)];
+                 
+                 //encapsulatedData
+                 NSData *encapsulatedData=[applicableData subdataWithRange:NSMakeRange(valueLocation,rnhhRange.location-valueLocation - 1 - ([[applicableData subdataWithRange:NSMakeRange(rnhhRange.location-2,2)] isEqualToData:rn] * 2))];
+                 
+                 if ([modality isEqualToString:@"CDA"])
+                 {
+                     LOG_INFO(@"CDA");
+                     NSRange CDAOpeningTagRange=[encapsulatedData rangeOfData:CDAOpeningTag options:0 range:NSMakeRange(0, encapsulatedData.length)];
+                     if (CDAOpeningTagRange.location != NSNotFound)
+                     {
+                         NSRange CDAClosingTagRange=[encapsulatedData rangeOfData:CDAClosingTag options:0 range:NSMakeRange(0, encapsulatedData.length)];
+                         NSData *cdaData=[encapsulatedData subdataWithRange:NSMakeRange(CDAOpeningTagRange.location, CDAClosingTagRange.location+CDAClosingTagRange.length-CDAOpeningTagRange.location)];
+                         return [RSDataResponse
+                                 responseWithData:cdaData
+                                 contentType:ctString];
                      }
                  }
-                 instance=instanceArray[index];
-             }
-
-             //wadors returns bytstream with 00420010
-             NSString *wadoRsString=(((instanceArray[index])[@"00081190"])[@"Value"])[0];
-             LOG_INFO(@"applicable wadors %@",wadoRsString);
-             
-             NSData *applicableData=[NSData dataWithContentsOfURL:[NSURL URLWithString:wadoRsString]];
-             if (!applicableData || ![applicableData length]) return [RSErrorResponse responseWithClientError:404 message:@"applicable %@ notFound",request.URL.path];
-
-             NSUInteger applicableDataLength=[applicableData length];
-
-             NSUInteger valueLocation;
-             //between "Content-Type: " and "\r\n"
-             NSRange ctRange  = [applicableData rangeOfData:contentType options:0 range:NSMakeRange(0, applicableDataLength)];
-             valueLocation=ctRange.location+ctRange.length;
-             NSRange rnRange  = [applicableData rangeOfData:rn options:0 range:NSMakeRange(valueLocation, applicableDataLength-valueLocation)];
-             NSData *contentTypeData=[applicableData subdataWithRange:NSMakeRange(valueLocation,rnRange.location-valueLocation)];
-             NSString *ctString=[[NSString alloc]initWithData:contentTypeData encoding:NSUTF8StringEncoding];
-             LOG_INFO(@"%@",ctString);
-
-             
-             //between "\r\n\r\n" and "\r\n--"
-             NSRange rnrnRange=[applicableData rangeOfData:rnrn options:0 range:NSMakeRange(0, applicableDataLength)];
-             valueLocation=rnrnRange.location+rnrnRange.length;
-             NSRange rnhhRange=[applicableData rangeOfData:rnhh options:0 range:NSMakeRange(valueLocation, applicableDataLength-valueLocation)];
-             
-             //encapsulatedData
-             NSData *encapsulatedData=[applicableData subdataWithRange:NSMakeRange(valueLocation,rnhhRange.location-valueLocation - 1 - ([[applicableData subdataWithRange:NSMakeRange(rnhhRange.location-2,2)] isEqualToData:rn] * 2))];
                  
-             if ([modality isEqualToString:@"CDA"])
-             {
-                 LOG_INFO(@"CDA");
-                 NSRange CDAOpeningTagRange=[encapsulatedData rangeOfData:CDAOpeningTag options:0 range:NSMakeRange(0, encapsulatedData.length)];
-                 if (CDAOpeningTagRange.location != NSNotFound)
-                 {
-                     NSRange CDAClosingTagRange=[encapsulatedData rangeOfData:CDAClosingTag options:0 range:NSMakeRange(0, encapsulatedData.length)];
-                     NSData *cdaData=[encapsulatedData subdataWithRange:NSMakeRange(CDAOpeningTagRange.location, CDAClosingTagRange.location+CDAClosingTagRange.length-CDAOpeningTagRange.location)];
-                     return [RSDataResponse
-                             responseWithData:cdaData
-                             contentType:ctString];
-                 }
+                 return [RSDataResponse
+                         responseWithData:encapsulatedData
+                         contentType:ctString];
              }
-             
-             return [RSDataResponse
-                    responseWithData:encapsulatedData
-                    contentType:ctString];
-             
+             return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} wadouri needed]",urlComponents.path];
          }(request));}];
 
         
@@ -1471,7 +1709,6 @@ int main(int argc, const char* argv[]) {
          {completionBlock(^RSResponse* (RSRequest* request)
          {
              LOG_DEBUG(@"client: %@",request.remoteAddressString);
-             //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
              
@@ -1484,20 +1721,20 @@ int main(int argc, const char* argv[]) {
              NSDictionary *q=request.query;
 
 
-             NSDictionary *destPacs=entitiesDicts[q[@"custodianOID"]];
-             NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+             NSDictionary *entityDict=entitiesDicts[q[@"custodianOID"]];
+             NSDictionary *sqlobjectmodel=sql[entityDict[@"sqlobjectmodel"]];
              if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              //db response may be in latin1
-             NSStringEncoding charset=(NSStringEncoding)[destPacs[@"sqlstringencoding"] integerValue ];
+             NSStringEncoding charset=(NSStringEncoding)[entityDict[@"sqlstringencoding"] integerValue ];
              if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
 
              NSString *sqlString;
              NSString *AccessionNumber=request.query[@"AccessionNumber"];
-             if (AccessionNumber)sqlString=[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisStudyAccessionNumber"],destPacs[@"sqlprolog"],AccessionNumber];
+             if (AccessionNumber)sqlString=[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisStudyAccessionNumber"],entityDict[@"sqlprolog"],AccessionNumber];
              else
              {
                  NSString *StudyInstanceUID=request.query[@"StudyInstanceUID"];
-                 if (StudyInstanceUID)sqlString=[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisStudyStudyInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID];
+                 if (StudyInstanceUID)sqlString=[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisStudyStudyInstanceUID"],entityDict[@"sqlprolog"],StudyInstanceUID];
                  else return [RSErrorResponse responseWithClientError:404 message:
                               @"parameter AccessionNumber or StudyInstanceUID required in %@%@?%@",b,p,q];
              }
@@ -1516,23 +1753,22 @@ int main(int argc, const char* argv[]) {
                  [studiesData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
              }
              NSMutableArray *studyArray=[NSJSONSerialization JSONObjectWithData:studiesData options:0 error:nil];
-            /*
-                [0]  p.family_name,p.given_name,p.middle_name,p.name_prefix,p.name_suffix,
-                [1] patient_id.pat_id,
-                [2] iopid.entity_uid,
-                [3] patient.pat_birthdate,
-                [4] patient.pat_sex,
+//[0] p.family_name,p.given_name,p.middle_name,p.name_prefix,p.name_suffix,
+//[1] patient_id.pat_id,
+//[2] iopid.entity_uid,
+//[3] patient.pat_birthdate,
+//[4] patient.pat_sex,
              
-                [5] study.study_iuid,
-                [6] study.accession_no,
-                [7] ioan.entity_uid,
-                [8] study_query_attrs.retrieve_aets,
-                [9] study.study_id,
-                [10] study.study_desc,
-                [11] study.study_date,
-                [12] study.study_time
-                [13] NumberOfStudyRelatedInstances
-             */
+//[5] study.study_iuid,
+//[6] study.accession_no,
+//[7] ioan.entity_uid,
+//[8] study_query_attrs.retrieve_aets,
+//[9] study.study_id,
+//[10] study.study_desc,
+//[11] study.study_date,
+//[12] study.study_time
+//[13] NumberOfStudyRelatedInstances
+ 
              //the accessionNumber may join more than one study of one or more patient !!!
              //look for patient roots first
              NSMutableArray *uniquePatients=[NSMutableArray array];
@@ -1584,7 +1820,7 @@ int main(int argc, const char* argv[]) {
                              NSMutableData *seriesData=[NSMutableData data];
                              int seriesResult=task(@"/bin/bash",
                                                     @[@"-s"],
-                                                    [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisSeriesStudyInstanceUID"],destPacs[@"sqlprolog"],studyInstance[5]]
+                                                    [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisSeriesStudyInstanceUID"],entityDict[@"sqlprolog"],studyInstance[5]]
                                                      dataUsingEncoding:NSUTF8StringEncoding],
                                                     seriesData
                                                     );
@@ -1611,7 +1847,7 @@ int main(int argc, const char* argv[]) {
                                  NSMutableData *instanceData=[NSMutableData data];
                                  int instanceResult=task(@"/bin/bash",
                                                        @[@"-s"],
-                                                       [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisInstanceSeriesInstanceUID"],destPacs[@"sqlprolog"],seriesInstance[0]]
+                                                       [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisInstanceSeriesInstanceUID"],entityDict[@"sqlprolog"],seriesInstance[0]]
                                                         dataUsingEncoding:NSUTF8StringEncoding],
                                                        instanceData
                                                        );
@@ -1644,13 +1880,15 @@ int main(int argc, const char* argv[]) {
         
         
 #pragma mark /manifest/weasis/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}
-        NSRegularExpression *mwseriesRegex = [NSRegularExpression regularExpressionWithPattern:@"^/manifest/weasis/studies/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*/series/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*" options:NSRegularExpressionCaseInsensitive error:NULL];
+ 
+        NSRegularExpression *mwseriesRegex = [NSRegularExpression regularExpressionWithPattern:@"^/manifest/weasis/studies/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*" options:NSRegularExpressionCaseInsensitive error:NULL];
+ ///series/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*
+        
         [httpdicomServer addHandler:@"GET" regex:mwseriesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request)
          {
              LOG_DEBUG(@"client: %@",request.remoteAddressString);
-             //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
@@ -1665,14 +1903,14 @@ int main(int argc, const char* argv[]) {
              
              //NSString *q=requestURL.query;
              NSDictionary *q=request.query;
-             NSDictionary *destPacs=entitiesDicts[q[@"custodianOID"]];
-             NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+             NSDictionary *entityDict=entitiesDicts[q[@"custodianOID"]];
+             NSDictionary *sqlobjectmodel=sql[entityDict[@"sqlobjectmodel"]];
              if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              //db response may be in latin1
-             NSStringEncoding charset=(NSStringEncoding)[destPacs[@"sqlstringencoding"] integerValue ];
+             NSStringEncoding charset=(NSStringEncoding)[entityDict[@"sqlstringencoding"] integerValue ];
              if (charset!=4 && charset!=5) return [RSErrorResponse responseWithClientError:404 message:@"unknown sql charset : %lu",(unsigned long)charset];
 
-             NSString *sqlString=[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisSeriesStudyInstanceUIDSeriesInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID,SeriesInstanceUID];
+             NSString *sqlString=[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisSeriesStudyInstanceUIDSeriesInstanceUID"],entityDict[@"sqlprolog"],StudyInstanceUID,SeriesInstanceUID];
  
              //LOG_INFO(@"%@",sqlString);
             
@@ -1690,20 +1928,18 @@ int main(int argc, const char* argv[]) {
              }
              NSMutableArray *seriesArray=[NSJSONSerialization JSONObjectWithData:seriesData options:0 error:nil];
              if (![seriesArray count]) return [RSErrorResponse responseWithClientError:404 message:@"0 record for %@%@?%@",b,p,q];
-             /*
-              [0] SeriesInstanceUID,
-              [1] SeriesDescription,
-              [2] SeriesNumber,
-              [3] Modality,
-              */
-             
+//[0] SeriesInstanceUID,
+//[1] SeriesDescription,
+//[2] SeriesNumber,
+//[3] Modality,
+ 
              //get corresponding patient and study
              //SQL for studies
 
              NSMutableData *studiesData=[NSMutableData data];
              int studiesResult=task(@"/bin/bash",
                                     @[@"-s"],
-                                    [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisStudyStudyInstanceUID"],destPacs[@"sqlprolog"],StudyInstanceUID] dataUsingEncoding:NSUTF8StringEncoding],
+                                    [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisStudyStudyInstanceUID"],entityDict[@"sqlprolog"],StudyInstanceUID] dataUsingEncoding:NSUTF8StringEncoding],
                                     studiesData
                                     );
              if (charset==5) //latin1
@@ -1712,22 +1948,22 @@ int main(int argc, const char* argv[]) {
                  [studiesData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
              }
              NSMutableArray *studyArray=[NSJSONSerialization JSONObjectWithData:studiesData options:0 error:nil];
-             /*
-              [0]  p.family_name,p.given_name,p.middle_name,p.name_prefix,p.name_suffix,
-              [1] patient_id.pat_id,
-              [2] iopid.entity_uid,
-              [3] patient.pat_birthdate,
-              [4] patient.pat_sex,
+
+//[0]  p.family_name,p.given_name,p.middle_name,p.name_prefix,p.name_suffix,
+//[1] patient_id.pat_id,
+//[2] iopid.entity_uid,
+//[3] patient.pat_birthdate,
+//[4] patient.pat_sex,
               
-              [5] study.study_iuid,
-              [6] study.accession_no,
-              [7] ioan.entity_uid,
-              [8] study_query_attrs.retrieve_aets,
-              [9] study.study_id,
-              [10] study.study_desc,
-              [11] study.study_date,
-              [12] study.study_time
-              */
+//[5] study.study_iuid,
+//[6] study.accession_no,
+//[7] ioan.entity_uid,
+//[8] study_query_attrs.retrieve_aets,
+//[9] study.study_id,
+//[10] study.study_desc,
+//[11] study.study_date,
+//[12] study.study_time
+ 
              //the accessionNumber may join more than one study of one or more patient !!!
              //look for patient roots first
              NSMutableArray *uniquePatients=[NSMutableArray array];
@@ -1788,7 +2024,7 @@ int main(int argc, const char* argv[]) {
                              NSMutableData *instanceData=[NSMutableData data];
                              int instanceResult=task(@"/bin/bash",
                                                      @[@"-s"],
-                                                     [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisInstanceSeriesInstanceUID"],destPacs[@"sqlprolog"],seriesInstance[0]]
+                                                     [[NSString stringWithFormat:sqlobjectmodel[@"manifestWeasisInstanceSeriesInstanceUID"],entityDict[@"sqlprolog"],seriesInstance[0]]
                                                       dataUsingEncoding:NSUTF8StringEncoding],
                                                      instanceData
                                                      );
@@ -1823,21 +2059,20 @@ int main(int argc, const char* argv[]) {
 
 
 #pragma mark datatables/studies
-        /*
-         query ajax with params:
-         agregate 00080090 in other accesible PCS...
+
+//query ajax with params:
+//agregate 00080090 in other accesible PCS...
          
-         q=current query
-         r=Req=request sql
-         s=subselection from caché
-         */
-        NSRegularExpression *dtstudiesRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/studies" options:0 error:NULL];
+//q=current query
+//r=Req=request sql
+//s=subselection from caché
+
+ NSRegularExpression *dtstudiesRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/studies" options:0 error:NULL];
         [httpdicomServer addHandler:@"GET" regex:dtstudiesRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
              LOG_VERBOSE(@"%@",[request.URL description]);
              LOG_DEBUG(@"client: %@",request.remoteAddressString);
-             //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
              
@@ -1914,14 +2149,14 @@ int main(int argc, const char* argv[]) {
 #pragma mark reemplazar org por custodianTitle e institucion por aet
                  //find dest
                  NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
-                 NSDictionary *destPacs=entitiesDicts[destOID];
+                 NSDictionary *entityDict=entitiesDicts[destOID];
                  
-                 NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+                 NSDictionary *sqlobjectmodel=sql[entityDict[@"sqlobjectmodel"]];
                  if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
                  
                  //local ... simulation qido through database access
                  
-                 //LOG_INFO(@"different context with db: %@",destPacs[@"sqldictpath"]);
+                 //LOG_INFO(@"different context with db: %@",entityDict[@"sqlobjectmodel"]);
                  
                  if (r){
                      //replace previous request of the session.
@@ -1961,24 +2196,20 @@ int main(int argc, const char* argv[]) {
                  //PEP por aet or custodian
                  if ([q[@"aet"] isEqualToString:q[@"custodiantitle"]])
                  {
-                     /*
-                     [studiesWhere appendFormat:
-                      @" AND %@ in %@",
-                      sqlobjectmodel[@"accessControlId"],
-                      custodianTitlesaetsStrings[q[@"custodiantitle"]]
-                      ];
-                      */
+//[studiesWhere appendFormat:
+//@" AND %@ in %@",
+//sqlobjectmodel[@"accessControlId"],
+//custodianTitlesaetsStrings[q[@"custodiantitle"]]
+//];
                  }
                  else
                  {
-                     /*
-                     [studiesWhere appendFormat:
-                      @" AND %@ in ('%@','%@')",
-                      sqlobjectmodel[@"accessControlId"],
-                      q[@"aet"],
-                      q[@"custodiantitle"]
-                      ];
-                      */
+//[studiesWhere appendFormat:
+//@" AND %@ in ('%@','%@')",
+//sqlobjectmodel[@"accessControlId"],
+//q[@"aet"],
+//q[@"custodiantitle"]
+//];
                  }
                  
                  if (q[@"search[value]"] && ![q[@"search[value]"] isEqualToString:@""])
@@ -2090,7 +2321,7 @@ int main(int argc, const char* argv[]) {
 
 //2 count
                  NSString *sqlCountQuery=[NSString stringWithFormat:@"%@%@%@%@",
-                                          destPacs[@"sqlprolog"],
+                                          entityDict[@"sqlprolog"],
                                           sqlobjectmodel[@"studiesCountProlog"],
                                           studiesWhere,
                                           sqlobjectmodel[@"studiesCountEpilog"]
@@ -2120,7 +2351,7 @@ int main(int argc, const char* argv[]) {
                      //order is performed later, from mutableDictionary
 //3 select
                      NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
-                                             destPacs[@"sqlprolog"],
+                                             entityDict[@"sqlprolog"],
                                              sqlobjectmodel[@"datatablesStudiesProlog"],
                                              studiesWhere,
                                              [NSString stringWithFormat: sqlobjectmodel[@"datatablesStudiesEpilog"],session,
@@ -2128,7 +2359,7 @@ int main(int argc, const char* argv[]) {
                                               ]
                                              ];
 
-                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery,(NSStringEncoding) [destPacs[@"sqlstringencoding"]integerValue]);
+                     NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery,(NSStringEncoding) [entityDict[@"sqlstringencoding"]integerValue]);
 
                      [Total setObject:studiesArray forKey:session];
                      [Filtered setObject:[studiesArray mutableCopy] forKey:session];
@@ -2306,16 +2537,16 @@ int main(int argc, const char* argv[]) {
 
         
 #pragma mark datatables/patient
-        /*
-         ventana emergente con todos los estudios del paciente
-         "datatables/patient?PatientID=33333333&IssuerOfPatientID.UniversalEntityID=NULL&session=1"
-         */
-        NSRegularExpression *dtpatientRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/patient" options:0 error:NULL];
+
+//ventana emergente con todos los estudios del paciente
+//"datatables/patient
+//PatientID=33333333&IssuerOfPatientID.UniversalEntityID=NULL&session=1"
+
+ NSRegularExpression *dtpatientRegex = [NSRegularExpression regularExpressionWithPattern:@"/datatables/patient" options:0 error:NULL];
         [httpdicomServer addHandler:@"GET" regex:dtpatientRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
              LOG_DEBUG(@"client: %@",request.remoteAddressString);
-             //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
              
@@ -2332,9 +2563,9 @@ int main(int argc, const char* argv[]) {
              
              //find dest
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
-             NSDictionary *destPacs=entitiesDicts[destOID];
+             NSDictionary *entityDict=entitiesDicts[destOID];
              
-             NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+             NSDictionary *sqlobjectmodel=sql[entityDict[@"sqlobjectmodel"]];
              if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              
              NSMutableString *studiesWhere=[NSMutableString stringWithString:sqlobjectmodel[@"studiesWhere"]];
@@ -2345,18 +2576,18 @@ int main(int argc, const char* argv[]) {
                ]
               ];
              //PEP por custodian aets
-             /*
-             [studiesWhere appendFormat:
-              @" AND %@ in ('%@')",
-              sqlobjectmodel[@"accessControlId"],
-              [custodianTitlesaets[q[@"custodiantitle"]] componentsJoinedByString:@"','"]
-              ];
-*/
+
+//[studiesWhere appendFormat:
+//@" AND %@ in ('%@')",
+//sqlobjectmodel[@"accessControlId"],
+//[custodianTitlesaets[q[@"custodiantitle"]] componentsJoinedByString:@"','"]
+//];
+
              LOG_INFO(@"WHERE %@",[studiesWhere substringFromIndex:38]);
              
 
              NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
-                                     destPacs[@"sqlprolog"],
+                                     entityDict[@"sqlprolog"],
                                      sqlobjectmodel[@"datatablesStudiesProlog"],
                                      studiesWhere,
                                      [NSString stringWithFormat: sqlobjectmodel[@"datatablesStudiesEpilog"],session,
@@ -2364,7 +2595,7 @@ int main(int argc, const char* argv[]) {
                                       ]
                                      ];
              
-             NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, (NSStringEncoding) [destPacs[@"sqlstringencoding"]integerValue]);
+             NSMutableArray *studiesArray=jsonMutableArray(sqlDataQuery, (NSStringEncoding) [entityDict[@"sqlstringencoding"]integerValue]);
              
              //sorted study date (5) desc
              [studiesArray sortWithOptions:0 usingComparator:^NSComparisonResult(id obj1, id obj2) {
@@ -2397,7 +2628,6 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
              LOG_DEBUG(@"client: %@",request.remoteAddressString);
-             //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
              
@@ -2409,15 +2639,15 @@ int main(int argc, const char* argv[]) {
              
              //find dest
              NSString *destOID=pacsTitlesDictionary[[q[@"custodiantitle"] stringByAppendingPathExtension:q[@"aet"]]];
-             NSDictionary *destPacs=entitiesDicts[destOID];
+             NSDictionary *entityDict=entitiesDicts[destOID];
              
-             NSDictionary *sqlobjectmodel=sql[destPacs[@"sqldictpath"]];
+             NSDictionary *sqlobjectmodel=sql[entityDict[@"sqlobjectmodel"]];
              if (!sqlobjectmodel) return [RSErrorResponse responseWithClientError:404 message:@"%@ [sql not found]",urlComponents.path];
              NSString *where;
              NSString *AccessionNumber=q[@"AccessionNumber"];
              NSString *StudyInstanceUID=q[@"StudyInstanceUID"];
              if (
-                    [destPacs[@"preferredStudyIdentificator"] isEqualToString:@"AccessionNumber"]
+                    [entityDict[@"preferredStudyIdentificator"] isEqualToString:@"AccessionNumber"]
                  && AccessionNumber
                  && ![AccessionNumber isEqualToString:@"NULL"])
              {
@@ -2434,7 +2664,7 @@ int main(int argc, const char* argv[]) {
              LOG_INFO(@"WHERE %@",[where substringFromIndex:38]);
 
              NSString *sqlDataQuery=[NSString stringWithFormat:@"%@%@%@%@",
-                                     destPacs[@"sqlprolog"],
+                                     entityDict[@"sqlprolog"],
                                      sqlobjectmodel[@"datatablesSeriesProlog"],
                                      where,
                                      [NSString stringWithFormat:
@@ -2444,7 +2674,7 @@ int main(int argc, const char* argv[]) {
                                       ]
                                      ];
              
-             NSMutableArray *seriesArray=jsonMutableArray(sqlDataQuery,(NSStringEncoding) [destPacs[@"sqlstringencoding"] integerValue]);
+             NSMutableArray *seriesArray=jsonMutableArray(sqlDataQuery,(NSStringEncoding) [entityDict[@"sqlstringencoding"] integerValue]);
              //LOG_INFO(@"series array:%@",[seriesArray description]);
              
              NSMutableDictionary *resp = [NSMutableDictionary dictionary];
@@ -2479,7 +2709,6 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
              LOG_DEBUG(@"client: %@",request.remoteAddressString);
-             //using NSURLComponents instead of RSRequest
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
              NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
@@ -2514,7 +2743,7 @@ int main(int argc, const char* argv[]) {
              NSString *custodianURI;
              //if ((entitiesDicts[q[@"custodianOID"]])[@"local"])
              custodianURI=[NSString stringWithFormat:@"http://localhost:%lld",port];
-             //else custodianURI=(entitiesDicts[q[@"custodianOID"]])[@"custodianbaseuri"];
+             //else custodianURI=(entitiesDicts[q[@"custodianOID"]])[@"custodianglobaluri"];
              //if (!@"custodianURI") return [RSDataResponse responseWithText:[NSString stringWithFormat:@"invalid custodianOID param in %@%@?%@",b,p,requestURL.query]];
              
              
@@ -2606,13 +2835,13 @@ int main(int argc, const char* argv[]) {
  
                  NSMutableData *seriesData=[NSMutableData data];
                  [seriesData setData:[NSData dataWithContentsOfURL:[NSURL URLWithString:qidoSeriesString]]];
- /*TODO CHARSET
-                  if (charset==5) //latin1
-                  {
-                      NSString *latin1String=[[NSString alloc]initWithData:seriesData encoding:NSISOLatin1StringEncoding];
-                      [seriesData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
-                  }
-*/
+//TODO CHARSET
+//                  if (charset==5) //latin1
+//                {
+//                      NSString *latin1String=[[NSString alloc]initWithData:seriesData encoding:NSISOLatin1StringEncoding];
+//                      [seriesData setData:[latin1String dataUsingEncoding:NSUTF8StringEncoding]];
+//                  }
+
                  NSError *error=nil;
                  NSMutableArray *seriesArray=[NSJSONSerialization JSONObjectWithData:seriesData options:NSJSONReadingMutableContainers error:&error];
                  if (error) return [RSErrorResponse responseWithClientError:404 message:@"bad qido sql result : %@",[error description]];
@@ -2717,7 +2946,7 @@ int main(int argc, const char* argv[]) {
              return [RSDataResponse responseWithText:[NSString stringWithFormat:@"unknown viewerType in %@%@?%@",b,p,requestURL.query]];
          }
                                                                                                                                           (request));}];
-        
+*/
 #pragma mark -
 #pragma mark run
         NSError *error=nil;

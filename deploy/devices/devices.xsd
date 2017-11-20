@@ -62,12 +62,12 @@
                                         </xs:element>
                                         <xs:element ref="string" id="custodianoid"/>
 
-                                        <xs:element name="key" fixed="custodianbaseuri">
+                                        <xs:element name="key" fixed="custodianglobaluri">
                                             <xs:annotation>
                                                 <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element ref="string" id="custodianbaseuri"/>
+                                        <xs:element ref="string" id="custodianglobaluri"/>
 
 
                                         <!-- ================================== -->
@@ -98,52 +98,52 @@
                                         <xs:element ref="string" id="sqlobjectmodel"/>
 
 
-                                        <xs:element name="key" fixed="filesystembaseuri">
+                                        <xs:element name="key" fixed="filesystemlocaluri">
                                             <xs:annotation>
                                                 <xs:documentation>acceso por sistema de archivos a los dicoms del device</xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element ref="string" id="filesystembaseuri"/>
+                                        <xs:element ref="string" id="filesystemlocaluri"/>
                     
                     
-                                        <xs:element name="key" fixed="wadouri">
+                                        <xs:element name="key" fixed="wadolocaluri">
                                             <xs:annotation>
                                                 <xs:documentation>uri del servicio en caso que el device local soporte esta funcionalidad</xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element ref="string" id="wadouri"/>
+                                        <xs:element ref="string" id="wadolocaluri"/>
   
   
-                                        <xs:element name="key" fixed="wadouriadditionalparameters">
+                                        <xs:element name="key" fixed="wadoadditionalparameters">
                                             <xs:annotation>
                                                 <xs:documentation>por ejemplo '&amp;amp;transferSyntax=1.2.840.10008.1.2.4.90' para pedir las imágenes con compresión JPEG2000 sin pérdida</xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element ref="string" id="wadouriadditionalparameters"/>
+                                        <xs:element ref="string" id="wadoadditionalparameters"/>
 
 
-                                        <xs:element name="key" fixed="qido">
+                                        <xs:element name="key" fixed="qidolocaluri">
                                             <xs:annotation>
                                                 <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element ref="string" id="qido"/>
+                                        <xs:element ref="string" id="qidolocaluri"/>
 
 
-                                        <xs:element name="key" fixed="wadors">
+                                        <xs:element name="key" fixed="wadorslocaluri">
                                             <xs:annotation>
                                                 <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element ref="string" id="wadors"/>
+                                        <xs:element ref="string" id="wadorslocaluri"/>
 
 
-                                        <xs:element name="key" fixed="stow">
+                                        <xs:element name="key" fixed="stowlocaluri">
                                             <xs:annotation>
                                                 <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element ref="string" id="stow"/>
+                                        <xs:element ref="string" id="stowlocaluri"/>
 
 
                                         <xs:element name="key" fixed="dicomaet">
@@ -188,10 +188,10 @@
 
         <xs:alternative test="@id = 'sqlstringencoding'"           type="stringencodingidstring"/>
 
-        <xs:alternative test="@id = 'wadouri'"                     type="httpidstring"/>
-        <xs:alternative test="@id = 'qido'"                        type="httpidstring"/>
-        <xs:alternative test="@id = 'wadors'"                      type="httpidstring"/>
-        <xs:alternative test="@id = 'stow'"                        type="httpidstring"/>
+        <xs:alternative test="@id = 'wadolocaluri'"                     type="httpidstring"/>
+        <xs:alternative test="@id = 'qidolocaluri'"                        type="httpidstring"/>
+        <xs:alternative test="@id = 'wadorslocaluri'"                      type="httpidstring"/>
+        <xs:alternative test="@id = 'stowlocaluri'"                        type="httpidstring"/>
 
         <xs:alternative test="@id = 'dicomaet'"                    type="titleidstring"/>
         <xs:alternative test="@id = 'dicomip'"                     type="ipidstring"/>

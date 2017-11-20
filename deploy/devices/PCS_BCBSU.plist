@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist
+    xmlns="http://www.opendicom.com/xsd/plist/devices.xsd"
+    
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.opendicom.com/xsd/plist/devices.xsd ./devices.xsd"
+    
+    version="1.0"
+    >
+    <dict>
+        <key>2.16.858.2.212659800019.72769.217215590012</key>
+        <dict>
+            <key>local</key>
+            <true/>
+            <key>preferredstudyidentificator</key>
+            <string id="preferredstudyidentificator">StudyInstanceUID</string>
+            <key>custodiantitle</key>
+            <string id="custodiantitle">PCS_BCBSU</string>
+            <key>custodianoid</key>
+            <string id="custodianoid">2.16.858.2.212659800019.72769.217215590012</string>
+            <key>custodianglobaluri</key>
+            <string id="custodianglobaluri">http://192.168.15.200:11110</string>
+            <key>sqlprolog</key>
+            <string id="sqlprolog">export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 127.0.0.1 -b pacsdb_arc -e &quot;</string>
+            <key>sqlstringencoding</key>
+            <string id="sqlstringencoding">5</string>
+            <key>sqlobjectmodel</key>
+            <string id="sqlobjectmodel">dal5mysql</string>
+            <key>filesystemlocaluri</key>
+            <string id="filesystemlocaluri"></string>
+            <key>wadolocaluri</key>
+            <string id="wadolocaluri">http://127.0.0.1:8080/dcm4chee-arc/aets/BCBSU/wado</string>
+            <key>wadoadditionalparameters</key>
+            <string id="wadouriadditionalparameters">&amp;transferSyntax=1.2.840.10008.1.2.4.90</string>
+            <key>qidolocaluri</key>
+            <string id="qidolocaluri">http://127.0.0.1:8080/dcm4chee-arc/aets/BCBSU/rs</string>
+            <key>wadorslocaluri</key>
+            <string id="wadorslocaluri">http://127.0.0.1:8080/dcm4chee-arc/aets/BCBSU/rs</string>
+            <key>stowlocaluri</key>
+            <string id="stowlocaluri">http://127.0.0.1:8080/dcm4chee-arc/aets/BCBSU/rs/studies</string>
+            <key>dicomaet</key>
+            <string id="dicomaet">BCBSU</string>
+            <key>dicomip</key>
+            <string id="dicomip">192.168.15.200</string>
+            <key>dicomport</key>
+            <string id="dicomport">11112</string>
+        </dict>
+    </dict>
+</plist>
