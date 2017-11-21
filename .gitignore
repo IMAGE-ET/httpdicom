@@ -23,3 +23,7 @@ deploy/dal55mysqlpacs.plist
 httpdicom.xcodeproj/xcuserdata/claudiobaeza.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
 
 httpdicom.xcodeproj/xcuserdata/claudiobaeza.xcuserdatad/xcschemes/xcschememanagement.plist
+
+*.xcbkptlist
+
+httpdicom.xcodeproj/xcuserdata/opendicom.xcuserdatad/xcschemes/xcschememanagement.plist

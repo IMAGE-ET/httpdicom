@@ -8,42 +8,42 @@
     version="1.0"
     >
     <dict>
-        <key>1.2</key>
+        <key>2.16.858.0.2.16.86.9.0.0.2.214462250019.72769.217215590012</key>
         <dict>
             <key>local</key>
-            <false/>
+            <true/>
             <key>preferredstudyidentificator</key>
-            <string id="preferredstudyidentificator">AccessionNumber</string>
+            <string id="preferredstudyidentificator">StudyInstanceUID</string>
             <key>custodiantitle</key>
-            <string id="custodiantitle">custodian</string>
+            <string id="custodiantitle">CIP</string>
             <key>custodianoid</key>
-            <string id="custodianoid">1</string>
+            <string id="custodianoid">2.16.858.0.2.16.86.9.0.0.2.214462250019.72769.217215590012</string>
             <key>custodianglobaluri</key>
-            <string id="custodianglobaluri">custodianURI</string>
+            <string id="custodianglobaluri">http://200.40.51.230:28080</string>
             <key>sqlprolog</key>
-            <string id="sqlprolog">sqlprolog</string>
+            <string id="sqlprolog">export MYSQL_PWD=pacs;/usr/local/mysql/bin/mysql --raw --skip-column-names -upacs -h 127.0.0.1 -b pacsdb_arc -e &quot;</string>
             <key>sqlstringencoding</key>
             <string id="sqlstringencoding">5</string>
             <key>sqlobjectmodel</key>
             <string id="sqlobjectmodel">dal5mysql</string>
             <key>filesystemlocaluri</key>
-            <string id="filesystemlocaluri">filesystembaseuri</string>
+            <string id="filesystemlocaluri"></string>
             <key>wadolocaluri</key>
-            <string id="wadolocaluri">http://wadouri</string>
-            <key>wadouriadditionalparameters</key>
-            <string id="wadoadditionalparameters">&amp;a=b</string>
+            <string id="wadolocaluri">http://127.0.0.1:8080/dcm4chee-arc/aets/DCM4CHEE/wado</string>
+            <key>wadoadditionalparameters</key>
+            <string id="wadouriadditionalparameters">&amp;transferSyntax=1.2.840.10008.1.2.4.90</string>
             <key>qidolocaluri</key>
-            <string id="qidolocaluri">http://qido</string>
+            <string id="qidolocaluri">http://127.0.0.1:8080/dcm4chee-arc/aets/DCM4CHEE/rs</string>
             <key>wadorslocaluri</key>
-            <string id="wadorslocaluri">https://wadors</string>
+            <string id="wadorslocaluri">http://127.0.0.1:8080/dcm4chee-arc/aets/DCM4CHEE/rs</string>
             <key>stowlocaluri</key>
-            <string id="stowlocaluri">http://stow</string>
+            <string id="stowlocaluri">http://127.0.0.1:8080/dcm4chee-arc/aets/DCM4CHEE/rs/studies</string>
             <key>dicomaet</key>
-            <string id="dicomaet">dicomaet</string>
+            <string id="dicomaet">DCM4CHEE</string>
             <key>dicomip</key>
-            <string id="dicomip">1.1.1.1</string>
+            <string id="dicomip">127.0.0.1</string>
             <key>dicomport</key>
-            <string id="dicomport">104</string>
+            <string id="dicomport">11112</string>
         </dict>
     </dict>
 </plist>

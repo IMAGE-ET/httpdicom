@@ -256,7 +256,7 @@
     <xs:complexType name="ipidstring">
         <xs:simpleContent>
             <xs:restriction base="idstring">
-                <xs:pattern value="[1-9]\d{0,2}\.[1-9]\d{0,2}\.[1-9]\d{0,2}\.[1-9]\d{0,2}"/>
+                <xs:pattern value="[1-9]\d{0,2}\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})"/>
             </xs:restriction>
         </xs:simpleContent>
     </xs:complexType>

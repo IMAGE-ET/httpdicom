@@ -288,12 +288,13 @@ BOOL buildWhereString(BOOL E,BOOL S,BOOL I,NSArray *queryItems, NSDictionary *sq
     return true;
 }
 
-NSInteger nextIndexForPredicateInQueryItems(NSArray *queryItems, NSPredicate *predicate, NSInteger offset)
+NSInteger nextIndexForPredicateInQueryItems(NSArray *queryItems, NSString *format, NSString *key, NSString *value, NSInteger offset)
 {
-    //NSPredicate *predicate = [NSPredicate predicateWithFormat:@"name=%@", key];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:format,key,value];
     if (offset < 0) return NSNotFound;
-    while (offset++ < [queryItems count]) {
+    while (offset < [queryItems count]) {
         if ([predicate evaluateWithObject:queryItems[offset]]) return offset;
+        offset++;
     }
     return NSNotFound;
 }
@@ -312,27 +313,11 @@ BOOL queryitemsvalidwadodicom(NSArray *qi){
 
     for (NSURLQueryItem* i in qi)
     {
-            if (!requestType)
-        {
-            if ([i.name isEqualToString:@"requestType"] && [i.value isEqualToString:@"WADO"]) requestType=true;
-        }
-        else if (!contentType)
-        {
-            if ([i.name isEqualToString:@"contentType"] && [i.value isEqualToString:@"application/dicom"]) requestType=true;
-        }
-        else if (!studyUID)
-        {
-            if ([i.name isEqualToString:@"studyUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) studyUID=true;
-        }
-        else if (!seriesUID)
-        {
-            if ([i.name isEqualToString:@"seriesUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) seriesUID=true;
-        }
-        else if (!objectUID)
-        {
-            if ([i.name isEqualToString:@"objectUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) objectUID=true;
-        }
-
+        if (!requestType && [i.name isEqualToString:@"requestType"] && [i.value isEqualToString:@"WADO"]) requestType=true;
+        else if (!contentType && [i.name isEqualToString:@"contentType"] && [i.value isEqualToString:@"application/dicom"]) contentType=true;
+        else if (!studyUID && [i.name isEqualToString:@"studyUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) studyUID=true;
+        else if (!seriesUID && [i.name isEqualToString:@"seriesUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) seriesUID=true;
+        else if (!objectUID && [i.name isEqualToString:@"objectUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) objectUID=true;
     }
     return (requestType && contentType && studyUID && seriesUID && objectUID);
 }
@@ -555,7 +540,7 @@ int main(int argc, const char* argv[]) {
         NSMutableDictionary *qidotag=[NSMutableDictionary dictionary];
         for (NSString *key in qidokey)
         {
-            [qidotag setObject:key forKey:(qidokey[@"key"])[@"tag"]];
+            [qidotag setObject:key forKey:((qidokey[key])[@"tag"])];
         }
         
         LOG_VERBOSE(@"sqls:\r\n%@",[sqlset description]);
@@ -563,7 +548,8 @@ int main(int argc, const char* argv[]) {
         
         for (NSString *sqlname in sqlset)
         {
-            NSString *sqlpath=[deployPath stringByAppendingPathComponent:sqlname];
+            NSString *sqlpath=[[deployPath
+                               stringByAppendingPathComponent:@"objectmodel"] stringByAppendingPathComponent:sqlname];
             NSDictionary *attribute=[NSDictionary dictionaryWithContentsOfFile:[sqlpath stringByAppendingPathComponent:@"attribute.plist"]];
             NSDictionary *from=[NSDictionary dictionaryWithContentsOfFile:[sqlpath stringByAppendingPathComponent:@"from.plist"]];
             NSDictionary *where=[NSMutableDictionary dictionaryWithContentsOfFile:[sqlpath stringByAppendingPathComponent:@"where.plist"]];
@@ -576,6 +562,7 @@ int main(int argc, const char* argv[]) {
                 LOG_ERROR(@"%@ sql configuration incomplete",sqlname);
                 return 1;
             }
+            
             [sql setObject:@{@"attribute":attribute, @"from":from, @"where":where} forKey:sqlname];
         }
 
@@ -622,7 +609,7 @@ int main(int argc, const char* argv[]) {
     if (!queryitemsvalidwadodicom(urlComponents.queryItems)) return [RSErrorResponse responseWithClientError:404 message:@"[wado] not valid application/dicom content request: %@",urlComponents.query];
 
     //param pacs
-    NSInteger index=nextIndexForPredicateInQueryItems(urlComponents.queryItems, [NSPredicate predicateWithFormat:@"name=pacs"], 0);
+    NSInteger index=nextIndexForPredicateInQueryItems(urlComponents.queryItems, @"%K=%@", @"name", @"pacs", 0);
     if (index==NSNotFound)
     {
         LOG_DEBUG(@"[wado]: no param pacs: %@",urlComponents.query);
@@ -640,7 +627,7 @@ int main(int argc, const char* argv[]) {
     NSDictionary *entityDict=entitiesDicts[entity];
     if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [pacs not known]",urlComponents.path];
     
-    //not local ... forward
+    //not local ... forward to custodian (with pacs parameter)
     if (![entityDict[@"local"]boolValue])
     {
         NSString *custodianbaseuri=entityDict[@"custodianglobaluri"];
@@ -651,23 +638,23 @@ int main(int argc, const char* argv[]) {
                              urlComponents.path,
                              urlComponents.query
                              ],
-                            @"application/dicom+json"
+                            @"application/dicom"
                             );
-        return [RSErrorResponse responseWithClientError:404 message:@"%@ [custodianbaseuri not known]",urlComponents.path];
+        return [RSErrorResponse responseWithClientError:404 message:@"%@ [custodianglobaluri not known]",urlComponents.path];
     }
     
     //wadouri base string defined for the entity
-    NSString *wadouriBaseString=entityDict[@"wadolocaluri"];
-    if (![wadouriBaseString isEqualToString:@""])
+    NSMutableString *newWadoString=[NSMutableString stringWithFormat:@"%@?",entityDict[@"wadolocaluri"]];
+    if (![newWadoString isEqualToString:@"?"])
     {
-        return urlProxy(
-                        [NSString stringWithFormat:@"%@/%@?%@",
-                         wadouriBaseString,
-                         urlComponents.path,
-                         urlComponents.query
-                         ],
-                        @"application/dicom+json"
-                        );
+        //add query params except "pacs"
+        for (int i=0; i<[urlComponents.queryItems count];i++)
+        {
+            if (i!=index)[newWadoString appendFormat:@"%@=%@&",urlComponents.queryItems[i].name,urlComponents.queryItems[i].value];
+        }
+        [newWadoString deleteCharactersInRange:NSMakeRange([newWadoString length]-1,1)];
+        NSLog(@"%@",newWadoString);
+        return urlProxy( newWadoString, @"application/dicom" );
   }
   
  
