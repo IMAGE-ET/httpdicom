@@ -64,7 +64,7 @@ static NSTimeInterval timeout=300;
 static NSDateFormatter *dicomDTFormatter=nil;
 static NSRegularExpression *UIRegex=nil;
 static NSRegularExpression *SHRegex=nil;
-static NSArray *levels=nil;
+static NSArray *qidoLastPathComponent=nil;
 
 //static immutable find within NSData
 static NSData *rn;
@@ -203,44 +203,6 @@ id qidoUrlProxy(NSString *qidoString,NSString *queryString, NSString *httpdicomS
 }
 
 
-id urlProxy(NSString *urlString,NSString *contentType)
-{
-    __block dispatch_semaphore_t __urlProxySemaphore = dispatch_semaphore_create(0);
-    __block NSData *__data;
-    __block NSURLResponse *__response;
-    __block NSError *__error;
-    __block NSDate *__date;
-    __block unsigned long __chunks=0;
-    
-    NSMutableURLRequest *request=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-    if (contentType) [request setValue:contentType forHTTPHeaderField:@"Accept"];//application/dicom+json not accepted !!!!!
-
-    NSURLSessionDataTask * const dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
-                                             {
-                                                 __data=data;
-                                                 __response=response;
-                                                 __error=error;
-                                                 dispatch_semaphore_signal(__urlProxySemaphore);
-                                             }];
-    __date=[NSDate date];
-    [dataTask resume];
-    dispatch_semaphore_wait(__urlProxySemaphore, DISPATCH_TIME_FOREVER);
-    //completionHandler of dataTask executed only once and before returning
-
-    
-    return [RSStreamedResponse responseWithContentType:contentType asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
-            {
-                if (__error) completionBlock(nil,__error);
-                if (__chunks)
-                {
-                    completionBlock([NSData data], nil);
-                    LOG_DEBUG(@"urlProxy: %lu chunk in %fs for:\r\n%@",__chunks,[[NSDate date] timeIntervalSinceDate:__date],[__response description]);
-                }
-                else completionBlock(__data, nil);
-                __chunks++;
-            }];
-}
-
 id urlChunkedProxy(NSString *urlString,NSString *contentType)
 {
     __block dispatch_semaphore_t __urlProxySemaphore = dispatch_semaphore_create(0);
@@ -340,7 +302,7 @@ int main(int argc, const char* argv[]) {
         [dicomDTFormatter setDateFormat:@"yyyyMMddHHmmss"];
         UIRegex = [NSRegularExpression regularExpressionWithPattern:@"^[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*$" options:0 error:NULL];
         SHRegex = [NSRegularExpression regularExpressionWithPattern:@"^(?:\\s*)([^\\r\\n\\f\\t]*[^\\r\\n\\f\\t\\s])(?:\\s*)$" options:0 error:NULL];
-        levels=@[@"patients",@"studies",@"series",@"instances"];
+        qidoLastPathComponent=@[@"/patients",@"/studies",@"/series",@"/instances"];
         
         //static immutable
         rn=[@"/r/n" dataUsingEncoding:NSASCIIStringEncoding];//0x0A0D;
@@ -578,16 +540,18 @@ int main(int argc, const char* argv[]) {
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
 {
     //use it to tag DEBUG logs
-    LOG_DEBUG(@"client: %@",request.remoteAddressString);
+    LOG_DEBUG(@"[wado dicom] client: %@",request.remoteAddressString);
 
     NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
 
     //valid params syntax?
     NSString *wadoDicomQueryItemsError=[urlComponents wadoDicomQueryItemsError];
-    if (wadoDicomQueryItemsError) return [RSErrorResponse responseWithClientError:404 message:@"[wado application/dicom] query item %@ error in: %@",wadoDicomQueryItemsError,urlComponents.query];
+    if (wadoDicomQueryItemsError) return [RSErrorResponse responseWithClientError:404 message:@"[wado dicom] query item %@ error in: %@",wadoDicomQueryItemsError,urlComponents.query];
 
     //param pacs
     NSString *pacs=[urlComponents firstQueryItemNamed:@"pacs"];
+    
+    // (a) any local pacs
     if (!pacs)
     {
         LOG_VERBOSE(@"[wado] no param named \"pacs\" in: %@",urlComponents.query);
@@ -602,39 +566,119 @@ int main(int argc, const char* argv[]) {
     
     //find entityDict
     NSDictionary *entityDict=entitiesDicts[pacs];
-    if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [pacs not known]",urlComponents.path];
+    if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"[wado] pacs %@ not known]",pacs];
     
-    //not local ... forward to custodian (with pacs parameter)
-    if (![entityDict[@"local"]boolValue])
+    //(b) sql+filesystem?
+    NSString *filesystembaseuri=entityDict[@"filesystembaseuri"];
+    NSString *sqlobjectmodel=entityDict[@"sqlobjectmodel"];
+    
+    if ([filesystembaseuri length] && [sqlobjectmodel length])
     {
-        NSString *custodianbaseuri=entityDict[@"custodianglobaluri"];
-        if (custodianbaseuri && [custodianbaseuri length])
-            return urlProxy(
-                            [NSString stringWithFormat:@"%@/%@?%@",
-                             custodianbaseuri,
-                             urlComponents.path,
-                             urlComponents.query
-                             ],
-                            @"application/dicom"
-                            );
-        return [RSErrorResponse responseWithClientError:404 message:@"%@ [custodianglobaluri not known]",urlComponents.path];
+#pragma mark TODO wado sql+filesystem
+        return [RSErrorResponse responseWithClientError:404 message:@"%@ [wado] not available]",urlComponents.path];
     }
-    
-    //wadouri base string defined for the entity
-    NSMutableString *newWadoString=[NSMutableString stringWithFormat:@"%@?",entityDict[@"wadolocaluri"]];
-    if (![newWadoString isEqualToString:@"?"]) return urlProxy( [newWadoString stringByAppendingString:[urlComponents queryWithoutItemNamed:@"pacs"]], @"application/dicom" );
+
+    //(c) wadolocaluri?
+    if ([entityDict[@"wadolocaluri"] length])
+    {
+        NSString *uriString=[NSString stringWithFormat:@"%@?%@",
+                             entityDict[@"wadolocaluri"],
+                             [urlComponents queryWithoutItemNamed:@"pacs"]
+                             ];
+        LOG_VERBOSE(@"[wado] proxying localmente to:\r\n%@",uriString);
+        NSMutableURLRequest *request=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:uriString]];
+        [request setValue:@"application/dicom" forHTTPHeaderField:@"Accept"];
+        //application/dicom+json not accepted !!!!!
+        
+        __block dispatch_semaphore_t __urlProxySemaphore = dispatch_semaphore_create(0);
+        __block NSURLResponse *__response;
+        __block NSError *__error;
+        __block NSDate *__date;
+        __block unsigned long __chunks=0;
+        __block NSData *__data;
+        
+        NSURLSessionDataTask * const dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
+                                                 {
+                                                     __data=data;
+                                                     __response=response;
+                                                     __error=error;
+                                                     dispatch_semaphore_signal(__urlProxySemaphore);
+                                                 }];
+        __date=[NSDate date];
+        [dataTask resume];
+        dispatch_semaphore_wait(__urlProxySemaphore, DISPATCH_TIME_FOREVER);
+        //completionHandler of dataTask executed only once and before returning
+        
+        
+        return [RSStreamedResponse responseWithContentType:@"application/dicom" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
+                {
+                    if (__error) completionBlock(nil,__error);
+                    if (__chunks)
+                    {
+                        completionBlock([NSData data], nil);
+                        LOG_DEBUG(@"urlProxy: %lu chunk in %fs for:\r\n%@",__chunks,[[NSDate date] timeIntervalSinceDate:__date],[__response description]);
+                    }
+                    else
+                    {
+                        
+                        completionBlock(__data, nil);
+                        __chunks++;
+                    }
+                }];
+    }
+
+    //(d) global?
+    if ([entityDict[@"custodianglobaluri"] length])
+    {
+        NSString *uriString=[NSString stringWithFormat:@"%@?%@",
+                             entityDict[@"custodianglobaluri"],
+                             [urlComponents query]
+                             ];
+        LOG_VERBOSE(@"[wado] proxying to another custodian:\r\n%@",uriString);
+        NSMutableURLRequest *request=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:uriString]];
+        [request setValue:@"application/dicom" forHTTPHeaderField:@"Accept"];
+        //application/dicom+json not accepted !!!!!
+        
+        __block dispatch_semaphore_t __urlProxySemaphore = dispatch_semaphore_create(0);
+        __block NSURLResponse *__response;
+        __block NSError *__error;
+        __block NSDate *__date;
+        __block unsigned long __chunks=0;
+        __block NSData *__data;
+        
+        NSURLSessionDataTask * const dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
+                                                 {
+                                                     __data=data;
+                                                     __response=response;
+                                                     __error=error;
+                                                     dispatch_semaphore_signal(__urlProxySemaphore);
+                                                 }];
+        __date=[NSDate date];
+        [dataTask resume];
+        dispatch_semaphore_wait(__urlProxySemaphore, DISPATCH_TIME_FOREVER);
+        //completionHandler of dataTask executed only once and before returning
+        
+        
+        return [RSStreamedResponse responseWithContentType:@"application/dicom" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
+                {
+                    if (__error) completionBlock(nil,__error);
+                    if (__chunks)
+                    {
+                        completionBlock([NSData data], nil);
+                        LOG_DEBUG(@"urlProxy: %lu chunk in %fs for:\r\n%@",__chunks,[[NSDate date] timeIntervalSinceDate:__date],[__response description]);
+                    }
+                    else
+                    {
+                        
+                        completionBlock(__data, nil);
+                        __chunks++;
+                    }
+                }];
+    }
+
   
-  //(c) sql+filesystem
-  NSString *filesystembaseuri=entityDict[@"filesystembaseuri"];
-  NSString *sqlobjectmodel=entityDict[@"sqlobjectmodel"];
-
-  if ([filesystembaseuri length] && [sqlobjectmodel length])
-  {
-      return [RSErrorResponse responseWithClientError:404 message:@"%@ [wado] not available]",urlComponents.path];
-  }
-
-  //(d) not available
-  return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-URI not available]",urlComponents.path];
+  //(e) not available
+  return [RSErrorResponse responseWithClientError:404 message:@"[wado] pacs %@ not available",pacs];
   
 }(request));}];
         
@@ -772,37 +816,53 @@ int main(int argc, const char* argv[]) {
 
         
 #pragma mark QIDO
-        // ( studies | series | instances )?
-        // pacs={oid}
+        // /(studies|series|instances)
+        // &pacs={oid}
         
-        // /pacs/{oid}/rs/( studies | series | instances )?
-        NSRegularExpression *qidoRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/rs\\/(studies|series|instances)$" options:NSRegularExpressionCaseInsensitive error:NULL];
+        NSRegularExpression *qidoRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/(studies|series|instances)$" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:qidoRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             //LOG_DEBUG(@"client: %@",request.remoteAddressString);
-             
+             //use it to tag DEBUG logs
+             LOG_DEBUG(@"[qido] client: %@",request.remoteAddressString);
+
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+             
              if ([urlComponents.queryItems count] < 1)
                  return [RSErrorResponse responseWithClientError:404
-                                                         message:@"%@ [invalid qido. Requires at least one filter]",[request.URL absoluteString]];
-             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
+                                                         message:@"[qido] requires at least one filter in: %@",[request.URL absoluteString]];
              
+             //valid params syntax?
+             //NSString *qidoQueryItemsError=[urlComponents qidoQueryItemsError:(*)];
+             //if (qidoQueryItemsError) return [RSErrorResponse responseWithClientError:404 message:@"[qido] query item %@ error in: %@",qidoQueryItemsError,urlComponents.query];
+
+             //param pacs
+             NSString *pacs=[urlComponents firstQueryItemNamed:@"pacs"];
+             
+             // (a) any local pacs
+             if (!pacs)
+             {
+                 LOG_VERBOSE(@"[qido] no param named \"pacs\" in: %@",urlComponents.query);
+                 //Find qido in any of the local device (recursive)
+                 for (NSString *oid in localOIDs)
+                 {
+#pragma mark TODO wado any local
+                 }
+
+             }
+
              //find entityDict
-             NSDictionary *entityDict=entitiesDicts[pComponents[2]];
-             if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not known]",urlComponents.path];
+             NSDictionary *entityDict=entitiesDicts[pacs];
+             if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"[qido] pacs %@ not known]",pacs];
 
-             NSString *custodianbaseuri=entityDict[@"custodianglobaluri"];
 
              
-//alternative (a) sql available
+             //(b) sql available
              NSDictionary *sqlobjectmodel=sql[entityDict[@"sqlobjectmodel"]];
              if (sqlobjectmodel)
              {
-                 //alternative (a) local ... simulation qido through database access
-                 
                  //create where
-                 NSUInteger level=[levels indexOfObject:pComponents[4]];
+                 NSUInteger level=[qidoLastPathComponent indexOfObject:urlComponents.path];
                  NSMutableString *whereString = [NSMutableString string];
                  switch (level) {
                      case 1:
@@ -815,7 +875,7 @@ int main(int argc, const char* argv[]) {
                          [whereString appendFormat:@" %@ ",(sqlobjectmodel[@"where"])[@"instance"]];
                          break;
                      default:
-                         return [RSErrorResponse responseWithClientError:404 message:@"level %@ not accepted. Should be study, series or instance",pComponents[4]];
+                         return [RSErrorResponse responseWithClientError:404 message:@"level %@ not accepted. Should be study, series or instance",urlComponents.path];
                          break;
                  }
                  
@@ -829,7 +889,7 @@ int main(int argc, const char* argv[]) {
                      if (!keyProperties) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not a valid qido filter for this PACS]",qi.name];
                      
                      //level check
-                     if ( level < [keyProperties[@"level"] unsignedIntegerValue]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not available at level %@]",key,pComponents[4]];
+                     if ( level < [keyProperties[@"level"] unsignedIntegerValue]) return [RSErrorResponse responseWithClientError:404 message:@"%@ [not available at level %@]",key,urlComponents.path];
                      
                      //string compare
                      if ([@[@"LO",@"PN",@"CS",@"UI"] indexOfObject:keyProperties[@"vr"]]!=NSNotFound)
@@ -971,112 +1031,211 @@ int main(int argc, const char* argv[]) {
                          [NSJSONSerialization dataWithJSONObject:qidoResponseArray options:0 error:nil] contentType:@"application/json"];
              }
              
-//alternative (b) there is no sqlobjectmodel, but entity has its own qidoBaseString
-             NSString *qidoBaseString=entityDict[@"qidolocaluri"];
-             if ([qidoBaseString length]>0)
+             //(c) qidolocaluri?
+             if ([entityDict[@"qidolocaluri"] length])
+             {
+                 NSString *qidolocaluriLevel=[entityDict[@"qidolocaluri"] stringByAppendingString:urlComponents.path];
+             }
+
+             
+             
+             /*
+             NSString *qidoLocalString=entityDict[@"qidolocaluri"];
+             if ([qidoLocalString length]>0)
              {
                  return qidoUrlProxy(
+              
                     [NSString stringWithFormat:@"%@/%@",qidoBaseString,pComponents.lastObject],
+                    =qidolocaluri + urlComponents.path
+                    ==qidoString
+                    ===pacsUri
+              
+              
                     urlComponents.query,
+                    =urlComponents.query
+                    ==queryString
+              
+              
                     [custodianbaseuri stringByAppendingString:urlComponents.path]
+                    =custodianglobaluri + urlComponents.path
+                    ==httpdicomString
+                    ===httpDicomUri
                     );
                  //pComponents.lastObject = ( studies | series | instances )
                  //application/dicom+json not accepted
              }
-
-//alternative (c) qido should be forwarded to its custodian
-             if (custodianbaseuri)
+*/
+             
+             //(d) global?
+             if ([entityDict[@"custodianglobaluri"] length])
              {
-                 NSString *urlString=[NSString stringWithFormat:@"%@/%@?%@",
-                                      custodianbaseuri,
-                                      urlComponents.path,
-                                      urlComponents.query
-                                      ];
-                 LOG_INFO(@"[QIDO] %@",urlString);
-                 return urlProxy(urlString,@"application/dicom+json");
+#pragma mark TODO qido global proxying
+                 
              }
              
-//alternative (d) otherwise qido not available
-             return [RSErrorResponse responseWithClientError:404 message:@"%@ [QIDO not available]",urlComponents.path];
              
+             //(e) not available
+             return [RSErrorResponse responseWithClientError:404 message:@"[qido] pacs %@ not available",pacs];
+
          }(request));}];
         
         
 //-----------------------------------------------
 
         
-#pragma mark WADO-RS
+#pragma mark wadors
         // /studies/{StudyInstanceUID}
         
         // /pacs/{OID}/rs/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}
         // /pacs/{OID}/rs/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}/instances/{SOPInstanceUID}
         //Accept: multipart/related;type="application/dicom"
-        NSRegularExpression *wadorsRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/rs\\/studies\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*" options:NSRegularExpressionCaseInsensitive error:NULL];
+        NSRegularExpression *wadorsRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/studies\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*.*" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:wadorsRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
          {
-             //LOG_DEBUG(@"client: %@",request.remoteAddressString);
+             LOG_DEBUG(@"[wadors]: %@",request.remoteAddressString);
              
              NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
-             NSArray *pComponents=[urlComponents.path componentsSeparatedByString:@"/"];
 
-             NSDictionary *entityDict=entitiesDicts[pComponents[2]];
+#pragma mark TODO validator
+             //valid params syntax?
+             //NSString *wadorsQueryItemsError=[urlComponents wadorsQueryItemsError];
+             //if (wadorsQueryItemsError) return [RSErrorResponse responseWithClientError:404 message:@"[wado dicom] query item %@ error in: %@",wadorsQueryItemsError,urlComponents.query];
+
+             //param pacs
+             NSString *pacs=[urlComponents firstQueryItemNamed:@"pacs"];
+             
+             // (a) any local pacs
+             if (!pacs)
+             {
+                 LOG_VERBOSE(@"[wadors] no param named \"pacs\" in: %@",urlComponents.query);
+                 //Find wado in any of the local device (recursive)
+                 for (NSString *oid in localOIDs)
+                 {
+#pragma mark TODO pasar de wado a wadors
+                     NSData *wadoResp=[NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://127.0.0.1:%lld/%@?%@&pacs=%@", port, urlComponents.path, urlComponents.query, oid]]];
+                     if (wadoResp && [wadoResp length] > 512) return [RSDataResponse responseWithData:wadoResp contentType:@"application/dicom"];
+                 }
+                 return [RSErrorResponse responseWithClientError:404 message:@"[wadors] not found locally: %@",urlComponents.query];
+             }
+
+             //find entityDict
+             NSDictionary *entityDict=entitiesDicts[pacs];
              if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} not found]",urlComponents.path];
 
-//alternative (a) sql available
-             /*
+//(b) sql+filsystem
+             NSString *filesystembaseuri=entityDict[@"filesystembaseuri"];
              NSString *sqlobjectmodel=entityDict[@"sqlobjectmodel"];
-             if (sqlobjectmodel)
-             {
-                  return [RSErrorResponse responseWithClientError:404 message:@"%@ [{pacs} wadors sql not implemented yet]",urlComponents.path];
-                 //local ... the PCS simulates WADO-RS thanks to a combination of
-                 //database access and wado-url
-#pragma mark TODO WADO-RS SQL
-                 //return...
-             }
-              */
              
-//alternative (b) there is no sqlobjectmodel, but entity has its own wadorsBaseString
-             NSString *wadorsBaseString=entityDict[@"wadorslocaluri"];
-             if ([wadorsBaseString length]>0)
+             if ([filesystembaseuri length] && [sqlobjectmodel length])
              {
-                 NSString *urlString;
-                 if (pComponents.count==6) urlString=[NSString stringWithFormat:@"%@/studies/%@",wadorsBaseString,pComponents[5]];
-                 else if (
-                             (pComponents.count==8)
-                          && [pComponents[6] isEqualToString:@"series"]
-                          && [UIRegex numberOfMatchesInString:pComponents[7] options:0 range:NSMakeRange(0,[pComponents[7] length])]
-                          )
-                 {
-                     urlString=[NSString stringWithFormat:@"%@/studies/%@/series/%@", wadorsBaseString,pComponents[5],pComponents[7]];
-                 }
-                 else if (
-                          (pComponents.count==10)
-                          && [pComponents[6] isEqualToString:@"series"]
-                          && [UIRegex numberOfMatchesInString:pComponents[7] options:0 range:NSMakeRange(0,[pComponents[7] length])]
-                          && [pComponents[8] isEqualToString:@"instances"]
-                          && [UIRegex numberOfMatchesInString:pComponents[9] options:0 range:NSMakeRange(0,[pComponents[9] length])]
-                          )
-                 {
-                     urlString=[NSString stringWithFormat:@"%@/studies/%@/series/%@/instances/%@", wadorsBaseString,pComponents[5],pComponents[7],pComponents[9]];
-                 }
-                 else return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-RS studies and studies/series only]",urlComponents.path];
-                 LOG_INFO(@"[WADO-RS] %@",urlString);
-                 return urlProxy(urlString,@"multipart/related;type=application/dicom");
+#pragma mark TODO wado sql+filesystem
+                 return [RSErrorResponse responseWithClientError:404 message:@"%@ [wadors] not available]",urlComponents.path];
+             }
+
+//(c)wadorslocaluri
+             NSString *wadorsBaseString=entityDict[@"wadorslocaluri"];
+             if ([entityDict[@"wadorslocaluri"] length]>0)
+             {
+                 NSString *uriString=[NSString stringWithFormat:@"%@%@?%@",
+                                      entityDict[@"wadorslocaluri"],
+                                      urlComponents.path,
+                                      [urlComponents queryWithoutItemNamed:@"pacs"]
+                                      ];
+                 LOG_VERBOSE(@"[wadors] proxying localmente to:\r\n%@",uriString);
+                 NSMutableURLRequest *request=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:uriString]];
+                 [request setValue:@"multipart/related;type=application/dicom" forHTTPHeaderField:@"Accept"];
+                 //application/dicom+json not accepted !!!!!
+                 
+                 __block dispatch_semaphore_t __urlProxySemaphore = dispatch_semaphore_create(0);
+                 __block NSURLResponse *__response;
+                 __block NSError *__error;
+                 __block NSDate *__date;
+                 __block unsigned long __chunks=0;
+                 __block NSData *__data;
+                 
+                 NSURLSessionDataTask * const dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
+                                                          {
+                                                              __data=data;
+                                                              __response=response;
+                                                              __error=error;
+                                                              dispatch_semaphore_signal(__urlProxySemaphore);
+                                                          }];
+                 __date=[NSDate date];
+                 [dataTask resume];
+                 dispatch_semaphore_wait(__urlProxySemaphore, DISPATCH_TIME_FOREVER);
+                 //completionHandler of dataTask executed only once and before returning
+                 
+                 
+                 return [RSStreamedResponse responseWithContentType:@"multipart/related;type=application/dicom" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
+                         {
+                             if (__error) completionBlock(nil,__error);
+                             if (__chunks)
+                             {
+                                 completionBlock([NSData data], nil);
+                                 LOG_DEBUG(@"urlProxy: %lu chunk in %fs for:\r\n%@",__chunks,[[NSDate date] timeIntervalSinceDate:__date],[__response description]);
+                             }
+                             else
+                             {
+                                 
+                                 completionBlock(__data, nil);
+                                 __chunks++;
+                             }
+                         }];
              }
              
 
-//alternative (c) qido should be forwarded to its custodian
-             NSString *custodianbaseuri=entityDict[@"custodianglobaluri"];
-             if (custodianbaseuri)
+//(d) global?
+             if ([entityDict[@"custodianglobaluri"] length])
              {
-                 NSString *urlString=[NSString stringWithFormat:@"%@/%@",custodianbaseuri,urlComponents.path];
-                 LOG_INFO(@"[WADO-RS] %@",urlString);
-                 return urlProxy(urlString,@"multipart/related;type=application/dicom");
+                 NSString *uriString=[NSString stringWithFormat:@"%@%@?%@",
+                                      entityDict[@"custodianglobaluri"],
+                                      urlComponents.path,
+                                      [urlComponents query]
+                                      ];
+                 LOG_VERBOSE(@"[wadors] proxying to another custodian:\r\n%@",uriString);
+                 NSMutableURLRequest *request=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:uriString]];
+                 [request setValue:@"multipart/related;type=application/dicom" forHTTPHeaderField:@"Accept"];
+                 
+                 __block dispatch_semaphore_t __urlProxySemaphore = dispatch_semaphore_create(0);
+                 __block NSURLResponse *__response;
+                 __block NSError *__error;
+                 __block NSDate *__date;
+                 __block unsigned long __chunks=0;
+                 __block NSData *__data;
+                 
+                 NSURLSessionDataTask * const dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
+                                                          {
+                                                              __data=data;
+                                                              __response=response;
+                                                              __error=error;
+                                                              dispatch_semaphore_signal(__urlProxySemaphore);
+                                                          }];
+                 __date=[NSDate date];
+                 [dataTask resume];
+                 dispatch_semaphore_wait(__urlProxySemaphore, DISPATCH_TIME_FOREVER);
+                 //completionHandler of dataTask executed only once and before returning
+                 
+                 
+                 return [RSStreamedResponse responseWithContentType:@"multipart/related;type=application/dicom" asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock)
+                         {
+                             if (__error) completionBlock(nil,__error);
+                             if (__chunks)
+                             {
+                                 completionBlock([NSData data], nil);
+                                 LOG_DEBUG(@"urlProxy: %lu chunk in %fs for:\r\n%@",__chunks,[[NSDate date] timeIntervalSinceDate:__date],[__response description]);
+                             }
+                             else
+                             {
+                                 
+                                 completionBlock(__data, nil);
+                                 __chunks++;
+                             }
+                         }];
              }
              
-//alternative (d) otherwise qido not available
-             return [RSErrorResponse responseWithClientError:404 message:@"%@ [WADO-RS not available]",urlComponents.path];
+//(e) not available
+             return [RSErrorResponse responseWithClientError:404 message:@"[wadors] pacs %@ not available",pacs];
              
          }(request));}];
 
