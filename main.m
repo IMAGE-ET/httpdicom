@@ -34,6 +34,7 @@
 
 
 #import <Foundation/Foundation.h>
+#import "NSURLComponents+PCS.h"
 #import "ODLog.h"
 //look at the implementation of the function ODLog below
 
@@ -295,39 +296,7 @@ BOOL buildWhereString(BOOL E,BOOL S,BOOL I,NSArray *queryItems, NSDictionary *sq
     return true;
 }
 
-NSInteger nextIndexForPredicateInQueryItems(NSArray *queryItems, NSString *format, NSString *key, NSString *value, NSInteger offset)
-{
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:format,key,value];
-    if (offset < 0) return NSNotFound;
-    while (offset < [queryItems count]) {
-        if ([predicate evaluateWithObject:queryItems[offset]]) return offset;
-        offset++;
-    }
-    return NSNotFound;
-}
 
-//?requestType=WADO
-//&contentType=application/dicom
-//&studyUID={studyUID}
-//&seriesUID={seriesUID}
-//&objectUID={objectUID}
-BOOL queryitemsvalidwadodicom(NSArray *qi){
-    BOOL requestType=false;
-    BOOL contentType=false;
-    BOOL studyUID=false;
-    BOOL seriesUID=false;
-    BOOL objectUID=false;
-
-    for (NSURLQueryItem* i in qi)
-    {
-        if (!requestType && [i.name isEqualToString:@"requestType"] && [i.value isEqualToString:@"WADO"]) requestType=true;
-        else if (!contentType && [i.name isEqualToString:@"contentType"] && [i.value isEqualToString:@"application/dicom"]) contentType=true;
-        else if (!studyUID && [i.name isEqualToString:@"studyUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) studyUID=true;
-        else if (!seriesUID && [i.name isEqualToString:@"seriesUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) seriesUID=true;
-        else if (!objectUID && [i.name isEqualToString:@"objectUID"] && [UIRegex numberOfMatchesInString:i.value options:0 range:NSMakeRange(0,[i.value length])]) objectUID=true;
-    }
-    return (requestType && contentType && studyUID && seriesUID && objectUID);
-}
 
 int main(int argc, const char* argv[]) {
     @autoreleasepool {
@@ -608,18 +577,20 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
 {
+    //use it to tag DEBUG logs
     LOG_DEBUG(@"client: %@",request.remoteAddressString);
 
     NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
 
     //valid params syntax?
-    if (!queryitemsvalidwadodicom(urlComponents.queryItems)) return [RSErrorResponse responseWithClientError:404 message:@"[wado] not valid application/dicom content request: %@",urlComponents.query];
+    NSString *wadoDicomQueryItemsError=[urlComponents wadoDicomQueryItemsError];
+    if (wadoDicomQueryItemsError) return [RSErrorResponse responseWithClientError:404 message:@"[wado application/dicom] query item %@ error in: %@",wadoDicomQueryItemsError,urlComponents.query];
 
     //param pacs
-    NSInteger pacsQueryItemIndex=nextIndexForPredicateInQueryItems(urlComponents.queryItems, @"%K=%@", @"name", @"pacs", 0);
-    if (pacsQueryItemIndex==NSNotFound)
+    NSString *pacs=[urlComponents firstQueryItemNamed:@"pacs"];
+    if (!pacs)
     {
-        LOG_DEBUG(@"[wado]: no param pacs: %@",urlComponents.query);
+        LOG_VERBOSE(@"[wado] no param named \"pacs\" in: %@",urlComponents.query);
         //Find wado in any of the local device (recursive)
         for (NSString *oid in localOIDs)
         {
@@ -630,8 +601,7 @@ int main(int argc, const char* argv[]) {
     }
     
     //find entityDict
-    NSString *entity=urlComponents.queryItems[pacsQueryItemIndex].value;
-    NSDictionary *entityDict=entitiesDicts[entity];
+    NSDictionary *entityDict=entitiesDicts[pacs];
     if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [pacs not known]",urlComponents.path];
     
     //not local ... forward to custodian (with pacs parameter)
@@ -652,19 +622,7 @@ int main(int argc, const char* argv[]) {
     
     //wadouri base string defined for the entity
     NSMutableString *newWadoString=[NSMutableString stringWithFormat:@"%@?",entityDict[@"wadolocaluri"]];
-    if (![newWadoString isEqualToString:@"?"])
-    {
-        //add query params except "pacs"
-        for (int i=0; i<[urlComponents.queryItems count];i++)
-        {
-            if (i!=pacsQueryItemIndex)[newWadoString appendFormat:@"%@=%@&",urlComponents.queryItems[i].name,urlComponents.queryItems[i].value];
-        }
-        [newWadoString deleteCharactersInRange:NSMakeRange([newWadoString length]-1,1)];
-        NSLog(@"%@",newWadoString);
-        return urlProxy( newWadoString, @"application/dicom" );
-  }
-  
- 
+    if (![newWadoString isEqualToString:@"?"]) return urlProxy( [newWadoString stringByAppendingString:[urlComponents queryWithoutItemNamed:@"pacs"]], @"application/dicom" );
   
   //(c) sql+filesystem
   NSString *filesystembaseuri=entityDict[@"filesystembaseuri"];
