@@ -302,6 +302,7 @@ int main(int argc, const char* argv[]) {
         [dicomDTFormatter setDateFormat:@"yyyyMMddHHmmss"];
         UIRegex = [NSRegularExpression regularExpressionWithPattern:@"^[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*$" options:0 error:NULL];
         SHRegex = [NSRegularExpression regularExpressionWithPattern:@"^(?:\\s*)([^\\r\\n\\f\\t]*[^\\r\\n\\f\\t\\s])(?:\\s*)$" options:0 error:NULL];
+        [NSURLComponents initializeStaticRegex];
         qidoLastPathComponent=@[@"/patients",@"/studies",@"/series",@"/instances"];
         
         //static immutable
