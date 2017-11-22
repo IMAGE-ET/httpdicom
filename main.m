@@ -1,19 +1,7 @@
-#import <Foundation/Foundation.h>
-#import "ODLog.h"
-//look at the implementation of the function ODLog below
-
-#import "RS.h"
-#import "RSDataResponse.h"
-#import "RSErrorResponse.h"
-#import "RSFileResponse.h"
-#import "RSStreamedResponse.h"
-
-#import "LFCGzipUtility.h"
-
-#import "NSString+PCS.h"
-#import "NSData+PCS.h"
-
-#import "URLSessionDataTask.h"
+//
+//  Created by jacquesfauquex on 2017-03-20.
+//  Copyright © 2018 opendicom.com. All rights reserved.
+//
 
 /*
  Copyright:  Copyright (c) 2017 jacques.fauquex@opendicom.com All Rights Reserved.
@@ -43,6 +31,25 @@
  of incidental or consequential damages, so this exclusion and limitation may not apply to
  You.
  */
+
+
+#import <Foundation/Foundation.h>
+#import "ODLog.h"
+//look at the implementation of the function ODLog below
+
+#import "RS.h"
+#import "RSDataResponse.h"
+#import "RSErrorResponse.h"
+#import "RSFileResponse.h"
+#import "RSStreamedResponse.h"
+
+#import "LFCGzipUtility.h"
+
+#import "NSString+PCS.h"
+#import "NSData+PCS.h"
+
+#import "URLSessionDataTask.h"
+
 
 
 //static immutable write
@@ -582,7 +589,7 @@ int main(int argc, const char* argv[]) {
 //does not support response consolidation (wado uri always return one object only)
         
         
-//http://{ip}:{port}/wado
+// /wado
 //?requestType=WADO
 //&contentType=application/dicom
 //&studyUID={studyUID}
@@ -609,8 +616,8 @@ int main(int argc, const char* argv[]) {
     if (!queryitemsvalidwadodicom(urlComponents.queryItems)) return [RSErrorResponse responseWithClientError:404 message:@"[wado] not valid application/dicom content request: %@",urlComponents.query];
 
     //param pacs
-    NSInteger index=nextIndexForPredicateInQueryItems(urlComponents.queryItems, @"%K=%@", @"name", @"pacs", 0);
-    if (index==NSNotFound)
+    NSInteger pacsQueryItemIndex=nextIndexForPredicateInQueryItems(urlComponents.queryItems, @"%K=%@", @"name", @"pacs", 0);
+    if (pacsQueryItemIndex==NSNotFound)
     {
         LOG_DEBUG(@"[wado]: no param pacs: %@",urlComponents.query);
         //Find wado in any of the local device (recursive)
@@ -623,7 +630,7 @@ int main(int argc, const char* argv[]) {
     }
     
     //find entityDict
-    NSString *entity=urlComponents.queryItems[index].value;
+    NSString *entity=urlComponents.queryItems[pacsQueryItemIndex].value;
     NSDictionary *entityDict=entitiesDicts[entity];
     if (!entityDict) return [RSErrorResponse responseWithClientError:404 message:@"%@ [pacs not known]",urlComponents.path];
     
@@ -650,7 +657,7 @@ int main(int argc, const char* argv[]) {
         //add query params except "pacs"
         for (int i=0; i<[urlComponents.queryItems count];i++)
         {
-            if (i!=index)[newWadoString appendFormat:@"%@=%@&",urlComponents.queryItems[i].name,urlComponents.queryItems[i].value];
+            if (i!=pacsQueryItemIndex)[newWadoString appendFormat:@"%@=%@&",urlComponents.queryItems[i].name,urlComponents.queryItems[i].value];
         }
         [newWadoString deleteCharactersInRange:NSMakeRange([newWadoString length]-1,1)];
         NSLog(@"%@",newWadoString);
@@ -807,6 +814,9 @@ int main(int argc, const char* argv[]) {
 
         
 #pragma mark QIDO
+        // ( studies | series | instances )?
+        // pacs={oid}
+        
         // /pacs/{oid}/rs/( studies | series | instances )?
         NSRegularExpression *qidoRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/rs\\/(studies|series|instances)$" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:qidoRegex processBlock:
@@ -1038,7 +1048,8 @@ int main(int argc, const char* argv[]) {
 
         
 #pragma mark WADO-RS
-        // /pacs/{OID}/rs/studies/{StudyInstanceUID}
+        // /studies/{StudyInstanceUID}
+        
         // /pacs/{OID}/rs/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}
         // /pacs/{OID}/rs/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}/instances/{SOPInstanceUID}
         //Accept: multipart/related;type="application/dicom"
@@ -1116,7 +1127,8 @@ int main(int argc, const char* argv[]) {
 //-----------------------------------------------
 
 #pragma mark dcm.zip
-        // /pacs/{OID}/dcm.zip?StudyInstanceUID={UID}
+        // dcm.zip?StudyInstanceUID={UID}
+        // pacs={oid}
         // option AccessionNumber, StudyInstanceUID, SeriesInstanceUID
         
         // servicio de segundo nivel que llama a filesystembaseuri, wadouri o wadors para su realización
@@ -1465,10 +1477,12 @@ int main(int argc, const char* argv[]) {
 
         
 #pragma mark ot doc cda sr
-        //pacs/{oid}/ot?
-        //pacs/{oid}/doc?
-        //pacs/{oid}/cda?
-        //pacs/{oid}/sr?
+        // /ot?
+        // /doc?
+        // /cda?
+        // /sr?
+        
+        //pacs={oid}
 /*
         NSRegularExpression *encapsulatedRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/pacs\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*\\/(ot|doc|cda|sr|OT|DOC|CDA|SR)$" options:NSRegularExpressionCaseInsensitive error:NULL];
          [httpdicomServer addHandler:@"GET" regex:encapsulatedRegex processBlock:
