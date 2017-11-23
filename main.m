@@ -350,6 +350,10 @@ int main(int argc, const char* argv[]) {
             LOG_ERROR(@"could not get contents of devices/devices.plist");
             return 1;
         }
+        
+#pragma mark TODO classify entitiesDicts
+        // sql, dicomweb, dicom, custodian
+        
         for (NSDictionary *d in [entitiesDicts allValues])
         {
             NSString *newcustodiantitle=d[@"custodiantitle"];
@@ -513,7 +517,7 @@ int main(int argc, const char* argv[]) {
 //-----------------------------------------------
         
 #pragma mark any
-#pragma mark wado
+#pragma mark wado application/dicom
 //default handler
         
 //does support transitive (to other PCS) operation
@@ -552,7 +556,9 @@ int main(int argc, const char* argv[]) {
     //param pacs
     NSString *pacs=[urlComponents firstQueryItemNamed:@"pacs"];
     
-    // (a) any local pacs
+    // (a) ningún pacs especificado
+#pragma mark TODO reemplazar la lógica con qidos para encontrar el pacs, tanto local como remotamente. Se podría ordenar los qido por proximidad.... sql,qido,custodian
+    
     if (!pacs)
     {
         LOG_VERBOSE(@"[wado] no param named \"pacs\" in: %@",urlComponents.query);
@@ -628,6 +634,7 @@ int main(int argc, const char* argv[]) {
                 }];
     }
 
+#pragma mark TODO (d) DICOM C-get
     //(d) global?
     if ([entityDict[@"custodianglobaluri"] length])
     {
@@ -1084,11 +1091,18 @@ int main(int argc, const char* argv[]) {
 //-----------------------------------------------
 
         
-#pragma mark wadors
+#pragma mark wadors multipart/related;type=application/dicom
+        //wadors should be evaluated before qido regex
+
         // /studies/{StudyInstanceUID}
+        //http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.1
         
         // /pacs/{OID}/rs/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}
+        //http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.2
+        
         // /pacs/{OID}/rs/studies/{StudyInstanceUID}/series/{SeriesInstanceUID}/instances/{SOPInstanceUID}
+        //http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.3
+        
         //Accept: multipart/related;type="application/dicom"
         NSRegularExpression *wadorsRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/studies\\/[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*.*" options:NSRegularExpressionCaseInsensitive error:NULL];
         [httpdicomServer addHandler:@"GET" regex:wadorsRegex processBlock:

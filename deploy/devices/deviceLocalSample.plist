@@ -10,8 +10,6 @@
     <dict>
         <key>1.2</key>
         <dict>
-            <key>local</key>
-            <false/>
             <key>preferredstudyidentificator</key>
             <string id="preferredstudyidentificator">AccessionNumber</string>
             <key>custodiantitle</key>
@@ -30,7 +28,7 @@
             <string id="filesystemlocaluri">filesystembaseuri</string>
             <key>wadolocaluri</key>
             <string id="wadolocaluri">http://wadouri</string>
-            <key>wadouriadditionalparameters</key>
+            <key>wadoadditionalparameters</key>
             <string id="wadoadditionalparameters">&amp;a=b</string>
             <key>qidolocaluri</key>
             <string id="qidolocaluri">http://qido</string>
@@ -44,6 +42,14 @@
             <string id="dicomip">1.1.1.1</string>
             <key>dicomport</key>
             <string id="dicomport">104</string>
+            <key>c-find</key>
+            <false/>
+            <key>c-get</key>
+            <false/>
+            <key>c-move</key>
+            <false/>
+            <key>c-store</key>
+            <false/>
         </dict>
     </dict>
 </plist>

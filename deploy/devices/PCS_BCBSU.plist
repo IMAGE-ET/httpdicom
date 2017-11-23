@@ -10,8 +10,6 @@
     <dict>
         <key>2.16.858.2.212659800019.72769.217215590012</key>
         <dict>
-            <key>local</key>
-            <true/>
             <key>preferredstudyidentificator</key>
             <string id="preferredstudyidentificator">StudyInstanceUID</string>
             <key>custodiantitle</key>
@@ -44,6 +42,14 @@
             <string id="dicomip">192.168.15.200</string>
             <key>dicomport</key>
             <string id="dicomport">11112</string>
+            <key>c-find</key>
+            <false/>
+            <key>c-get</key>
+            <false/>
+            <key>c-move</key>
+            <false/>
+            <key>c-store</key>
+            <false/>
         </dict>
     </dict>
 </plist>
