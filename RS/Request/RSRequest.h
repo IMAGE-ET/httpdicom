@@ -1,5 +1,7 @@
 #import "RSBodyWriterProtocol.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
 /**
  *  The RSRequest class is instantiated by the RSConnection
  *  after the HTTP headers have been received. Each instance wraps a single HTTP
@@ -32,6 +34,10 @@
     NSMutableArray* _decoders;
     NSMutableDictionary* _attributes;
     id<RSBodyWriter> __unsafe_unretained _writer;
+    
+    //data
+    NSString* _text;
+    id _jsonObject;
 }
 
 @property(nonatomic, readonly) NSString* method;
@@ -52,6 +58,30 @@
 @property(nonatomic, readwrite) NSString* localAddressString;
 @property(nonatomic, readwrite) NSString* remoteAddressString;
 
+//data
+@property(nonatomic, readonly) NSData* data;
+
+//data for the request body interpreted as text
+//If the content type of the body is not a text one, or if an error occurs, nil is returned.
+//The text encoding used to interpret the data is extracted from the "Content-Type" header or defaults to UTF-8.
+@property(nonatomic, readonly, nullable) NSString* text;
+
+//data for the request body interpreted as a JSON object
+//If the content type of the body is not JSON, or if an error occurs, nil is returned.
+@property(nonatomic, readonly, nullable) id jsonObject;
+
+//url encoded
+//Returns the unescaped control names and values for the URL encoded form.
+//The text encoding used to interpret the data is extracted from the "Content-Type" header or defaults to UTF-8.
+
+@property(nonatomic, readonly) NSDictionary* arguments;
+
+//Returns the MIME type for URL encoded forms
+//i.e. "application/x-www-form-urlencoded".
+
++ (NSString*)mimeType;
+
+
 - (BOOL)hasBody;
 - (BOOL)hasByteRange;
 
@@ -71,3 +101,5 @@
 - (void)setAttribute:(id)attribute forKey:(NSString*)key;
 
 @end
+
+NS_ASSUME_NONNULL_END

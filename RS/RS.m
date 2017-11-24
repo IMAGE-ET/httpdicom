@@ -21,6 +21,29 @@
 }
 
 - (void)addHandler:(NSString*)method
+             path:(NSString*)path
+      processBlock:(RSProcessBlock)processBlock
+{
+    RSHandler* handler = [[RSHandler alloc] initWithMatchBlock:
+                          ^RSRequest *(NSString* requestMethod, NSURL* requestURL, NSDictionary* requestHeaders, NSString* urlPath, NSDictionary* urlQuery, NSString* local, NSString* remote)
+                          {
+                              
+                              if (![requestMethod isEqualToString:method]) return nil;
+                              
+                              if (!path || ![path isEqualToString:urlPath]) return nil;                              
+                              
+                              RSRequest* request = [[RSRequest alloc] initWithMethod:requestMethod url:requestURL headers:requestHeaders path:urlPath query:urlQuery local:local remote:remote];
+
+                              return request;
+                          }
+                          
+                                                  processBlock:processBlock
+                          ];
+    
+    [_handlers insertObject:handler atIndex:0];
+}
+
+- (void)addHandler:(NSString*)method
              regex:(NSRegularExpression*)regex
       processBlock:(RSProcessBlock)processBlock
 {

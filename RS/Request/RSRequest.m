@@ -4,7 +4,113 @@
 #import "RFC822.h"
 #import "NSString+PCS.h"
 
+NSString* GCDWebServerUnescapeURLString(NSString* string) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return CFBridgingRelease(CFURLCreateStringByReplacingPercentEscapesUsingEncoding(kCFAllocatorDefault, (CFStringRef)string, CFSTR(""), kCFStringEncodingUTF8));
+#pragma clang diagnostic pop
+}
+
+NSString* GCDWebServerExtractHeaderValueParameter(NSString* value, NSString* name) {
+    NSString* parameter = nil;
+    if (value) {
+        NSScanner* scanner = [[NSScanner alloc] initWithString:value];
+        [scanner setCaseSensitive:NO];  // Assume parameter names are case-insensitive
+        NSString* string = [NSString stringWithFormat:@"%@=", name];
+        if ([scanner scanUpToString:string intoString:NULL]) {
+            [scanner scanString:string intoString:NULL];
+            if ([scanner scanString:@"\"" intoString:NULL]) {
+                [scanner scanUpToString:@"\"" intoString:&parameter];
+            } else {
+                [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&parameter];
+            }
+        }
+    }
+    return parameter;
+}
+
+
+// http://www.w3schools.com/tags/ref_charactersets.asp
+NSStringEncoding GCDWebServerStringEncodingFromCharset(NSString* charset) {
+    NSStringEncoding encoding = kCFStringEncodingInvalidId;
+    if (charset) {
+        encoding = CFStringConvertEncodingToNSStringEncoding(CFStringConvertIANACharSetNameToEncoding((CFStringRef)charset));
+    }
+    return (encoding != kCFStringEncodingInvalidId ? encoding : NSUTF8StringEncoding);
+}
+
+
+BOOL GCDWebServerIsTextContentType(NSString* type) {
+    return ([type hasPrefix:@"text/"] || [type hasPrefix:@"application/json"] || [type hasPrefix:@"application/xml"]);
+}
+
+NSString* GCDWebServerDescribeData(NSData* data, NSString* type) {
+    if (GCDWebServerIsTextContentType(type)) {
+        NSString* charset = GCDWebServerExtractHeaderValueParameter(type, @"charset");
+        NSString* string = [[NSString alloc] initWithData:data encoding:GCDWebServerStringEncodingFromCharset(charset)];
+        if (string) {
+            return string;
+        }
+    }
+    return [NSString stringWithFormat:@"<%lu bytes>", (unsigned long)data.length];
+}
+
+
+NSString* GCDWebServerTruncateHeaderValue(NSString* value) {
+    if (value) {
+        NSRange range = [value rangeOfString:@";"];
+        if (range.location != NSNotFound) {
+            return [value substringToIndex:range.location];
+        }
+    }
+    return value;
+}
+
+
+NSDictionary* GCDWebServerParseURLEncodedForm(NSString* form) {
+    NSMutableDictionary* parameters = [NSMutableDictionary dictionary];
+    NSScanner* scanner = [[NSScanner alloc] initWithString:form];
+    [scanner setCharactersToBeSkipped:nil];
+    while (1) {
+        NSString* key = nil;
+        if (![scanner scanUpToString:@"=" intoString:&key] || [scanner isAtEnd]) {
+            break;
+        }
+        [scanner setScanLocation:([scanner scanLocation] + 1)];
+        
+        NSString* value = nil;
+        [scanner scanUpToString:@"&" intoString:&value];
+        if (value == nil) {
+            value = @"";
+        }
+        
+        key = [key stringByReplacingOccurrencesOfString:@"+" withString:@" "];
+        NSString* unescapedKey = key ? GCDWebServerUnescapeURLString(key) : nil;
+        value = [value stringByReplacingOccurrencesOfString:@"+" withString:@" "];
+        NSString* unescapedValue = value ? GCDWebServerUnescapeURLString(value) : nil;
+        if (unescapedKey && unescapedValue) {
+            [parameters setObject:unescapedValue forKey:unescapedKey];
+        } else {
+            LOG_WARNING(@"Failed parsing URL encoded form for key \"%@\" and value \"%@\"", key, value);
+        }
+        
+        if ([scanner isAtEnd]) {
+            break;
+        }
+        [scanner setScanLocation:([scanner scanLocation] + 1)];
+    }
+    return parameters;
+}
+
+
+
+@interface RSRequest ()
+@property(nonatomic) NSMutableData* data;
+@end
+
+
 @implementation RSRequest : NSObject
+
 
 @synthesize method=_method;
 @synthesize URL=_url;
@@ -120,6 +226,7 @@
   return [_attributes objectForKey:key];
 }
 
+/*
 - (BOOL)open:(NSError**)error {
   return YES;
 }
@@ -131,6 +238,7 @@
 - (BOOL)close:(NSError**)error {
   return YES;
 }
+*/
 
 - (void)prepareForWriting {
   _writer = self;
@@ -169,6 +277,8 @@
     return _localAddressString;
 }
 */
+
+/*
 - (NSString*)description {
   NSMutableString* description = [NSMutableString stringWithFormat:@"%@ %@", _method, _path];
   for (NSString* argument in [[_query allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
@@ -179,6 +289,83 @@
     [description appendFormat:@"\n%@: %@", header, [_headers objectForKey:header]];
   }
   return description;
+}
+*/
+//data
+- (BOOL)open:(NSError**)error {
+    if (self.contentLength != NSUIntegerMax) {
+        _data = [[NSMutableData alloc] initWithCapacity:self.contentLength];
+    } else {
+        _data = [[NSMutableData alloc] init];
+    }
+    if (_data == nil) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"GCDWebServerErrorDomain" code:-1 userInfo:@{ NSLocalizedDescriptionKey : @"Failed allocating memory" }];
+        }
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)writeData:(NSData*)data error:(NSError**)error {
+    [_data appendData:data];
+    return YES;
+}
+
+- (BOOL)close:(NSError**)error {
+    
+    NSString* charset = GCDWebServerExtractHeaderValueParameter(self.contentType, @"charset");
+    
+    NSString* string = [[NSString alloc] initWithData:self.data encoding:GCDWebServerStringEncodingFromCharset(charset)];
+    
+    _arguments = GCDWebServerParseURLEncodedForm(string);
+
+    return YES;
+}
+
+- (NSString*)description {
+    NSMutableString* description = [NSMutableString stringWithFormat:@"%@ %@", _method, _path];
+    for (NSString* argument in [[_query allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
+        [description appendFormat:@"\n  %@ = %@", argument, [_query objectForKey:argument]];
+    }
+    [description appendString:@"\n"];
+    for (NSString* header in [[_headers allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
+        [description appendFormat:@"\n%@: %@", header, [_headers objectForKey:header]];
+    }
+    if (_data) {
+        [description appendString:@"\n\n"];
+        [description appendString:GCDWebServerDescribeData(_data, (NSString*)self.contentType)];
+    }
+    for (NSString* argument in [[_arguments allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
+        [description appendFormat:@"\n%@ = %@", argument, [_arguments objectForKey:argument]];
+    }
+
+    return description;
+}
+
+
+- (NSString*)text {
+    if (_text == nil) {
+        if ([self.contentType hasPrefix:@"text/"]) {
+            NSString* charset = GCDWebServerExtractHeaderValueParameter(self.contentType, @"charset");
+            _text = [[NSString alloc] initWithData:self.data encoding:GCDWebServerStringEncodingFromCharset(charset)];
+        } else {
+            LOG_WARNING(@"RSDataRequest (Extensions) text method without prefix text/");
+        }
+    }
+    return _text;
+}
+
+- (id)jsonObject {
+    if (_jsonObject == nil) {
+        NSString* mimeType = GCDWebServerTruncateHeaderValue(self.contentType);
+        if ([mimeType isEqualToString:@"application/json"] || [mimeType isEqualToString:@"text/json"] || [mimeType isEqualToString:@"text/javascript"]) {
+            _jsonObject = [NSJSONSerialization JSONObjectWithData:_data options:0 error:NULL];
+        } else {
+            LOG_WARNING(@"RSDataRequest (Extensions) jsonObject without correct MIME");
+        }
+    }
+    return _jsonObject;
 }
 
 @end

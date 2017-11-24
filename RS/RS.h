@@ -22,6 +22,10 @@
 - (instancetype)init;
 
 - (void)addHandler:(NSString*)method
+              path:(NSString*)path
+      processBlock:(RSProcessBlock)processBlock;
+
+- (void)addHandler:(NSString*)method
              regex:(NSRegularExpression*)regex
       processBlock:(RSProcessBlock)processBlock;
 

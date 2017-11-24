@@ -634,8 +634,11 @@ int main(int argc, const char* argv[]) {
                 }];
     }
 
-#pragma mark TODO (d) DICOM C-get
-    //(d) global?
+#pragma mark TODO (d) DICOM c-get
+    
+#pragma mark TODO (e) DICOM c-move
+    
+    //(f) global?
     if ([entityDict[@"custodianglobaluri"] length])
     {
         NSString *uriString=[NSString stringWithFormat:@"%@?%@",
@@ -685,22 +688,32 @@ int main(int argc, const char* argv[]) {
     }
 
   
-  //(e) not available
+  //(g) not available
+  LOG_DEBUG(@"%@",[[urlComponents queryItems]description]);
   return [RSErrorResponse responseWithClientError:404 message:@"[wado] pacs %@ not available",pacs];
   
 }(request));}];
         
 //-----------------------------------------------
+
+        [httpdicomServer addHandler:@"POST" path:@"/mwlItem" processBlock:
+         ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
+             {
+                 //use it to tag DEBUG logs
+                 LOG_DEBUG(@"[mwlItem] client: %@",request.remoteAddressString);
+                 NSString* value = [[request arguments] objectForKey:@"value"];
+                 NSString* html = [NSString stringWithFormat:@"<html><body><p>%@</p></body></html>", value];
+                 return [RSDataResponse responseWithHTML:html];
+
+             }(request));}];
+
+        
         
 #pragma mark echo
-        NSRegularExpression *echoRegex = [NSRegularExpression regularExpressionWithPattern:@"^\\/echo$" options:0 error:NULL];
-        [httpdicomServer addHandler:@"GET" regex:echoRegex processBlock:
+        [httpdicomServer addHandler:@"GET" path:@"/echo" processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request){
-            
-            LOG_INFO(@"%@ echo",request.remoteAddressString);
-            return [RSDataResponse responseWithText:request.remoteAddressString];
-            
+            return [RSDataResponse responseWithText:[NSString stringWithFormat:@"[echo] your IP:port is %@", request.remoteAddressString]];
         }(request));}];
 
         
@@ -712,8 +725,6 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:custodiansRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock)
          {completionBlock(^RSResponse* (RSRequest* request){
-            
-            //LOG_DEBUG(@"client: %@",request.remoteAddressString);
 
             //using NSURLComponents instead of RSRequest
             NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
