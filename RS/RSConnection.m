@@ -257,7 +257,7 @@ static NSArray *_handlers = nil;
          */
 
         NSDictionary* requestQuery = nil;
-        if (!queryString) requestQuery = @{};
+        if (!queryString || ![queryString length]) requestQuery = @{};
         else
         {
             NSMutableDictionary* parameters = [NSMutableDictionary dictionary];

@@ -11,25 +11,6 @@ NSString* GCDWebServerUnescapeURLString(NSString* string) {
 #pragma clang diagnostic pop
 }
 
-NSString* GCDWebServerExtractHeaderValueParameter(NSString* value, NSString* name) {
-    NSString* parameter = nil;
-    if (value) {
-        NSScanner* scanner = [[NSScanner alloc] initWithString:value];
-        [scanner setCaseSensitive:NO];  // Assume parameter names are case-insensitive
-        NSString* string = [NSString stringWithFormat:@"%@=", name];
-        if ([scanner scanUpToString:string intoString:NULL]) {
-            [scanner scanString:string intoString:NULL];
-            if ([scanner scanString:@"\"" intoString:NULL]) {
-                [scanner scanUpToString:@"\"" intoString:&parameter];
-            } else {
-                [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&parameter];
-            }
-        }
-    }
-    return parameter;
-}
-
-
 // http://www.w3schools.com/tags/ref_charactersets.asp
 NSStringEncoding GCDWebServerStringEncodingFromCharset(NSString* charset) {
     NSStringEncoding encoding = kCFStringEncodingInvalidId;
@@ -46,7 +27,7 @@ BOOL GCDWebServerIsTextContentType(NSString* type) {
 
 NSString* GCDWebServerDescribeData(NSData* data, NSString* type) {
     if (GCDWebServerIsTextContentType(type)) {
-        NSString* charset = GCDWebServerExtractHeaderValueParameter(type, @"charset");
+        NSString* charset = [type valueForName:@"charset"];
         NSString* string = [[NSString alloc] initWithData:data encoding:GCDWebServerStringEncodingFromCharset(charset)];
         if (string) {
             return string;
@@ -103,7 +84,7 @@ NSDictionary* GCDWebServerParseURLEncodedForm(NSString* form) {
 }
 
 
-
+//
 @interface RSRequest ()
 @property(nonatomic) NSMutableData* data;
 @end
@@ -314,7 +295,7 @@ NSDictionary* GCDWebServerParseURLEncodedForm(NSString* form) {
 
 - (BOOL)close:(NSError**)error {
     
-    NSString* charset = GCDWebServerExtractHeaderValueParameter(self.contentType, @"charset");
+    NSString* charset = [self.contentType valueForName:@"charset"];
     
     NSString* string = [[NSString alloc] initWithData:self.data encoding:GCDWebServerStringEncodingFromCharset(charset)];
     
@@ -347,10 +328,10 @@ NSDictionary* GCDWebServerParseURLEncodedForm(NSString* form) {
 - (NSString*)text {
     if (_text == nil) {
         if ([self.contentType hasPrefix:@"text/"]) {
-            NSString* charset = GCDWebServerExtractHeaderValueParameter(self.contentType, @"charset");
+            NSString* charset = [self.contentType valueForName:@"charset"];
             _text = [[NSString alloc] initWithData:self.data encoding:GCDWebServerStringEncodingFromCharset(charset)];
         } else {
-            LOG_WARNING(@"RSDataRequest (Extensions) text method without prefix text/");
+            LOG_WARNING(@"can not extract text if content type does not start with text/");
         }
     }
     return _text;
@@ -362,7 +343,7 @@ NSDictionary* GCDWebServerParseURLEncodedForm(NSString* form) {
         if ([mimeType isEqualToString:@"application/json"] || [mimeType isEqualToString:@"text/json"] || [mimeType isEqualToString:@"text/javascript"]) {
             _jsonObject = [NSJSONSerialization JSONObjectWithData:_data options:0 error:NULL];
         } else {
-            LOG_WARNING(@"RSDataRequest (Extensions) jsonObject without correct MIME");
+            LOG_WARNING(@"Content-Type \"%@\" is not correct for json content", self.contentType);
         }
     }
     return _jsonObject;

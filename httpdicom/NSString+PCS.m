@@ -107,7 +107,7 @@
 }
 
 
--(NSString*)extractHeaderValueParameter:(NSString*)name
+-(NSString*)valueForName:(NSString*)name
 {
     NSString* parameter = nil;
     NSScanner* scanner = [[NSScanner alloc] initWithString:self];

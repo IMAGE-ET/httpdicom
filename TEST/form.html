@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <style>
+            body { 
+                font-family:Verdana ; 
+                font-size: small;            
+                }
+            th { 
+                text-align:left; 
+                background:#08d; 
+                color:#fff;
+               }
+            textarea { 
+                height:100%; 
+                width:99%;
+                }
+            input[type="submit"] {
+                padding:5px 15px; 
+                background:#08d; 
+                border:0 none;
+                cursor:pointer;
+                -webkit-border-radius: 5px;
+                border-radius: 5px; 
+                color:#fff;
+                font-weight: bold;
+                font-size: large;            
+            }
+            .fullwidth { width:99%; }
+        </style>
+        <title>mwlitem</title>
+    </head>
+    <body>
+        <table>
+            <tr>
+                <td>
+                    <svg version="1.1" id="Layer_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 132.7 70.7" style="enable-background:new 0 0 132.7 70.7;" xml:space="preserve" width="70">
+                        <style type="text/css"> .st0 { fill: #0080D0;}</style>
+                        <g>
+                        	<g>
+                        		<path class="st0" d="M64.2,66.5c-1.7,0-3-1.2-3-3c0-1.7,1.2-2.9,3-2.9c1.7,0,2.9,1.2,2.9,2.9C67.2,65.3,66,66.5,64.2,66.5
+                        			 M64.2,60c-1.9,0-3.5,1.6-3.5,3.5c0,1.9,1.6,3.5,3.5,3.5c1.9,0,3.5-1.6,3.5-3.5C67.8,61.6,66.2,60,64.2,60"/>
+                        		<path class="st0" d="M64.1,63.3h-0.7V62h1.1c0.5,0,1,0.1,1,0.6C65.5,63.4,64.7,63.3,64.1,63.3 M66.1,62.6c0-0.7-0.4-1.1-1.4-1.1
+                        			h-1.7v4h0.5v-1.8h0.9l1.1,1.8H66l-1.2-1.8C65.5,63.7,66.1,63.4,66.1,62.6"/>
+                        		<path class="st0" d="M50.2,21.1V3.5h-28v17.6H4.6v28.1h17.6v17.6h28V49.2h17.6V21.1H50.2z"/>
+                        	</g>
+                        	<g>
+                        		<path class="st0" d="M124.5,66.5c-1.7,0-2.9-1.2-2.9-2.9c0-1.7,1.2-2.9,2.9-2.9c1.7,0,2.9,1.2,2.9,2.9
+                        			C127.4,65.3,126.2,66.5,124.5,66.5 M124.5,60.2c-1.9,0-3.5,1.5-3.5,3.4c0,1.9,1.6,3.5,3.5,3.5c1.9,0,3.4-1.5,3.4-3.5
+                        			C128,61.7,126.4,60.2,124.5,60.2"/>
+                        		<path class="st0" d="M124.5,63.4h-0.7v-1.3h1.1c0.5,0,0.9,0.1,0.9,0.6C125.8,63.4,125,63.4,124.5,63.4 M126.3,62.7
+                        			c0-0.7-0.3-1.1-1.4-1.1h-1.7v3.9h0.5v-1.7h0.8l1.1,1.7h0.6l-1.2-1.7C125.8,63.8,126.3,63.5,126.3,62.7"/>
+                        		<path class="st0" d="M124.2,3.6c-6.8,3.4-13.6,5.3-21.5,5.3c-8,0-14.7-1.9-21.5-5.3c-4.5,8.8-5.2,23.1-1.3,35
+                        			c3.7,11.5,10.9,22,22.8,28.5c11.9-6.6,19.1-17,22.8-28.5C129.4,26.6,128.7,12.4,124.2,3.6"/>
+                        		<polygon class="st0" points="102.7,59.3 102.7,59.3 102.7,59.3 		"/>
+                        	</g>
+                        </g>
+                    </svg>
+                </td>
+                <td>
+                    <h1>Blue Cross Blue Shield</h1>
+                </td>
+            </tr>
+            <tr style="height:20%">
+                <td colspan="2"><h2>Punta del Este - Nuevo estudio de Rayos x</h2></td>
+            </tr>
+        </table>
+        
+        <!--  application/x-www-form-urlencoded does not pass file contents...-->
+        <!--  multipart/form-data does pass all name/value within body...-->
+        <form action="http://127.0.0.1:11111/mwlitem" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="pacs" value="2.16.858.2.212659800019.72769.217215590012" />
+            <input type="hidden" name="Modality" value="CR" />
+            <table border="1">
+                <tr>
+                    <th>
+                        <label for="AccessionNumber">Nro acceso</label>
+                    </th>
+                    <td>
+                        <input class="fullwidth" id="AccessionNumber" type="text" name="AccessionNumber" placeholder="nro único de documento de historia clínica" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label for="StudyDescription">Estudio</label>
+                    </th>
+                    <td>
+                        <select class="fullwidth" id="StudyDescription" name="StudyDescription">
+                            <option value="7014001">RX HUESOS FACIALES</option>
+                            <option value="7022001">RX SENOS FACIALES</option>
+                            <option value="7024001">RX SILLA TURCA</option>
+                            <option value="7026001">RX CRANEO</option>
+                            <option value="7036001">RX CUELLO (PARTES BLANDAS)</option>
+                            <option value="7101001">RX TORAX ( PARTES BLANDAS)</option>
+                            <option value="7102001">RX TORAX (F y P)</option>
+                            <option value="7201001">RX COLUMNA ENTERA</option>
+                            <option value="7204001">RX COLUMNA CERVICAL</option>
+                            <option value="7207001">RX COLUMNA TORAXICA (DORSAL)</option>
+                            <option value="7210001">RX COLUMNA LUMBO - SACRA</option>
+                            <option value="7211001">RX EST. COMPLEMENTARIOS c/ Placa MS,COLUMNA
+                                VERT.c/Placa</option>
+                            <option value="7211050">RX EST.COMPLEMENTARIOS c/ PLACA MI</option>
+                            <option value="7211401">RX EST. COMPLEMENTARIOS Perfil,de
+                                pie,acostado</option>
+                            <option value="7217001">RX PELVIS</option>
+                            <option value="7300001">RX CLAVICULA</option>
+                            <option value="7301001">RX ESCAPULA</option>
+                            <option value="7302001">RX HOMBRO</option>
+                            <option value="7306001">RX BRAZO</option>
+                            <option value="7307001">RX CODO</option>
+                            <option value="7309001">RX ANTEBRAZO</option>
+                            <option value="7310001">RX PU—O</option>
+                            <option value="7312001">RX MANO</option>
+                            <option value="7314001">RX DEDOS</option>
+                            <option value="7350001">RX CADERA</option>
+                            <option value="7351001">METODO DE GREEN</option>
+                            <option value="7355001">RX FEMUR</option>
+                            <option value="7356001">RX RODILLA</option>
+                            <option value="7359001">RX TIBIA Y PERONE</option>
+                            <option value="7361501">RX TOBILLO</option>
+                            <option value="7362001">RX PIE</option>
+                            <option value="7400001">RX ABDOMEN</option>
+                            <option value="7423002">TRANSITO INTESTINO DELGADO</option>
+                            <option value="7423501">ESTUDIO DE LA DEGLUCION</option>
+                            <option value="7447001">RX APARATO URINARIO</option>
+                            <option value="7697701">DENSITOMETRIA OSEA</option>
+                            <option value="7697750">DENSITOMETRIA OSEA PEDIATRICA</option>
+                            <option value="7101002">RX TRAQUEA</option>
+                            <option value="7036002">RX CUELLO PERFIL</option>
+                            <option value="7424604">RX GASTRODUODENO</option>
+                            <option value="7424605">RX ESOFAGO</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label>Nombre</label>
+                    </th>
+                    <td>
+                        <input id="apellido1" type="text" name="apellido1" placeholder="apellido1" />
+                        <input id="apellido2" type="text" name="apellido2" placeholder="apellido2" />
+                        <input id="nombres" type="text" name="nombres" placeholder="nombres" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label for="PatientID">ID</label>
+                    </th>
+                    <td>
+                        <input id="PatientID" type="text" name="PatientID" placeholder="nro" />
+                        <select id="PatientIDIssuer" name="Country">
+                            <option value="858">Uruguay</option>
+                            <option value="03">Argentina</option>
+                            <option value="724">España</option>
+                        </select>
+                        <select id="documentType" name="documentType">
+                            <option value="68909">cédula</option>
+                            <option value="68912">pasaporte</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label for="PatientBirthDate">Nacimiento</label>
+                    </th>
+                    <td>
+                        <input class="fullwidth" id="PatientBirthDate" type="text" placeholder="aaaammdd"
+                            name="PatientBirthDate" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label>Sexo</label>
+                    </th>
+                    <td>
+                        
+                        <label><input type="radio" name="PatientSex" value="F" checked="checked"/> feminino</label>
+                        <label><input type="radio" name="PatientSex" value="M"/> masculino</label>
+                        <label><input type="radio" name="PatientSex" value="O"/> otro</label>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label>Prioridad</label>
+                    </th>
+                    <td>
+                        <label><input type="radio" name="Priority" value="N" checked="checked"/> normal</label>
+                        <label><input type="radio" name="Priority" value="U"/> urgente</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label><input 
+                            type="radio" 
+                            name="enc" 
+                            value="msg" 
+                            checked="checked" 
+                            onclick="document.getElementById('enctextarea').style.display = 'block';
+                                     document.getElementById('encpdf').style.display = 'none';"
+                        /> mensaje</label>
+                    </td>
+                    <td>
+                        <textarea id="enctextarea" name="Message" placeholder="información a comunicar al radiólogo"></textarea> 
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label><input 
+                            type="radio" 
+                            name="enc" 
+                            value="pdf" 
+                            onclick="document.getElementById('encpdf').style.display = 'block';
+                                     document.getElementById('enctextarea').style.display = 'none';"
+                            /> pdf</label>
+                        
+                        </td>
+                    <td>
+                        <input id="encpdf" hidden="hidden" name="encpdf" type="file" />
+                    </td>
+                </tr>
+            </table>
+            <br />
+            <input
+                type="submit" ></input>
+        </form>
+    </body>
+</html>

@@ -45,7 +45,7 @@
 -(NSString*)sqlFilterWithStart:(NSString*)start end:(NSString*)end;
 -(NSString*)MD5String;
 -(NSString*)normalizeHeaderValue;
--(NSString*)extractHeaderValueParameter:(NSString*)name;
+-(NSString*)valueForName:(NSString*)name;
 -(NSString*)dcmDaFromDate;
 
 @end

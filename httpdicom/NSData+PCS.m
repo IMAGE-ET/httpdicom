@@ -37,8 +37,12 @@
 
 
 #import "NSData+PCS.h"
+#import "ODLog.h"
 
 @implementation NSData (PCS)
+
+static NSData *formDataPartName=nil;
+static NSData *doubleQuotes=nil;
 
 +(NSData*)jsonpCallback:(NSString*)callback withDictionary:(NSDictionary*)dictionary
 {
@@ -171,5 +175,60 @@ void generateCRC32Table(uint32_t *pTable, uint32_t poly)
     return crc ^ 0xFFFFFFFFL;
 }
 
++(void)initPCS
+{
+    formDataPartName=[@"Content-Disposition: form-data; name=\"" dataUsingEncoding:NSASCIIStringEncoding];
+    doubleQuotes=[@"\"" dataUsingEncoding:NSASCIIStringEncoding];
+}
+-(NSArray*)componentsSeparatedBy:(NSData*)separator fileContentType:(NSData*)fileContentType
+{
+    //return datatype is array,because a param name may be repeated
+    
+    NSMutableArray *components=[NSMutableArray array];
+    //there is a separator at the beginning and at the end
+    NSRange containerRange=NSMakeRange(0,self.length);
+    NSRange separatorRange=[self rangeOfData:separator options:0 range:containerRange];
+    NSUInteger componentStart=separatorRange.location + separatorRange.length + 2;//2...0D0A
+    containerRange.location=componentStart;
+    containerRange.length=self.length - componentStart;
 
+    //skip 0->first separator
+    separatorRange=[self rangeOfData:separator options:0 range:containerRange];
+    
+    while (separatorRange.location != NSNotFound)
+    {
+        NSMutableData *dataChunk=[NSMutableData dataWithData:[self subdataWithRange:NSMakeRange(componentStart,separatorRange.location - componentStart - 4)]];//4... 0D0A
+        
+        NSRange formDataPartNameRange=[dataChunk rangeOfData:formDataPartName options:0 range:NSMakeRange(0,38)];
+        
+        if (!formDataPartNameRange.length) break;
+        
+        [dataChunk replaceBytesInRange:NSMakeRange(0,38) withBytes:NULL length:0];
+        NSString *string = [[NSString alloc]initWithData:dataChunk encoding:NSUTF8StringEncoding];
+        
+        NSRange fileContentTypeRange=[dataChunk rangeOfData:fileContentType options:0 range:NSMakeRange(0,[dataChunk length])];
+        if (fileContentTypeRange.location != NSNotFound)
+        {
+            //find param name
+            NSRange doubleQuotesRange=[dataChunk rangeOfData:doubleQuotes options:0 range:NSMakeRange(0,[dataChunk length])];
+            NSString *name=[[NSString alloc]initWithData:[dataChunk subdataWithRange:NSMakeRange(0,doubleQuotesRange.location)] encoding:NSUTF8StringEncoding];
+            //base64 file
+            [dataChunk replaceBytesInRange:NSMakeRange(0,fileContentTypeRange.location + fileContentTypeRange.length) withBytes:NULL length:0];
+            [components addObject:[NSURLQueryItem queryItemWithName:name value:[dataChunk base64EncodedStringWithOptions:0]]];
+        }
+        else
+        {
+            NSString *string = [[NSString alloc]initWithData:dataChunk encoding:NSUTF8StringEncoding];
+            NSArray *nameValue=[string componentsSeparatedByString:@"\"\r\n\r\n"];
+            [components addObject:[NSURLQueryItem queryItemWithName:nameValue[0] value:nameValue[1]]];
+        }
+        
+        componentStart=separatorRange.location + separatorRange.length + 2;//2...0D0A
+        containerRange.location=componentStart;
+        containerRange.length=self.length - componentStart;
+
+        separatorRange=[self rangeOfData:separator options:0 range:containerRange];
+    }
+    return [NSArray arrayWithArray:components];
+}
 @end

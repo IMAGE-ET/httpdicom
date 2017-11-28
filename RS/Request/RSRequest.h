@@ -76,11 +76,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property(nonatomic, readonly) NSDictionary* arguments;
 
-//Returns the MIME type for URL encoded forms
-//i.e. "application/x-www-form-urlencoded".
-
-+ (NSString*)mimeType;
-
 
 - (BOOL)hasBody;
 - (BOOL)hasByteRange;

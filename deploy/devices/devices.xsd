@@ -105,8 +105,7 @@
                                                 </xs:annotation>
                                             </xs:element>
                                             <xs:element ref="string" id="wadolocaluri"/>
-        
-        
+                                            
                                             <xs:element name="key" fixed="wadoadditionalparameters">
                                                 <xs:annotation>
                                                     <xs:documentation>por ejemplo '&amp;amp;transferSyntax=1.2.840.10008.1.2.4.90' para pedir las imágenes con compresión JPEG2000 sin pérdida</xs:documentation>
@@ -138,60 +137,60 @@
                                             </xs:element>
                                             <xs:element ref="string" id="stowlocaluri"/>
         
-        
-                                            <xs:element name="key" fixed="dicomaet">
-                                                <xs:annotation>
-                                                    <xs:documentation>nombre corto (máx 16 chars) del device</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
-                                            <xs:element ref="string" id="dicomaet"/>
-                                            
-                                            
-                                            <xs:element name="key" fixed="dicomip">
-                                                <xs:annotation>
-                                                    <xs:documentation>IP DICOM local</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
-                                            <xs:element ref="string" id="dicomip"/>
-                                            
-                                            
-                                            <xs:element name="key" fixed="dicomport" >
-                                                <xs:annotation>
-                                                    <xs:documentation>puerto DICOM local</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
-                                            <xs:element ref="string" id="dicomport"/>
-                                            
-                                            
-                                            <xs:element name="key" fixed="c-find">
-                                                <xs:annotation>
-                                                    <xs:documentation>disponibilidad del comando</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
-                                            <xs:group ref="truefalse"/>
-                                            
-                                            <xs:element name="key" fixed="c-get">
-                                                <xs:annotation>
-                                                    <xs:documentation>disponibilidad del comando</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
-                                            <xs:group ref="truefalse"/>
-                                            
-                                            <xs:element name="key" fixed="c-move">
-                                                <xs:annotation>
-                                                    <xs:documentation>disponibilidad del comando</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
-                                            <xs:group ref="truefalse"/>
-                                            
-                                            <xs:element name="key" fixed="c-store">
-                                                <xs:annotation>
-                                                    <xs:documentation>disponibilidad del comando</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
-                                            <xs:group ref="truefalse"/>
+                                            <xs:sequence>
+                                                <xs:element name="key" fixed="dicomaet">
+                                                    <xs:annotation>
+                                                        <xs:documentation>nombre corto (máx 16 chars) del device</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:element>
+                                                <xs:element ref="string" id="dicomaet"/>
+                                                
+                                                
+                                                <xs:element name="key" fixed="dicomip">
+                                                    <xs:annotation>
+                                                        <xs:documentation>IP DICOM local</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:element>
+                                                <xs:element ref="string" id="dicomip"/>
+                                                
+                                                
+                                                <xs:element name="key" fixed="dicomport" >
+                                                    <xs:annotation>
+                                                        <xs:documentation>puerto DICOM local</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:element>
+                                                <xs:element ref="string" id="dicomport"/>
+                                                
+                                                
+                                                <xs:element name="key" fixed="c-find">
+                                                    <xs:annotation>
+                                                        <xs:documentation>disponibilidad del comando</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:element>
+                                                <xs:group ref="truefalse"/>
+                                                
+                                                <xs:element name="key" fixed="c-get">
+                                                    <xs:annotation>
+                                                        <xs:documentation>disponibilidad del comando</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:element>
+                                                <xs:group ref="truefalse"/>
+                                                
+                                                <xs:element name="key" fixed="c-move">
+                                                    <xs:annotation>
+                                                        <xs:documentation>disponibilidad del comando</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:element>
+                                                <xs:group ref="truefalse"/>
+                                                
+                                                <xs:element name="key" fixed="c-store">
+                                                    <xs:annotation>
+                                                        <xs:documentation>disponibilidad del comando</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:element>
+                                                <xs:group ref="truefalse"/>
+                                            </xs:sequence>
                                         </xs:sequence>
-                                        
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>

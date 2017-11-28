@@ -65,6 +65,7 @@ static NSDateFormatter *dicomDTFormatter=nil;
 static NSRegularExpression *UIRegex=nil;
 static NSRegularExpression *SHRegex=nil;
 static NSArray *qidoLastPathComponent=nil;
+static NSData *pdfContentType;
 
 //static immutable find within NSData
 static NSData *rn;
@@ -304,6 +305,7 @@ int main(int argc, const char* argv[]) {
         SHRegex = [NSRegularExpression regularExpressionWithPattern:@"^(?:\\s*)([^\\r\\n\\f\\t]*[^\\r\\n\\f\\t\\s])(?:\\s*)$" options:0 error:NULL];
         [NSURLComponents initializeStaticRegex];
         qidoLastPathComponent=@[@"/patients",@"/studies",@"/series",@"/instances"];
+        [NSData initPCS];
         
         //static immutable
         rn=[@"/r/n" dataUsingEncoding:NSASCIIStringEncoding];//0x0A0D;
@@ -314,7 +316,7 @@ int main(int argc, const char* argv[]) {
         CDAClosingTag=[@"</ClinicalDocument>" dataUsingEncoding:NSASCIIStringEncoding];
         ctad=[@"Content-Type: application/dicom\r\n\r\n" dataUsingEncoding:NSASCIIStringEncoding];
         emptyJsonArray=[@"[]" dataUsingEncoding:NSASCIIStringEncoding];
-        
+        pdfContentType=[@"Content-Type: application/pdf\r\n\r\n" dataUsingEncoding:NSASCIIStringEncoding];
         //datatables caché [session]
         Req=[NSMutableDictionary dictionary];
         Total=[NSMutableDictionary dictionary];
@@ -516,7 +518,6 @@ int main(int argc, const char* argv[]) {
         
 //-----------------------------------------------
         
-#pragma mark any
 #pragma mark wado application/dicom
 //default handler
         
@@ -544,14 +545,21 @@ int main(int argc, const char* argv[]) {
         [httpdicomServer addHandler:@"GET" regex:wadouriRegex processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
 {
-    //use it to tag DEBUG logs
-    LOG_DEBUG(@"[wado dicom] client: %@",request.remoteAddressString);
-
     NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
 
     //valid params syntax?
     NSString *wadoDicomQueryItemsError=[urlComponents wadoDicomQueryItemsError];
-    if (wadoDicomQueryItemsError) return [RSErrorResponse responseWithClientError:404 message:@"[wado dicom] query item %@ error in: %@",wadoDicomQueryItemsError,urlComponents.query];
+    if (wadoDicomQueryItemsError)
+    {
+#pragma mark any
+
+        LOG_DEBUG(@"[any] Path: %@",urlComponents.path);
+        LOG_DEBUG(@"[any] Query: %@",urlComponents.query);
+        LOG_DEBUG(@"[any] Content-Type:\"%@\"",request.contentType);
+        LOG_DEBUG(@"[any] Body: %@",[request.data description]);
+
+        return [RSErrorResponse responseWithClientError:404 message:@"[any]<br/> unkwnown path y/o query:<br/>%@?%@",urlComponents.path,urlComponents.query];
+    }
 
     //param pacs
     NSString *pacs=[urlComponents firstQueryItemNamed:@"pacs"];
@@ -695,15 +703,75 @@ int main(int argc, const char* argv[]) {
 }(request));}];
         
 //-----------------------------------------------
+        
+#pragma mark mwlItem
 
-        [httpdicomServer addHandler:@"POST" path:@"/mwlItem" processBlock:
+        [httpdicomServer addHandler:@"POST" path:@"/mwlitem" processBlock:
          ^(RSRequest* request, RSCompletionBlock completionBlock){completionBlock(^RSResponse* (RSRequest* request)
              {
-                 //use it to tag DEBUG logs
-                 LOG_DEBUG(@"[mwlItem] client: %@",request.remoteAddressString);
-                 NSString* value = [[request arguments] objectForKey:@"value"];
-                 NSString* html = [NSString stringWithFormat:@"<html><body><p>%@</p></body></html>", value];
+                 //PARAMETROS OBLIGATORIOS
+                 //pacs=2.16.858.2.212659800019.72769.217215590012
+                 //Modality="CR" (fijo, indicando que se trata de radiografía)
+                 //AccessionNumber= (<17 caracteres - identificador único de este estudio de este paciente en la historia clínica de BCBSU)
+                 //StudyDescription= (formato: [código]^CPT)
+                 //PatientName= (apellido1>apellido2^nombre1 nombre2   todo en mayusculas)
+                 //PatientID= (cédula sin puntos, con guión antes del dígito verificador,  o nro pasaporte)
+                 //PatientIDIssuer= (formato: 2.16.858.1.[ID país].[ID tipo de documento] ,  ver lista de los ID abajo)
+                 //PatientBirthDate= (formato: aaaammdd)
+                 //PatientSex= (M=masculino, F=feminino, O=no especificado)
+                 //Priority=
+                 // pdf= (dato médico u otras comunicaciones en el formato de documento indicado por el nombre del parámetro, codificado base64)
+                 // msg= texto
+
+                 //PARAMETROS OPCIONALES
+                 
+                 //Informing=
+                 //Referring= (quien pidió el examen. Formato:   BCBSU^^Apellido (y eventualmente nombre)^especialidad)
+
+                 
+                 //data
+                 NSURLComponents *urlComponents=[NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+                 LOG_DEBUG(@"[mwlitem] Path: %@",urlComponents.path);
+                 LOG_DEBUG(@"[mwlitem] Query: %@",urlComponents.query);
+                 LOG_DEBUG(@"[mwlitem] Content-Type:\"%@\"",request.contentType);
+                 NSMutableString* html = [NSMutableString stringWithString:@"<html><body>"];
+
+                 //Allow
+                 // Content-Type:"multipart/form-data" (form html5)
+                 // Content-Type:"application/x-www-form-urlencoded" (easier to create in rest)
+                 if ([request.contentType hasPrefix:@"multipart/form-data"])
+                 {
+                     //LOG_DEBUG(@"[mwlitem] Body: %@",[request.data description]);
+                     
+                     NSArray *components=[request.data componentsSeparatedBy:[[request.contentType valueForName:@"boundary"]dataUsingEncoding:NSASCIIStringEncoding] fileContentType:pdfContentType];
+                     //LOG_VERBOSE(@"[mwlitem] request body parts: %@",[components description]);
+                     //[request.data writeToFile:@"/private/tmp/data" options:0 error:nil];
+                     [html appendString:@"<dl>"];
+                     for (NSURLQueryItem *qi in components)
+                     {
+                         [html appendFormat:@"<dt>%@</dt><dd>%@</dd>",qi.name,qi.value];
+                     }
+                     [html appendString:@"</dl>"];
+
+                     NSURLQueryItem *p=[components lastObject];
+                     [html appendString:[NSString stringWithFormat:@"<embed src=\"data:application/pdf;base64,%@\" width=\"500\" height=\"375\" type=\"application/pdf\">",p.value ]];
+                 }
+                 else if ([request.contentType hasPrefix:@"application/x-www-form-urlencoded"])
+                 {
+                     [html appendString:@"<dl>"];
+                      for (NSString *key in [[request arguments]allKeys])
+                     {
+                         [html appendFormat:@"<dt>%@</dt><dd>%@</dd>",key,[[request arguments] objectForKey:key]];
+                     }
+                     [html appendString:@"</dl>"];
+                 }
+                 else
+                     return [RSErrorResponse responseWithClientError:404 message:@"[[mwlitem] Content-Type:\"%@\" (should be either \"multipart/form-data\" or \"application/x-www-form-urlencoded\"",request.contentType];
+                 
+                 [html appendString:@"</body></html>"];
                  return [RSDataResponse responseWithHTML:html];
+
+                 
 
              }(request));}];
 
@@ -1126,7 +1194,7 @@ int main(int argc, const char* argv[]) {
 #pragma mark TODO validator
              //valid params syntax?
              //NSString *wadorsQueryItemsError=[urlComponents wadorsQueryItemsError];
-             //if (wadorsQueryItemsError) return [RSErrorResponse responseWithClientError:404 message:@"[wado dicom] query item %@ error in: %@",wadorsQueryItemsError,urlComponents.query];
+             //if (wadorsQueryItemsError) return [RSErrorResponse responseWithClientError:404 message:@"[wadors dicom] query item %@ error in: %@",wadorsQueryItemsError,urlComponents.query];
 
              //param pacs
              NSString *pacs=[urlComponents firstQueryItemNamed:@"pacs"];
