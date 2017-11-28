@@ -745,7 +745,7 @@ int main(int argc, const char* argv[]) {
                      
                      NSArray *components=[request.data componentsSeparatedBy:[[request.contentType valueForName:@"boundary"]dataUsingEncoding:NSASCIIStringEncoding] fileContentType:pdfContentType];
                      //LOG_VERBOSE(@"[mwlitem] request body parts: %@",[components description]);
-                     //[request.data writeToFile:@"/private/tmp/data" options:0 error:nil];
+                     [request.data writeToFile:@"/private/tmp/data" options:0 error:nil];
                      [html appendString:@"<dl>"];
                      for (NSURLQueryItem *qi in components)
                      {
@@ -754,7 +754,7 @@ int main(int argc, const char* argv[]) {
                      [html appendString:@"</dl>"];
 
                      NSURLQueryItem *p=[components lastObject];
-                     [html appendString:[NSString stringWithFormat:@"<embed src=\"data:application/pdf;base64,%@\" width=\"500\" height=\"375\" type=\"application/pdf\">",p.value ]];
+                     if ([p.name isEqualToString:@"enclosurePdf"] && [p.value length]) [html appendString:[NSString stringWithFormat:@"<embed src=\"data:application/pdf;base64,%@\" width=\"500\" height=\"375\" type=\"application/pdf\">",p.value ]];
                  }
                  else if ([request.contentType hasPrefix:@"application/x-www-form-urlencoded"])
                  {

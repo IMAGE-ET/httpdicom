@@ -199,12 +199,11 @@ void generateCRC32Table(uint32_t *pTable, uint32_t poly)
     {
         NSMutableData *dataChunk=[NSMutableData dataWithData:[self subdataWithRange:NSMakeRange(componentStart,separatorRange.location - componentStart - 4)]];//4... 0D0A
         
-        NSRange formDataPartNameRange=[dataChunk rangeOfData:formDataPartName options:0 range:NSMakeRange(0,38)];
+        NSRange formDataPartNameRange=[dataChunk rangeOfData:formDataPartName options:0 range:NSMakeRange(0,[dataChunk length])];
         
         if (!formDataPartNameRange.length) break;
         
-        [dataChunk replaceBytesInRange:NSMakeRange(0,38) withBytes:NULL length:0];
-        NSString *string = [[NSString alloc]initWithData:dataChunk encoding:NSUTF8StringEncoding];
+        [dataChunk replaceBytesInRange:NSMakeRange(0,formDataPartNameRange.location + formDataPartNameRange.length) withBytes:NULL length:0];
         
         NSRange fileContentTypeRange=[dataChunk rangeOfData:fileContentType options:0 range:NSMakeRange(0,[dataChunk length])];
         if (fileContentTypeRange.location != NSNotFound)
