@@ -1,0 +1,29 @@
+{
+"00080005": {"vr":"CS","Value":["<CHARSET>"]},    
+"00400100": {"vr":"SQ","Value":[
+    {
+    "00400001":{"vr":"AE","Value":["<AET>"]},
+    "00400002":{"vr":"DA","Value":["<DATE>"]},
+    "00400003":{"vr":"TM","Value":["<TIME>"]},
+    "00080060":{"vr":"CS","Value":["<MODALITY>"]},
+    "00400009":{"vr":"SH","Value":["<STEPID>"]},
+    "00400020":{"vr":"CS","Value":["<STATUS>"]}
+    }
+]},
+"00401001":{"vr":"SH","Value":["<PROCID>"]},
+"00321064":{"vr":"SQ","Value":[
+    {
+    "00080100":{"vr":"SH","Value":["<PROCCODE>"]},
+    "00080102":{"vr":"SH","Value":["<PROCSCHEME>"]},
+    "00080104":{"vr":"LO","Value":["<PROCMEANING>"]}
+    }                
+]},
+"0020000D":{"vr":"UI","Value":["<STUDYUID>"]},
+"00401003":{"vr":"SH","Value":["<PRIORITY>"]},
+"00080050":{"vr":"SH","Value":["<ACCNUM>"]},
+"00100010":{"vr":"PN","Value":["<PATNAME>"]},
+"00100020":{"vr":"LO","Value":["<PATID>"]},
+"00100021":{"vr":"LO","Value":["<PATIDISSUER>"]},
+"00100030":{"vr":"DA","Value":["<BIRTHDATE>"]},
+"00100040":{"vr":"CS","Value":["<SEX>"]}
+}

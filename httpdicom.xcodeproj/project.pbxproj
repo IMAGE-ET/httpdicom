@@ -46,12 +46,16 @@
 		4A96C5611E843CBD002EB09E /* RFC822.h in Headers */ = {isa = PBXBuildFile; fileRef = 4A96C5601E843CBD002EB09E /* RFC822.h */; };
 		4AA57AA51FC52F7900283C91 /* NSURLComponents+PCS.h in Headers */ = {isa = PBXBuildFile; fileRef = 4AA57AA31FC52F7900283C91 /* NSURLComponents+PCS.h */; };
 		4AA57AA61FC52F7900283C91 /* NSURLComponents+PCS.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AA57AA41FC52F7900283C91 /* NSURLComponents+PCS.m */; };
+		4AA57AB21FDC06E800283C91 /* NSURLSessionDataTask+PCS.h in Headers */ = {isa = PBXBuildFile; fileRef = 4AA57AB01FDC06E800283C91 /* NSURLSessionDataTask+PCS.h */; };
+		4AA57AB31FDC06E800283C91 /* NSURLSessionDataTask+PCS.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AA57AB11FDC06E800283C91 /* NSURLSessionDataTask+PCS.m */; };
+		4AA57AB61FDC6A4A00283C91 /* NSMutableURLRequest+PCS.h in Headers */ = {isa = PBXBuildFile; fileRef = 4AA57AB41FDC6A4A00283C91 /* NSMutableURLRequest+PCS.h */; };
+		4AA57AB71FDC6A4A00283C91 /* NSMutableURLRequest+PCS.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AA57AB51FDC6A4A00283C91 /* NSMutableURLRequest+PCS.m */; };
+		4AA57ABC1FDE862D00283C91 /* DCMTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 4AA57ABA1FDE862C00283C91 /* DCMTypes.h */; };
+		4AA57ABD1FDE862D00283C91 /* DCMTypes.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AA57ABB1FDE862C00283C91 /* DCMTypes.m */; };
 		4AAB26761D8A42A400401FD5 /* LFCGzipUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AAB26701D8A42A400401FD5 /* LFCGzipUtility.m */; };
 		4AAB26771D8A42A400401FD5 /* zconf.h in Headers */ = {isa = PBXBuildFile; fileRef = 4AAB26711D8A42A400401FD5 /* zconf.h */; };
 		4AAB26781D8A42A400401FD5 /* zlib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4AAB26721D8A42A400401FD5 /* zlib.h */; };
 		4AAB26791D8A42A400401FD5 /* LFCGzipUtility.h in Headers */ = {isa = PBXBuildFile; fileRef = 4AAB26731D8A42A400401FD5 /* LFCGzipUtility.h */; };
-		4AEF37871DC8D6C800CDA008 /* URLSessionDataTask.h in Headers */ = {isa = PBXBuildFile; fileRef = 4AEF37851DC8D6C800CDA008 /* URLSessionDataTask.h */; };
-		4AEF37881DC8D6C800CDA008 /* URLSessionDataTask.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AEF37861DC8D6C800CDA008 /* URLSessionDataTask.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -110,12 +114,16 @@
 		4AA28D2D1D94569400B223CA /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		4AA57AA31FC52F7900283C91 /* NSURLComponents+PCS.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "NSURLComponents+PCS.h"; path = "httpdicom/NSURLComponents+PCS.h"; sourceTree = SOURCE_ROOT; };
 		4AA57AA41FC52F7900283C91 /* NSURLComponents+PCS.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "NSURLComponents+PCS.m"; path = "httpdicom/NSURLComponents+PCS.m"; sourceTree = SOURCE_ROOT; };
+		4AA57AB01FDC06E800283C91 /* NSURLSessionDataTask+PCS.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "NSURLSessionDataTask+PCS.h"; path = "httpdicom/NSURLSessionDataTask+PCS.h"; sourceTree = SOURCE_ROOT; };
+		4AA57AB11FDC06E800283C91 /* NSURLSessionDataTask+PCS.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "NSURLSessionDataTask+PCS.m"; path = "httpdicom/NSURLSessionDataTask+PCS.m"; sourceTree = SOURCE_ROOT; };
+		4AA57AB41FDC6A4A00283C91 /* NSMutableURLRequest+PCS.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "NSMutableURLRequest+PCS.h"; path = "httpdicom/NSMutableURLRequest+PCS.h"; sourceTree = SOURCE_ROOT; };
+		4AA57AB51FDC6A4A00283C91 /* NSMutableURLRequest+PCS.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "NSMutableURLRequest+PCS.m"; path = "httpdicom/NSMutableURLRequest+PCS.m"; sourceTree = SOURCE_ROOT; };
+		4AA57ABA1FDE862C00283C91 /* DCMTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DCMTypes.h; path = httpdicom/DCMTypes.h; sourceTree = SOURCE_ROOT; };
+		4AA57ABB1FDE862C00283C91 /* DCMTypes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = DCMTypes.m; path = httpdicom/DCMTypes.m; sourceTree = SOURCE_ROOT; };
 		4AAB26701D8A42A400401FD5 /* LFCGzipUtility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LFCGzipUtility.m; path = httpdicom/LFCGzipUtility.m; sourceTree = SOURCE_ROOT; };
 		4AAB26711D8A42A400401FD5 /* zconf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zconf.h; path = httpdicom/zconf.h; sourceTree = SOURCE_ROOT; };
 		4AAB26721D8A42A400401FD5 /* zlib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zlib.h; path = httpdicom/zlib.h; sourceTree = SOURCE_ROOT; };
 		4AAB26731D8A42A400401FD5 /* LFCGzipUtility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LFCGzipUtility.h; path = httpdicom/LFCGzipUtility.h; sourceTree = SOURCE_ROOT; };
-		4AEF37851DC8D6C800CDA008 /* URLSessionDataTask.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = URLSessionDataTask.h; path = httpdicom/URLSessionDataTask.h; sourceTree = SOURCE_ROOT; };
-		4AEF37861DC8D6C800CDA008 /* URLSessionDataTask.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = URLSessionDataTask.m; path = httpdicom/URLSessionDataTask.m; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -163,6 +171,8 @@
 		2A6BE9E31C91141D0011DEC0 /* httpdicom */ = {
 			isa = PBXGroup;
 			children = (
+				4AA57ABA1FDE862C00283C91 /* DCMTypes.h */,
+				4AA57ABB1FDE862C00283C91 /* DCMTypes.m */,
 				4A0E60431E81C01B005D7F2B /* ODLog.h */,
 				4A8346691DD91B5F008EFF41 /* NSData+PCS.h */,
 				4A83466A1DD91B5F008EFF41 /* NSData+PCS.m */,
@@ -172,12 +182,14 @@
 				4AAB26711D8A42A400401FD5 /* zconf.h */,
 				4AAB26721D8A42A400401FD5 /* zlib.h */,
 				4AAB26731D8A42A400401FD5 /* LFCGzipUtility.h */,
-				4AEF37851DC8D6C800CDA008 /* URLSessionDataTask.h */,
-				4AEF37861DC8D6C800CDA008 /* URLSessionDataTask.m */,
 				4A96C55E1E843C9E002EB09E /* RFC822.m */,
 				4A96C5601E843CBD002EB09E /* RFC822.h */,
 				4AA57AA31FC52F7900283C91 /* NSURLComponents+PCS.h */,
 				4AA57AA41FC52F7900283C91 /* NSURLComponents+PCS.m */,
+				4AA57AB01FDC06E800283C91 /* NSURLSessionDataTask+PCS.h */,
+				4AA57AB11FDC06E800283C91 /* NSURLSessionDataTask+PCS.m */,
+				4AA57AB41FDC6A4A00283C91 /* NSMutableURLRequest+PCS.h */,
+				4AA57AB51FDC6A4A00283C91 /* NSMutableURLRequest+PCS.m */,
 			);
 			name = httpdicom;
 			path = IIDproxy;
@@ -255,6 +267,8 @@
 				4A0FDF471E91078C001E3426 /* RSResponse.h in Headers */,
 				4A0E60441E81C01B005D7F2B /* ODLog.h in Headers */,
 				4A0FDF491E91078C001E3426 /* RSDataResponse.h in Headers */,
+				4AA57AB21FDC06E800283C91 /* NSURLSessionDataTask+PCS.h in Headers */,
+				4AA57AB61FDC6A4A00283C91 /* NSMutableURLRequest+PCS.h in Headers */,
 				4A83466F1DD91B5F008EFF41 /* NSString+PCS.h in Headers */,
 				4A19C9341E8F15B700DDD35D /* RSHandler.h in Headers */,
 				4AAB26791D8A42A400401FD5 /* LFCGzipUtility.h in Headers */,
@@ -262,10 +276,10 @@
 				4A0FDF4F1E91078C001E3426 /* RSStreamedResponse.h in Headers */,
 				4A0FDF421E91078C001E3426 /* RSBodyEncoder.h in Headers */,
 				4A0FDF4D1E91078C001E3426 /* RSFileResponse.h in Headers */,
+				4AA57ABC1FDE862D00283C91 /* DCMTypes.h in Headers */,
 				4A83466D1DD91B5F008EFF41 /* NSData+PCS.h in Headers */,
 				4A0FDF511E91078C001E3426 /* RS.h in Headers */,
 				4A0FDF531E91078C001E3426 /* RSConnection.h in Headers */,
-				4AEF37871DC8D6C800CDA008 /* URLSessionDataTask.h in Headers */,
 				4A0FDF621E910C1D001E3426 /* RSBodyDecoder.h in Headers */,
 				4AAB26771D8A42A400401FD5 /* zconf.h in Headers */,
 				4A0FDF441E91078C001E3426 /* RSBodyReaderProtocol.h in Headers */,
@@ -334,8 +348,8 @@
 				4A0FDF4A1E91078C001E3426 /* RSDataResponse.m in Sources */,
 				4A8346701DD91B5F008EFF41 /* NSString+PCS.m in Sources */,
 				4A0FDF4E1E91078C001E3426 /* RSFileResponse.m in Sources */,
+				4AA57ABD1FDE862D00283C91 /* DCMTypes.m in Sources */,
 				4A0FDF651E910C1D001E3426 /* RSGZipDecoder.m in Sources */,
-				4AEF37881DC8D6C800CDA008 /* URLSessionDataTask.m in Sources */,
 				4AAB26761D8A42A400401FD5 /* LFCGzipUtility.m in Sources */,
 				4A0FDF521E91078C001E3426 /* RS.m in Sources */,
 				4A0FDF501E91078C001E3426 /* RSStreamedResponse.m in Sources */,
@@ -343,7 +357,9 @@
 				4A0FDF201E904E5C001E3426 /* main.m in Sources */,
 				4A0FDF5D1E9109EB001E3426 /* RSRequest.m in Sources */,
 				4A0FDF631E910C1D001E3426 /* RSBodyDecoder.m in Sources */,
+				4AA57AB71FDC6A4A00283C91 /* NSMutableURLRequest+PCS.m in Sources */,
 				4A0FDF431E91078C001E3426 /* RSBodyEncoder.m in Sources */,
+				4AA57AB31FDC06E800283C91 /* NSURLSessionDataTask+PCS.m in Sources */,
 				4A96C55F1E843C9E002EB09E /* RFC822.m in Sources */,
 				4A0FDF541E91078C001E3426 /* RSConnection.m in Sources */,
 				4A83466E1DD91B5F008EFF41 /* NSData+PCS.m in Sources */,

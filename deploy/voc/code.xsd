@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema 
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://www.opendicom.com/xsd/plist/code.xsd"
+    xmlns="http://www.opendicom.com/xsd/plist/code.xsd" 
+    elementFormDefault="qualified"
+    xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" 
+    vc:minVersion="1.1"
+    >
+
+    <xs:element name="plist">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="dict">
+                    <xs:complexType>
+                        <xs:sequence maxOccurs="unbounded">
+                            <xs:element name="key" type="titleidstring"/>                                    
+                            <xs:element name="dict">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:group ref="id"/>
+                                        <xs:group ref="translation"/>
+                                        <xs:group ref="codesystem"/>
+                                        <xs:group ref="displayname"/>
+                                        <xs:group ref="category"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="version" fixed="1.0"/>
+        </xs:complexType>
+    </xs:element>    
+
+    <xs:group name="id">
+        <xs:sequence>
+            <xs:element name="key" fixed="id"/>
+            <xs:element ref="string"  id="idstring"/>
+        </xs:sequence>
+    </xs:group>
+    <xs:group name="translation">
+        <xs:sequence>
+            <xs:element name="key" fixed="translation"/>
+            <xs:element name="dict">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="key" type="titleidstring"/>                                    
+                        <xs:element ref="string" id="translationsystem"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:group>
+
+    <xs:group name="codesystem">
+        <xs:sequence>
+            <xs:element name="key" fixed="codesystem"/>
+            <xs:element ref="string"  id="codesystem"/>
+        </xs:sequence>
+    </xs:group>
+    <xs:group name="displayname">
+        <xs:sequence>
+            <xs:element name="key" fixed="displayname"/>
+            <xs:element ref="string"  id="displayname"/>
+        </xs:sequence>
+    </xs:group>
+    <xs:group name="category">
+        <xs:sequence>
+            <xs:element name="key" fixed="category"/>
+            <xs:element ref="string"  id="category"/>
+        </xs:sequence>
+    </xs:group>
+    
+    <!-- type polysemy -->
+    
+    <xs:element name="string" type="idstring">
+        <xs:alternative test="@id = 'id'"                  type="titleidstring"/>
+        <xs:alternative test="@id = 'translation'"         type="titleidstring"/>
+        <xs:alternative test="@id = 'translationsysystem'" type="titleidstring"/>
+        <xs:alternative test="@id = 'code'"                type="titleidstring"/>
+        <xs:alternative test="@id = 'codesystem'"          type="titleidstring"/>
+    </xs:element>
+    
+    <xs:complexType name="idstring">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="id" use="required"/>                
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="titleidstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="16"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="oididstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:pattern value="[1-2](\d)*(\.0|\.[1-9](\d)*)*"/>
+                <xs:maxLength value="64"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:complexType name="httpidstring">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:pattern value="()|(https?://.*)"/>
+                <xs:whiteSpace value="collapse"></xs:whiteSpace>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+</xs:schema>

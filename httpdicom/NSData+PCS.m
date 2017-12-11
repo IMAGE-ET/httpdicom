@@ -43,6 +43,11 @@
 
 static NSData *formDataPartName=nil;
 static NSData *doubleQuotes=nil;
+static NSData *contentType=nil;
+static NSData *semicolon=nil;
+static NSData *rnrn=nil;
+static NSData *rn=nil;
+
 
 +(NSData*)jsonpCallback:(NSString*)callback withDictionary:(NSDictionary*)dictionary
 {
@@ -179,19 +184,26 @@ void generateCRC32Table(uint32_t *pTable, uint32_t poly)
 {
     formDataPartName=[@"Content-Disposition: form-data; name=\"" dataUsingEncoding:NSASCIIStringEncoding];
     doubleQuotes=[@"\"" dataUsingEncoding:NSASCIIStringEncoding];
+    contentType=[@"Content-Type: " dataUsingEncoding:NSASCIIStringEncoding];
+    semicolon=[@";" dataUsingEncoding:NSASCIIStringEncoding];
+    rnrn=[@"\r\n\r\n" dataUsingEncoding:NSASCIIStringEncoding];
+    rn=[@"\r\n" dataUsingEncoding:NSASCIIStringEncoding];
 }
--(NSArray*)componentsSeparatedBy:(NSData*)separator fileContentType:(NSData*)fileContentType
+
+-(NSDictionary*)parseNamesValuesTypesInBodySeparatedBy:(NSData*)separator
 {
     //return datatype is array,because a param name may be repeated
     
-    NSMutableArray *components=[NSMutableArray array];
+    NSMutableArray *names=[NSMutableArray array];
+    NSMutableArray *values=[NSMutableArray array];
+    NSMutableArray *types=[NSMutableArray array];
     //there is a separator at the beginning and at the end
     NSRange containerRange=NSMakeRange(0,self.length);
     NSRange separatorRange=[self rangeOfData:separator options:0 range:containerRange];
     NSUInteger componentStart=separatorRange.location + separatorRange.length + 2;//2...0D0A
     containerRange.location=componentStart;
     containerRange.length=self.length - componentStart;
-
+    
     //skip 0->first separator
     separatorRange=[self rangeOfData:separator options:0 range:containerRange];
     
@@ -199,35 +211,59 @@ void generateCRC32Table(uint32_t *pTable, uint32_t poly)
     {
         NSMutableData *dataChunk=[NSMutableData dataWithData:[self subdataWithRange:NSMakeRange(componentStart,separatorRange.location - componentStart - 4)]];//4... 0D0A
         
-        NSRange formDataPartNameRange=[dataChunk rangeOfData:formDataPartName options:0 range:NSMakeRange(0,[dataChunk length])];
-        
-        if (!formDataPartNameRange.length) break;
-        
-        [dataChunk replaceBytesInRange:NSMakeRange(0,formDataPartNameRange.location + formDataPartNameRange.length) withBytes:NULL length:0];
-        
-        NSRange fileContentTypeRange=[dataChunk rangeOfData:fileContentType options:0 range:NSMakeRange(0,[dataChunk length])];
-        if (fileContentTypeRange.location != NSNotFound)
-        {
-            //find param name
-            NSRange doubleQuotesRange=[dataChunk rangeOfData:doubleQuotes options:0 range:NSMakeRange(0,[dataChunk length])];
-            NSString *name=[[NSString alloc]initWithData:[dataChunk subdataWithRange:NSMakeRange(0,doubleQuotesRange.location)] encoding:NSUTF8StringEncoding];
-            //base64 file
-            [dataChunk replaceBytesInRange:NSMakeRange(0,fileContentTypeRange.location + fileContentTypeRange.length) withBytes:NULL length:0];
-            [components addObject:[NSURLQueryItem queryItemWithName:name value:[dataChunk base64EncodedStringWithOptions:0]]];
-        }
+        //add object to types
+        NSString *type;
+        NSRange contentTypeRange=[dataChunk rangeOfData:contentType options:0 range:NSMakeRange(0,[dataChunk length])];
+        if (contentTypeRange.location==NSNotFound) type=@"";
         else
         {
-            NSString *string = [[NSString alloc]initWithData:dataChunk encoding:NSUTF8StringEncoding];
-            NSArray *nameValue=[string componentsSeparatedByString:@"\"\r\n\r\n"];
-            [components addObject:[NSURLQueryItem queryItemWithName:nameValue[0] value:nameValue[1]]];
+            NSUInteger start=contentTypeRange.location+contentTypeRange.length;
+            NSRange semicolonRange=[dataChunk rangeOfData:semicolon options:0 range:NSMakeRange(start,[dataChunk length]-start)];
+            NSRange rnRange=[dataChunk rangeOfData:rn options:0 range:NSMakeRange(start,[dataChunk length]-start)];
+            if (   semicolonRange.location==NSNotFound
+                || (    rnRange.location!=NSNotFound
+                    &&  rnRange.location < semicolonRange.location)
+                ) type=[[NSString alloc]initWithData:[dataChunk subdataWithRange:NSMakeRange(start,rnRange.location-start)] encoding:NSUTF8StringEncoding];
+            else type=[[NSString alloc]initWithData:[dataChunk subdataWithRange:NSMakeRange(start,semicolonRange.location-start)] encoding:NSUTF8StringEncoding];
         }
+        [types addObject:type];
+        
+        //remove everything until name
+        NSRange formDataPartNameRange=[dataChunk rangeOfData:formDataPartName options:0 range:NSMakeRange(0,[dataChunk length])];
+        if (!formDataPartNameRange.length) break;
+        [dataChunk replaceBytesInRange:NSMakeRange(0,formDataPartNameRange.location + formDataPartNameRange.length) withBytes:NULL length:0];
+        
+        //add object to names
+        NSRange doubleQuotesRange=[dataChunk rangeOfData:doubleQuotes options:0 range:NSMakeRange(0,[dataChunk length])];
+        [names addObject:[[NSString alloc]initWithData:[dataChunk subdataWithRange:NSMakeRange(0,doubleQuotesRange.location)] encoding:NSUTF8StringEncoding]];
+        
+        //remove everything until rnrn
+        NSRange rnrnRange=[dataChunk rangeOfData:rnrn options:0 range:NSMakeRange(0,[dataChunk length])];
+        [dataChunk replaceBytesInRange:NSMakeRange(0,rnrnRange.location + rnrnRange.length) withBytes:NULL length:0];
+
+        //add object to values
+        if (  ![type length]
+            || [type hasPrefix:@"text"]
+            || [type hasPrefix:@"application/json"]
+            || [type hasPrefix:@"application/dicom+json"]
+            || [type hasPrefix:@"application/xml"]
+            || [type hasPrefix:@"application/xml+json"]
+            )[values addObject:[[NSString alloc]initWithData:dataChunk encoding:NSUTF8StringEncoding]];
+        else [values addObject:[dataChunk base64EncodedStringWithOptions:0]];
         
         componentStart=separatorRange.location + separatorRange.length + 2;//2...0D0A
         containerRange.location=componentStart;
         containerRange.length=self.length - componentStart;
-
+        
         separatorRange=[self rangeOfData:separator options:0 range:containerRange];
     }
-    return [NSArray arrayWithArray:components];
+    return [NSDictionary dictionaryWithObjectsAndKeys:
+            [NSArray arrayWithArray:names],
+            @"names",
+            [NSArray arrayWithArray:values],
+            @"values",
+            [NSArray arrayWithArray:types],
+            @"types",
+            nil];
 }
 @end

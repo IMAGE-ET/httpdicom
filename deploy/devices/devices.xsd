@@ -114,29 +114,26 @@
                                             <xs:element ref="string" id="wadoadditionalparameters"/>
         
         
-                                            <xs:element name="key" fixed="qidolocaluri">
-                                                <xs:annotation>
-                                                    <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
+                                            <xs:element name="key" fixed="qidolocaluri"/>
                                             <xs:element ref="string" id="qidolocaluri"/>
         
         
-                                            <xs:element name="key" fixed="wadorslocaluri">
-                                                <xs:annotation>
-                                                    <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
+                                            <xs:element name="key" fixed="wadorslocaluri"/>
                                             <xs:element ref="string" id="wadorslocaluri"/>
         
         
-                                            <xs:element name="key" fixed="stowlocaluri">
-                                                <xs:annotation>
-                                                    <xs:documentation>nombre corto (máx 16 chars) del PCS custodian</xs:documentation>
-                                                </xs:annotation>
-                                            </xs:element>
+                                            <xs:element name="key" fixed="stowlocaluri"/>
                                             <xs:element ref="string" id="stowlocaluri"/>
-        
+    
+    
+                                            <xs:element name="key" fixed="mwlitemlocaluri"/>
+                                            <xs:element ref="string" id="mwlitemlocaluri"/>
+                                            
+                                            
+                                            <xs:element name="key" fixed="patientslocaluri"/>
+                                            <xs:element ref="string" id="patientslocaluri"/>
+                                            
+    
                                             <xs:sequence>
                                                 <xs:element name="key" fixed="dicomaet">
                                                     <xs:annotation>
@@ -189,6 +186,16 @@
                                                     </xs:annotation>
                                                 </xs:element>
                                                 <xs:group ref="truefalse"/>
+                                                
+                                                <xs:element name="key" fixed="ormlocaluri"/>
+                                                <xs:element ref="string" id="ormlocaluri"/>
+                                                
+                                                <xs:element name="key" fixed="orulocaluri"/>
+                                                <xs:element ref="string" id="orulocaluri"/>
+                                                
+                                                <xs:element name="key" fixed="pidlocaluri"/>
+                                                <xs:element ref="string" id="pidlocaluri"/>
+                                                
                                             </xs:sequence>
                                         </xs:sequence>
                                     </xs:sequence>
@@ -209,14 +216,19 @@
 
         <xs:alternative test="@id = 'sqlstringencoding'"           type="stringencodingidstring"/>
 
-        <xs:alternative test="@id = 'wadolocaluri'"                     type="httpidstring"/>
-        <xs:alternative test="@id = 'qidolocaluri'"                        type="httpidstring"/>
-        <xs:alternative test="@id = 'wadorslocaluri'"                      type="httpidstring"/>
-        <xs:alternative test="@id = 'stowlocaluri'"                        type="httpidstring"/>
-
+        <xs:alternative test="@id = 'wadolocaluri'"                type="httpidstring"/>
+        <xs:alternative test="@id = 'qidolocaluri'"                type="httpidstring"/>
+        <xs:alternative test="@id = 'wadorslocaluri'"              type="httpidstring"/>
+        <xs:alternative test="@id = 'stowlocaluri'"                type="httpidstring"/>
+        <xs:alternative test="@id = 'mwlitemlocaluri'"             type="httpidstring"/>
+        <xs:alternative test="@id = 'patientlocaluri'"             type="httpidstring"/>
+        
         <xs:alternative test="@id = 'dicomaet'"                    type="titleidstring"/>
         <xs:alternative test="@id = 'dicomip'"                     type="ipidstring"/>
         <xs:alternative test="@id = 'dicompuerto'"                 type="portidstring"/>
+        <xs:alternative test="@id = 'ormlocaluri'"                 type="httpidstring"/>
+        <xs:alternative test="@id = 'orulocaluri'"                 type="httpidstring"/>
+        <xs:alternative test="@id = 'pidlocaluri'"                 type="httpidstring"/>
     </xs:element>
     
     <xs:complexType name="idstring">

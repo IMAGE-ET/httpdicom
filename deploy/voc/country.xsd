@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema 
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://www.opendicom.com/xsd/plist/country.xsd"
+    xmlns="http://www.opendicom.com/xsd/plist/country.xsd" 
+    elementFormDefault="qualified"
+    xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" 
+    vc:minVersion="1.1"
+    >
+
+    <xs:element name="plist">
+        <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+                <xs:element name="array">
+                    <xs:complexType>
+                        <xs:sequence maxOccurs="unbounded">
+                            <xs:element name="array">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element ref="string" id="PAIS"/>
+                                        <xs:element ref="string" id="COUNTRY"/>
+                                        <xs:element ref="string" id="AB"/>
+                                        <xs:element ref="string" id="ABC"/>
+                                        <xs:element ref="string" id="XXX"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="version" fixed="1.0"/>
+        </xs:complexType>
+    </xs:element>    
+    
+    <!-- type polysemy -->
+    
+    <xs:element name="string" type="idstring">
+        <xs:alternative test="@id = 'PAIS'"    type="idstring"/>
+        <xs:alternative test="@id = 'COUNTRY'" type="idstring"/>
+        <xs:alternative test="@id = 'AB'"      type="AB"/>
+        <xs:alternative test="@id = 'ABC'"     type="ABC"/>
+        <xs:alternative test="@id = 'XXX'"     type="XXX"/>
+    </xs:element>
+    
+    <xs:complexType name="idstring">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="id" use="required"/>                
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="AB">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:pattern value="\p{Lu}\p{Lu}"></xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:complexType name="ABC">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:pattern value="\p{Lu}\p{Lu}\p{Lu}"></xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:complexType name="XXX">
+        <xs:simpleContent>
+            <xs:restriction base="idstring">
+                <xs:pattern value="\p{N}\p{N}\p{N}"></xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+</xs:schema>

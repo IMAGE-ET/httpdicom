@@ -1,0 +1,710 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist
+    xmlns="http://www.opendicom.com/xsd/plist/code.xsd"
+    
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.opendicom.com/xsd/plist/code.xsd ../code.xsd"
+    
+    version="1.0"
+    >
+    <dict>
+        
+        <key id="code">7014001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1154</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX HUESOS FACIALES</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7022001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1155</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX SENOS FACIALES</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7024001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1154</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX SILLA TURCA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7026001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1155</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX CRANEO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7036001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1172</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX CUELLO (PARTES BLANDAS)</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7101001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1174</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX TORAX ( PARTES BLANDAS)</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7102001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1185</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX TORAX (F y P)</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7201001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1150</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX COLUMNA ENTERA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7204001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1149A</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX COLUMNA CERVICAL</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7207001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1149B</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX COLUMNA TORAXICA (DORSAL)</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7210001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1149D</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX COLUMNA LUMBO - SACRA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7211001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1157</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX EST. COMPLEMENTARIOS c/ Placa MS,COLUMNA VERT.c/Placa</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7211050</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1149J</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX EST.COMPLEMENTARIOS c/ PLACA MI</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7211401</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1149J</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX EST. COMPLEMENTARIOS Perfil,de pie,acostado</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7217001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1149G</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX PELVIS</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7300001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1215</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX CLAVICULA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7301001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1215</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX ESCAPULA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7302001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1215</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX HOMBRO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7306001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1215</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX BRAZO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7307001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1215</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX CODO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7309001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1215</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX ANTEBRAZO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7310001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1215</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX PUÑO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7312001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1215</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX MANO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7314001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1215</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX DEDOS</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7350001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1149G</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX CADERA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7351001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1257</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">METODO DE GREEN</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7355001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1212</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX FEMUR</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7356001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1212</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX RODILLA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7359001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1214</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX TIBIA Y PERONE</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7361501</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1212</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX TOBILLO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7362001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1212</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX PIE</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7400001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1171</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX ABDOMEN</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7423002</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1143A</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">TRANSITO INTESTINO DELGADO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7423501</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1404</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">ESTUDIO DE LA DEGLUCION</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7447001</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1171</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX APARATO URINARIO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7697701</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode"></key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">DENSITOMETRIA OSEA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7697750</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode"></key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">DENSITOMETRIA OSEA PEDIATRICA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7101002</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1185</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX TRAQUEA</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7036002</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1176</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX CUELLO PERFIL</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7424604</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1202</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX GASTRODUODENO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+        <key id="code">7424605</key>
+        <dict>
+            <key>id</key>
+            <string id="idstring"></string>
+            <key>translation</key>
+            <dict>
+                <key id="translationcode">1191</key>
+                <string id="translationsystem">CIP</string>
+            </dict>
+            <key>codesystem</key>
+            <string id="codesystem">CPT</string>
+            <key>displayname</key>
+            <string id="displayname">RX ESOFAGO</string>
+            <key>category</key>
+            <string id="category">CR</string>
+        </dict>
+        
+    </dict>
+</plist>

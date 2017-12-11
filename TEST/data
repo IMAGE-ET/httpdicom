@@ -1,0 +1,92 @@
+
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="pacs"
+
+2.16.858.2.212659800019.72769.217215590012
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="Modality"
+
+CR
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="AccessionNumber"
+
+123
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="StudyDescription"
+
+RX HUESOS FACIALES
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="apellido1"
+
+FAUQUEX
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="apellido2"
+
+LANVENEX
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="nombres"
+
+JACQUES ALBERT
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="PatientID"
+
+5063730-0
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="PatientIDCountry"
+
+UY
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="PatientIDType"
+
+68909
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="PatientBirthDate"
+
+19650123
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="PatientSex"
+
+M
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="Priority"
+
+N
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="enclosure"
+
+msg
+------=_Part_0_16273713.1512418196972
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: form-data; name="enclosureTextarea"
+
+hola
+------=_Part_0_16273713.1512418196972--

@@ -1,0 +1,1690 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist
+    xmlns="http://www.opendicom.com/xsd/plist/country.xsd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.opendicom.com/xsd/plist/country.xsd 
+    file:country.xsd"
+    >
+    <array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">AALAND ISLANDS</string>
+            <string id="AB">AX</string>
+            <string id="ABC">ALA</string>
+            <string id="XXX">248</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">AFGHANISTAN</string>
+            <string id="AB">AF</string>
+            <string id="ABC">AFG</string>
+            <string id="XXX">004</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ALBANIA</string>
+            <string id="AB">AL</string>
+            <string id="ABC">ALB</string>
+            <string id="XXX">008</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ALGERIA</string>
+            <string id="AB">DZ</string>
+            <string id="ABC">DZA</string>
+            <string id="XXX">012</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">AMERICAN SAMOA</string>
+            <string id="AB">AS</string>
+            <string id="ABC">ASM</string>
+            <string id="XXX">016</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ANDORRA</string>
+            <string id="AB">AD</string>
+            <string id="ABC">AND</string>
+            <string id="XXX">020</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ANGOLA</string>
+            <string id="AB">AO</string>
+            <string id="ABC">AGO</string>
+            <string id="XXX">024</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ANGUILLA</string>
+            <string id="AB">AI</string>
+            <string id="ABC">AIA</string>
+            <string id="XXX">660</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ANTARCTICA</string>
+            <string id="AB">AQ</string>
+            <string id="ABC">ATA</string>
+            <string id="XXX">010</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ANTIGUA AND BARBUDA</string>
+            <string id="AB">AG</string>
+            <string id="ABC">ATG</string>
+            <string id="XXX">028</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ARGENTINA</string>
+            <string id="AB">AR</string>
+            <string id="ABC">ARG</string>
+            <string id="XXX">032</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ARMENIA</string>
+            <string id="AB">AM</string>
+            <string id="ABC">ARM</string>
+            <string id="XXX">051</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ARUBA</string>
+            <string id="AB">AW</string>
+            <string id="ABC">ABW</string>
+            <string id="XXX">533</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">AUSTRALIA</string>
+            <string id="AB">AU</string>
+            <string id="ABC">AUS</string>
+            <string id="XXX">036</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">AUSTRIA</string>
+            <string id="AB">AT</string>
+            <string id="ABC">AUT</string>
+            <string id="XXX">040</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">AZERBAIJAN</string>
+            <string id="AB">AZ</string>
+            <string id="ABC">AZE</string>
+            <string id="XXX">031</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BAHAMAS</string>
+            <string id="AB">BS</string>
+            <string id="ABC">BHS</string>
+            <string id="XXX">044</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BAHRAIN</string>
+            <string id="AB">BH</string>
+            <string id="ABC">BHR</string>
+            <string id="XXX">048</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BANGLADESH</string>
+            <string id="AB">BD</string>
+            <string id="ABC">BGD</string>
+            <string id="XXX">050</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BARBADOS</string>
+            <string id="AB">BB</string>
+            <string id="ABC">BRB</string>
+            <string id="XXX">052</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BELARUS</string>
+            <string id="AB">BY</string>
+            <string id="ABC">BLR</string>
+            <string id="XXX">112</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BELGIUM</string>
+            <string id="AB">BE</string>
+            <string id="ABC">BEL</string>
+            <string id="XXX">056</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BELIZE</string>
+            <string id="AB">BZ</string>
+            <string id="ABC">BLZ</string>
+            <string id="XXX">084</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BENIN</string>
+            <string id="AB">BJ</string>
+            <string id="ABC">BEN</string>
+            <string id="XXX">204</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BERMUDA</string>
+            <string id="AB">BM</string>
+            <string id="ABC">BMU</string>
+            <string id="XXX">060</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BHUTAN</string>
+            <string id="AB">BT</string>
+            <string id="ABC">BTN</string>
+            <string id="XXX">064</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BOLIVIA</string>
+            <string id="AB">BO</string>
+            <string id="ABC">BOL</string>
+            <string id="XXX">068</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BOSNIA AND HERZEGOWINA</string>
+            <string id="AB">BA</string>
+            <string id="ABC">BIH</string>
+            <string id="XXX">070</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BOTSWANA</string>
+            <string id="AB">BW</string>
+            <string id="ABC">BWA</string>
+            <string id="XXX">072</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BOUVET ISLAND</string>
+            <string id="AB">BV</string>
+            <string id="ABC">BVT</string>
+            <string id="XXX">074</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BRAZIL</string>
+            <string id="AB">BR</string>
+            <string id="ABC">BRA</string>
+            <string id="XXX">076</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BRITISH INDIAN OCEAN TERRITORY</string>
+            <string id="AB">IO</string>
+            <string id="ABC">IOT</string>
+            <string id="XXX">086</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BRUNEI DARUSSALAM</string>
+            <string id="AB">BN</string>
+            <string id="ABC">BRN</string>
+            <string id="XXX">096</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BULGARIA</string>
+            <string id="AB">BG</string>
+            <string id="ABC">BGR</string>
+            <string id="XXX">100</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BURKINA FASO</string>
+            <string id="AB">BF</string>
+            <string id="ABC">BFA</string>
+            <string id="XXX">854</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">BURUNDI</string>
+            <string id="AB">BI</string>
+            <string id="ABC">BDI</string>
+            <string id="XXX">108</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CAMBODIA</string>
+            <string id="AB">KH</string>
+            <string id="ABC">KHM</string>
+            <string id="XXX">116</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CAMEROON</string>
+            <string id="AB">CM</string>
+            <string id="ABC">CMR</string>
+            <string id="XXX">120</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CANADA</string>
+            <string id="AB">CA</string>
+            <string id="ABC">CAN</string>
+            <string id="XXX">124</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CAPE VERDE</string>
+            <string id="AB">CV</string>
+            <string id="ABC">CPV</string>
+            <string id="XXX">132</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CAYMAN ISLANDS</string>
+            <string id="AB">KY</string>
+            <string id="ABC">CYM</string>
+            <string id="XXX">136</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CENTRAL AFRICAN REPUBLIC</string>
+            <string id="AB">CF</string>
+            <string id="ABC">CAF</string>
+            <string id="XXX">140</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CHAD</string>
+            <string id="AB">TD</string>
+            <string id="ABC">TCD</string>
+            <string id="XXX">148</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CHILE</string>
+            <string id="AB">CL</string>
+            <string id="ABC">CHL</string>
+            <string id="XXX">152</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CHINA</string>
+            <string id="AB">CN</string>
+            <string id="ABC">CHN</string>
+            <string id="XXX">156</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CHRISTMAS ISLAND</string>
+            <string id="AB">CX</string>
+            <string id="ABC">CXR</string>
+            <string id="XXX">162</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">COCOS (KEELING) ISLANDS</string>
+            <string id="AB">CC</string>
+            <string id="ABC">CCK</string>
+            <string id="XXX">166</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">COLOMBIA</string>
+            <string id="AB">CO</string>
+            <string id="ABC">COL</string>
+            <string id="XXX">170</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">COMOROS</string>
+            <string id="AB">KM</string>
+            <string id="ABC">COM</string>
+            <string id="XXX">174</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CONGO, Democratic Republic of (was Zaire)</string>
+            <string id="AB">CD</string>
+            <string id="ABC">COD</string>
+            <string id="XXX">180</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CONGO, Republic of</string>
+            <string id="AB">CG</string>
+            <string id="ABC">COG</string>
+            <string id="XXX">178</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">COOK ISLANDS</string>
+            <string id="AB">CK</string>
+            <string id="ABC">COK</string>
+            <string id="XXX">184</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">COSTA RICA</string>
+            <string id="AB">CR</string>
+            <string id="ABC">CRI</string>
+            <string id="XXX">188</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">COTE D'IVOIRE</string>
+            <string id="AB">CI</string>
+            <string id="ABC">CIV</string>
+            <string id="XXX">384</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CROATIA (local name: Hrvatska)</string>
+            <string id="AB">HR</string>
+            <string id="ABC">HRV</string>
+            <string id="XXX">191</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CUBA</string>
+            <string id="AB">CU</string>
+            <string id="ABC">CUB</string>
+            <string id="XXX">192</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CYPRUS</string>
+            <string id="AB">CY</string>
+            <string id="ABC">CYP</string>
+            <string id="XXX">196</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">CZECH REPUBLIC</string>
+            <string id="AB">CZ</string>
+            <string id="ABC">CZE</string>
+            <string id="XXX">203</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">DENMARK</string>
+            <string id="AB">DK</string>
+            <string id="ABC">DNK</string>
+            <string id="XXX">208</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">DJIBOUTI</string>
+            <string id="AB">DJ</string>
+            <string id="ABC">DJI</string>
+            <string id="XXX">262</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">DOMINICA</string>
+            <string id="AB">DM</string>
+            <string id="ABC">DMA</string>
+            <string id="XXX">212</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">DOMINICAN REPUBLIC</string>
+            <string id="AB">DO</string>
+            <string id="ABC">DOM</string>
+            <string id="XXX">214</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ECUADOR</string>
+            <string id="AB">EC</string>
+            <string id="ABC">ECU</string>
+            <string id="XXX">218</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">EGYPT</string>
+            <string id="AB">EG</string>
+            <string id="ABC">EGY</string>
+            <string id="XXX">818</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">EL SALVADOR</string>
+            <string id="AB">SV</string>
+            <string id="ABC">SLV</string>
+            <string id="XXX">222</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">EQUATORIAL GUINEA</string>
+            <string id="AB">GQ</string>
+            <string id="ABC">GNQ</string>
+            <string id="XXX">226</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ERITREA</string>
+            <string id="AB">ER</string>
+            <string id="ABC">ERI</string>
+            <string id="XXX">232</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ESTONIA</string>
+            <string id="AB">EE</string>
+            <string id="ABC">EST</string>
+            <string id="XXX">233</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ETHIOPIA</string>
+            <string id="AB">ET</string>
+            <string id="ABC">ETH</string>
+            <string id="XXX">231</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">FALKLAND ISLANDS (MALVINAS)</string>
+            <string id="AB">FK</string>
+            <string id="ABC">FLK</string>
+            <string id="XXX">238</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">FAROE ISLANDS</string>
+            <string id="AB">FO</string>
+            <string id="ABC">FRO</string>
+            <string id="XXX">234</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">FIJI</string>
+            <string id="AB">FJ</string>
+            <string id="ABC">FJI</string>
+            <string id="XXX">242</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">FINLAND</string>
+            <string id="AB">FI</string>
+            <string id="ABC">FIN</string>
+            <string id="XXX">246</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">FRANCE</string>
+            <string id="AB">FR</string>
+            <string id="ABC">FRA</string>
+            <string id="XXX">250</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">FRENCH GUIANA</string>
+            <string id="AB">GF</string>
+            <string id="ABC">GUF</string>
+            <string id="XXX">254</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">FRENCH POLYNESIA</string>
+            <string id="AB">PF</string>
+            <string id="ABC">PYF</string>
+            <string id="XXX">258</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">FRENCH SOUTHERN TERRITORIES</string>
+            <string id="AB">TF</string>
+            <string id="ABC">ATF</string>
+            <string id="XXX">260</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GABON</string>
+            <string id="AB">GA</string>
+            <string id="ABC">GAB</string>
+            <string id="XXX">266</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GAMBIA</string>
+            <string id="AB">GM</string>
+            <string id="ABC">GMB</string>
+            <string id="XXX">270</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GEORGIA</string>
+            <string id="AB">GE</string>
+            <string id="ABC">GEO</string>
+            <string id="XXX">268</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GERMANY</string>
+            <string id="AB">DE</string>
+            <string id="ABC">DEU</string>
+            <string id="XXX">276</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GHANA</string>
+            <string id="AB">GH</string>
+            <string id="ABC">GHA</string>
+            <string id="XXX">288</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GIBRALTAR</string>
+            <string id="AB">GI</string>
+            <string id="ABC">GIB</string>
+            <string id="XXX">292</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GREECE</string>
+            <string id="AB">GR</string>
+            <string id="ABC">GRC</string>
+            <string id="XXX">300</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GREENLAND</string>
+            <string id="AB">GL</string>
+            <string id="ABC">GRL</string>
+            <string id="XXX">304</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GRENADA</string>
+            <string id="AB">GD</string>
+            <string id="ABC">GRD</string>
+            <string id="XXX">308</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GUADELOUPE</string>
+            <string id="AB">GP</string>
+            <string id="ABC">GLP</string>
+            <string id="XXX">312</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GUAM</string>
+            <string id="AB">GU</string>
+            <string id="ABC">GUM</string>
+            <string id="XXX">316</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GUATEMALA</string>
+            <string id="AB">GT</string>
+            <string id="ABC">GTM</string>
+            <string id="XXX">320</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GUINEA</string>
+            <string id="AB">GN</string>
+            <string id="ABC">GIN</string>
+            <string id="XXX">324</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GUINEA-BISSAU</string>
+            <string id="AB">GW</string>
+            <string id="ABC">GNB</string>
+            <string id="XXX">624</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">GUYANA</string>
+            <string id="AB">GY</string>
+            <string id="ABC">GUY</string>
+            <string id="XXX">328</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">HAITI</string>
+            <string id="AB">HT</string>
+            <string id="ABC">HTI</string>
+            <string id="XXX">332</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">HEARD AND MC DONALD ISLANDS</string>
+            <string id="AB">HM</string>
+            <string id="ABC">HMD</string>
+            <string id="XXX">334</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">HONDURAS</string>
+            <string id="AB">HN</string>
+            <string id="ABC">HND</string>
+            <string id="XXX">340</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">HONG KONG</string>
+            <string id="AB">HK</string>
+            <string id="ABC">HKG</string>
+            <string id="XXX">344</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">HUNGARY</string>
+            <string id="AB">HU</string>
+            <string id="ABC">HUN</string>
+            <string id="XXX">348</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ICELAND</string>
+            <string id="AB">IS</string>
+            <string id="ABC">ISL</string>
+            <string id="XXX">352</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">INDIA</string>
+            <string id="AB">IN</string>
+            <string id="ABC">IND</string>
+            <string id="XXX">356</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">INDONESIA</string>
+            <string id="AB">ID</string>
+            <string id="ABC">IDN</string>
+            <string id="XXX">360</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">IRAN (ISLAMIC REPUBLIC OF)</string>
+            <string id="AB">IR</string>
+            <string id="ABC">IRN</string>
+            <string id="XXX">364</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">IRAQ</string>
+            <string id="AB">IQ</string>
+            <string id="ABC">IRQ</string>
+            <string id="XXX">368</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">IRELAND</string>
+            <string id="AB">IE</string>
+            <string id="ABC">IRL</string>
+            <string id="XXX">372</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ISRAEL</string>
+            <string id="AB">IL</string>
+            <string id="ABC">ISR</string>
+            <string id="XXX">376</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ITALY</string>
+            <string id="AB">IT</string>
+            <string id="ABC">ITA</string>
+            <string id="XXX">380</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">JAMAICA</string>
+            <string id="AB">JM</string>
+            <string id="ABC">JAM</string>
+            <string id="XXX">388</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">JAPAN</string>
+            <string id="AB">JP</string>
+            <string id="ABC">JPN</string>
+            <string id="XXX">392</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">JORDAN</string>
+            <string id="AB">JO</string>
+            <string id="ABC">JOR</string>
+            <string id="XXX">400</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">KAZAKHSTAN</string>
+            <string id="AB">KZ</string>
+            <string id="ABC">KAZ</string>
+            <string id="XXX">398</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">KENYA</string>
+            <string id="AB">KE</string>
+            <string id="ABC">KEN</string>
+            <string id="XXX">404</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">KIRIBATI</string>
+            <string id="AB">KI</string>
+            <string id="ABC">KIR</string>
+            <string id="XXX">296</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">KOREA, DEMOCRATIC PEOPLE'S REPUBLIC OF</string>
+            <string id="AB">KP</string>
+            <string id="ABC">PRK</string>
+            <string id="XXX">408</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">KOREA, REPUBLIC OF</string>
+            <string id="AB">KR</string>
+            <string id="ABC">KOR</string>
+            <string id="XXX">410</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">KUWAIT</string>
+            <string id="AB">KW</string>
+            <string id="ABC">KWT</string>
+            <string id="XXX">414</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">KYRGYZSTAN</string>
+            <string id="AB">KG</string>
+            <string id="ABC">KGZ</string>
+            <string id="XXX">417</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">LAO PEOPLE'S DEMOCRATIC REPUBLIC</string>
+            <string id="AB">LA</string>
+            <string id="ABC">LAO</string>
+            <string id="XXX">418</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">LATVIA</string>
+            <string id="AB">LV</string>
+            <string id="ABC">LVA</string>
+            <string id="XXX">428</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">LEBANON</string>
+            <string id="AB">LB</string>
+            <string id="ABC">LBN</string>
+            <string id="XXX">422</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">LESOTHO</string>
+            <string id="AB">LS</string>
+            <string id="ABC">LSO</string>
+            <string id="XXX">426</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">LIBERIA</string>
+            <string id="AB">LR</string>
+            <string id="ABC">LBR</string>
+            <string id="XXX">430</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">LIBYAN ARAB JAMAHIRIYA</string>
+            <string id="AB">LY</string>
+            <string id="ABC">LBY</string>
+            <string id="XXX">434</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">LIECHTENSTEIN</string>
+            <string id="AB">LI</string>
+            <string id="ABC">LIE</string>
+            <string id="XXX">438</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">LITHUANIA</string>
+            <string id="AB">LT</string>
+            <string id="ABC">LTU</string>
+            <string id="XXX">440</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">LUXEMBOURG</string>
+            <string id="AB">LU</string>
+            <string id="ABC">LUX</string>
+            <string id="XXX">442</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MACAU</string>
+            <string id="AB">MO</string>
+            <string id="ABC">MAC</string>
+            <string id="XXX">446</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MACEDONIA, THE FORMER YUGOSLAV REPUBLIC OF</string>
+            <string id="AB">MK</string>
+            <string id="ABC">MKD</string>
+            <string id="XXX">807</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MADAGASCAR</string>
+            <string id="AB">MG</string>
+            <string id="ABC">MDG</string>
+            <string id="XXX">450</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MALAWI</string>
+            <string id="AB">MW</string>
+            <string id="ABC">MWI</string>
+            <string id="XXX">454</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MALAYSIA</string>
+            <string id="AB">MY</string>
+            <string id="ABC">MYS</string>
+            <string id="XXX">458</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MALDIVES</string>
+            <string id="AB">MV</string>
+            <string id="ABC">MDV</string>
+            <string id="XXX">462</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MALI</string>
+            <string id="AB">ML</string>
+            <string id="ABC">MLI</string>
+            <string id="XXX">466</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MALTA</string>
+            <string id="AB">MT</string>
+            <string id="ABC">MLT</string>
+            <string id="XXX">470</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MARSHALL ISLANDS</string>
+            <string id="AB">MH</string>
+            <string id="ABC">MHL</string>
+            <string id="XXX">584</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MARTINIQUE</string>
+            <string id="AB">MQ</string>
+            <string id="ABC">MTQ</string>
+            <string id="XXX">474</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MAURITANIA</string>
+            <string id="AB">MR</string>
+            <string id="ABC">MRT</string>
+            <string id="XXX">478</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MAURITIUS</string>
+            <string id="AB">MU</string>
+            <string id="ABC">MUS</string>
+            <string id="XXX">480</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MAYOTTE</string>
+            <string id="AB">YT</string>
+            <string id="ABC">MYT</string>
+            <string id="XXX">175</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MEXICO</string>
+            <string id="AB">MX</string>
+            <string id="ABC">MEX</string>
+            <string id="XXX">484</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MICRONESIA, FEDERATED STATES OF</string>
+            <string id="AB">FM</string>
+            <string id="ABC">FSM</string>
+            <string id="XXX">583</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MOLDOVA, REPUBLIC OF</string>
+            <string id="AB">MD</string>
+            <string id="ABC">MDA</string>
+            <string id="XXX">498</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MONACO</string>
+            <string id="AB">MC</string>
+            <string id="ABC">MCO</string>
+            <string id="XXX">492</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MONGOLIA</string>
+            <string id="AB">MN</string>
+            <string id="ABC">MNG</string>
+            <string id="XXX">496</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MONTSERRAT</string>
+            <string id="AB">MS</string>
+            <string id="ABC">MSR</string>
+            <string id="XXX">500</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MOROCCO</string>
+            <string id="AB">MA</string>
+            <string id="ABC">MAR</string>
+            <string id="XXX">504</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MOZAMBIQUE</string>
+            <string id="AB">MZ</string>
+            <string id="ABC">MOZ</string>
+            <string id="XXX">508</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">MYANMAR</string>
+            <string id="AB">MM</string>
+            <string id="ABC">MMR</string>
+            <string id="XXX">104</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NAMIBIA</string>
+            <string id="AB">NA</string>
+            <string id="ABC">NAM</string>
+            <string id="XXX">516</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NAURU</string>
+            <string id="AB">NR</string>
+            <string id="ABC">NRU</string>
+            <string id="XXX">520</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NEPAL</string>
+            <string id="AB">NP</string>
+            <string id="ABC">NPL</string>
+            <string id="XXX">524</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NETHERLANDS</string>
+            <string id="AB">NL</string>
+            <string id="ABC">NLD</string>
+            <string id="XXX">528</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NETHERLANDS ANTILLES</string>
+            <string id="AB">AN</string>
+            <string id="ABC">ANT</string>
+            <string id="XXX">530</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NEW CALEDONIA</string>
+            <string id="AB">NC</string>
+            <string id="ABC">NCL</string>
+            <string id="XXX">540</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NEW ZEALAND</string>
+            <string id="AB">NZ</string>
+            <string id="ABC">NZL</string>
+            <string id="XXX">554</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NICARAGUA</string>
+            <string id="AB">NI</string>
+            <string id="ABC">NIC</string>
+            <string id="XXX">558</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NIGER</string>
+            <string id="AB">NE</string>
+            <string id="ABC">NER</string>
+            <string id="XXX">562</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NIGERIA</string>
+            <string id="AB">NG</string>
+            <string id="ABC">NGA</string>
+            <string id="XXX">566</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NIUE</string>
+            <string id="AB">NU</string>
+            <string id="ABC">NIU</string>
+            <string id="XXX">570</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NORFOLK ISLAND</string>
+            <string id="AB">NF</string>
+            <string id="ABC">NFK</string>
+            <string id="XXX">574</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NORTHERN MARIANA ISLANDS</string>
+            <string id="AB">MP</string>
+            <string id="ABC">MNP</string>
+            <string id="XXX">580</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">NORWAY</string>
+            <string id="AB">NO</string>
+            <string id="ABC">NOR</string>
+            <string id="XXX">578</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">OMAN</string>
+            <string id="AB">OM</string>
+            <string id="ABC">OMN</string>
+            <string id="XXX">512</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PAKISTAN</string>
+            <string id="AB">PK</string>
+            <string id="ABC">PAK</string>
+            <string id="XXX">586</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PALAU</string>
+            <string id="AB">PW</string>
+            <string id="ABC">PLW</string>
+            <string id="XXX">585</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PALESTINIAN TERRITORY, Occupied</string>
+            <string id="AB">PS</string>
+            <string id="ABC">PSE</string>
+            <string id="XXX">275</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PANAMA</string>
+            <string id="AB">PA</string>
+            <string id="ABC">PAN</string>
+            <string id="XXX">591</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PAPUA NEW GUINEA</string>
+            <string id="AB">PG</string>
+            <string id="ABC">PNG</string>
+            <string id="XXX">598</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PARAGUAY</string>
+            <string id="AB">PY</string>
+            <string id="ABC">PRY</string>
+            <string id="XXX">600</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PERU</string>
+            <string id="AB">PE</string>
+            <string id="ABC">PER</string>
+            <string id="XXX">604</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PHILIPPINES</string>
+            <string id="AB">PH</string>
+            <string id="ABC">PHL</string>
+            <string id="XXX">608</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PITCAIRN</string>
+            <string id="AB">PN</string>
+            <string id="ABC">PCN</string>
+            <string id="XXX">612</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">POLAND</string>
+            <string id="AB">PL</string>
+            <string id="ABC">POL</string>
+            <string id="XXX">616</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PORTUGAL</string>
+            <string id="AB">PT</string>
+            <string id="ABC">PRT</string>
+            <string id="XXX">620</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">PUERTO RICO</string>
+            <string id="AB">PR</string>
+            <string id="ABC">PRI</string>
+            <string id="XXX">630</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">QATAR</string>
+            <string id="AB">QA</string>
+            <string id="ABC">QAT</string>
+            <string id="XXX">634</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">REUNION</string>
+            <string id="AB">RE</string>
+            <string id="ABC">REU</string>
+            <string id="XXX">638</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ROMANIA</string>
+            <string id="AB">RO</string>
+            <string id="ABC">ROU</string>
+            <string id="XXX">642</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">RUSSIAN FEDERATION</string>
+            <string id="AB">RU</string>
+            <string id="ABC">RUS</string>
+            <string id="XXX">643</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">RWANDA</string>
+            <string id="AB">RW</string>
+            <string id="ABC">RWA</string>
+            <string id="XXX">646</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SAINT HELENA</string>
+            <string id="AB">SH</string>
+            <string id="ABC">SHN</string>
+            <string id="XXX">654</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SAINT KITTS AND NEVIS</string>
+            <string id="AB">KN</string>
+            <string id="ABC">KNA</string>
+            <string id="XXX">659</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SAINT LUCIA</string>
+            <string id="AB">LC</string>
+            <string id="ABC">LCA</string>
+            <string id="XXX">662</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SAINT PIERRE AND MIQUELON</string>
+            <string id="AB">PM</string>
+            <string id="ABC">SPM</string>
+            <string id="XXX">666</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SAINT VINCENT AND THE GRENADINES</string>
+            <string id="AB">VC</string>
+            <string id="ABC">VCT</string>
+            <string id="XXX">670</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SAMOA</string>
+            <string id="AB">WS</string>
+            <string id="ABC">WSM</string>
+            <string id="XXX">882</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SAN MARINO</string>
+            <string id="AB">SM</string>
+            <string id="ABC">SMR</string>
+            <string id="XXX">674</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SAO TOME AND PRINCIPE</string>
+            <string id="AB">ST</string>
+            <string id="ABC">STP</string>
+            <string id="XXX">678</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SAUDI ARABIA</string>
+            <string id="AB">SA</string>
+            <string id="ABC">SAU</string>
+            <string id="XXX">682</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SENEGAL</string>
+            <string id="AB">SN</string>
+            <string id="ABC">SEN</string>
+            <string id="XXX">686</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SERBIA AND MONTENEGRO</string>
+            <string id="AB">CS</string>
+            <string id="ABC">SCG</string>
+            <string id="XXX">891</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SEYCHELLES</string>
+            <string id="AB">SC</string>
+            <string id="ABC">SYC</string>
+            <string id="XXX">690</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SIERRA LEONE</string>
+            <string id="AB">SL</string>
+            <string id="ABC">SLE</string>
+            <string id="XXX">694</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SINGAPORE</string>
+            <string id="AB">SG</string>
+            <string id="ABC">SGP</string>
+            <string id="XXX">702</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SLOVAKIA</string>
+            <string id="AB">SK</string>
+            <string id="ABC">SVK</string>
+            <string id="XXX">703</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SLOVENIA</string>
+            <string id="AB">SI</string>
+            <string id="ABC">SVN</string>
+            <string id="XXX">705</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SOLOMON ISLANDS</string>
+            <string id="AB">SB</string>
+            <string id="ABC">SLB</string>
+            <string id="XXX">090</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SOMALIA</string>
+            <string id="AB">SO</string>
+            <string id="ABC">SOM</string>
+            <string id="XXX">706</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SOUTH AFRICA</string>
+            <string id="AB">ZA</string>
+            <string id="ABC">ZAF</string>
+            <string id="XXX">710</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS</string>
+            <string id="AB">GS</string>
+            <string id="ABC">SGS</string>
+            <string id="XXX">239</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SPAIN</string>
+            <string id="AB">ES</string>
+            <string id="ABC">ESP</string>
+            <string id="XXX">724</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SRI LANKA</string>
+            <string id="AB">LK</string>
+            <string id="ABC">LKA</string>
+            <string id="XXX">144</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SUDAN</string>
+            <string id="AB">SD</string>
+            <string id="ABC">SDN</string>
+            <string id="XXX">736</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SURINAME</string>
+            <string id="AB">SR</string>
+            <string id="ABC">SUR</string>
+            <string id="XXX">740</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SVALBARD AND JAN MAYEN ISLANDS</string>
+            <string id="AB">SJ</string>
+            <string id="ABC">SJM</string>
+            <string id="XXX">744</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SWAZILAND</string>
+            <string id="AB">SZ</string>
+            <string id="ABC">SWZ</string>
+            <string id="XXX">748</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SWEDEN</string>
+            <string id="AB">SE</string>
+            <string id="ABC">SWE</string>
+            <string id="XXX">752</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SWITZERLAND</string>
+            <string id="AB">CH</string>
+            <string id="ABC">CHE</string>
+            <string id="XXX">756</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">SYRIAN ARAB REPUBLIC</string>
+            <string id="AB">SY</string>
+            <string id="ABC">SYR</string>
+            <string id="XXX">760</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TAIWAN</string>
+            <string id="AB">TW</string>
+            <string id="ABC">TWN</string>
+            <string id="XXX">158</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TAJIKISTAN</string>
+            <string id="AB">TJ</string>
+            <string id="ABC">TJK</string>
+            <string id="XXX">762</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TANZANIA, UNITED REPUBLIC OF</string>
+            <string id="AB">TZ</string>
+            <string id="ABC">TZA</string>
+            <string id="XXX">834</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">THAILAND</string>
+            <string id="AB">TH</string>
+            <string id="ABC">THA</string>
+            <string id="XXX">764</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TIMOR-LESTE</string>
+            <string id="AB">TL</string>
+            <string id="ABC">TLS</string>
+            <string id="XXX">626</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TOGO</string>
+            <string id="AB">TG</string>
+            <string id="ABC">TGO</string>
+            <string id="XXX">768</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TOKELAU</string>
+            <string id="AB">TK</string>
+            <string id="ABC">TKL</string>
+            <string id="XXX">772</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TONGA</string>
+            <string id="AB">TO</string>
+            <string id="ABC">TON</string>
+            <string id="XXX">776</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TRINIDAD AND TOBAGO</string>
+            <string id="AB">TT</string>
+            <string id="ABC">TTO</string>
+            <string id="XXX">780</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TUNISIA</string>
+            <string id="AB">TN</string>
+            <string id="ABC">TUN</string>
+            <string id="XXX">788</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TURKEY</string>
+            <string id="AB">TR</string>
+            <string id="ABC">TUR</string>
+            <string id="XXX">792</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TURKMENISTAN</string>
+            <string id="AB">TM</string>
+            <string id="ABC">TKM</string>
+            <string id="XXX">795</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TURKS AND CAICOS ISLANDS</string>
+            <string id="AB">TC</string>
+            <string id="ABC">TCA</string>
+            <string id="XXX">796</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">TUVALU</string>
+            <string id="AB">TV</string>
+            <string id="ABC">TUV</string>
+            <string id="XXX">798</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">UGANDA</string>
+            <string id="AB">UG</string>
+            <string id="ABC">UGA</string>
+            <string id="XXX">800</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">UKRAINE</string>
+            <string id="AB">UA</string>
+            <string id="ABC">UKR</string>
+            <string id="XXX">804</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">UNITED ARAB EMIRATES</string>
+            <string id="AB">AE</string>
+            <string id="ABC">ARE</string>
+            <string id="XXX">784</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">UNITED KINGDOM</string>
+            <string id="AB">GB</string>
+            <string id="ABC">GBR</string>
+            <string id="XXX">826</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">UNITED STATES</string>
+            <string id="AB">US</string>
+            <string id="ABC">USA</string>
+            <string id="XXX">840</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">UNITED STATES MINOR OUTLYING ISLANDS</string>
+            <string id="AB">UM</string>
+            <string id="ABC">UMI</string>
+            <string id="XXX">581</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">URUGUAY</string>
+            <string id="AB">UY</string>
+            <string id="ABC">URY</string>
+            <string id="XXX">858</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">UZBEKISTAN</string>
+            <string id="AB">UZ</string>
+            <string id="ABC">UZB</string>
+            <string id="XXX">860</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">VANUATU</string>
+            <string id="AB">VU</string>
+            <string id="ABC">VUT</string>
+            <string id="XXX">548</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">VATICAN CITY STATE (HOLY SEE)</string>
+            <string id="AB">VA</string>
+            <string id="ABC">VAT</string>
+            <string id="XXX">336</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">VENEZUELA</string>
+            <string id="AB">VE</string>
+            <string id="ABC">VEN</string>
+            <string id="XXX">862</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">VIET NAM</string>
+            <string id="AB">VN</string>
+            <string id="ABC">VNM</string>
+            <string id="XXX">704</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">VIRGIN ISLANDS (BRITISH)</string>
+            <string id="AB">VG</string>
+            <string id="ABC">VGB</string>
+            <string id="XXX">092</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">VIRGIN ISLANDS (U.S.)</string>
+            <string id="AB">VI</string>
+            <string id="ABC">VIR</string>
+            <string id="XXX">850</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">WALLIS AND FUTUNA ISLANDS</string>
+            <string id="AB">WF</string>
+            <string id="ABC">WLF</string>
+            <string id="XXX">876</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">WESTERN SAHARA</string>
+            <string id="AB">EH</string>
+            <string id="ABC">ESH</string>
+            <string id="XXX">732</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">YEMEN</string>
+            <string id="AB">YE</string>
+            <string id="ABC">YEM</string>
+            <string id="XXX">887</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ZAMBIA</string>
+            <string id="AB">ZM</string>
+            <string id="ABC">ZMB</string>
+            <string id="XXX">894</string>
+        </array>
+        <array>
+            <string id="PAIS"></string>
+            <string id="COUNTRY">ZIMBABWE</string>
+            <string id="AB">ZW</string>
+            <string id="ABC">ZWE</string>
+            <string id="XXX">716</string>
+        </array>
+    </array>
+</plist>

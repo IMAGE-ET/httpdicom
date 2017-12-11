@@ -51,6 +51,6 @@
 -(uint32_t) crc32WithSeed:(uint32_t)seed usingPolynomial:(uint32_t)poly;
 
 +(void)initPCS;
--(NSArray*)componentsSeparatedBy:(NSData*)separator fileContentType:(NSData*)fileContentType;
+-(NSDictionary*)parseNamesValuesTypesInBodySeparatedBy:(NSData*)separator;
 
 @end

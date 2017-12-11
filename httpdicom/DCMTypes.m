@@ -1,8 +1,5 @@
 //
-//  URLSessionDataTask.m
-//  httpdicom
-//
-//  Created by jacquesfauquex on 2016-11-01.
+//  Created by jacquesfauquex on 20171122.
 //  Copyright © 2018 opendicom.com. All rights reserved.
 //
 
@@ -36,46 +33,60 @@
  */
 
 
-#import "URLSessionDataTask.h"
-#import "RSStreamedResponse.h"
+#import "DCMTypes.h"
 
-@implementation URLSessionDataTask
+static NSDateFormatter *DTFormatter=nil;
+static NSDateFormatter *DAFormatter=nil;
+static NSDateFormatter *TMFormatter=nil;
+static NSRegularExpression *UIRegex=nil;
+static NSRegularExpression *SHRegex=nil;
+static NSRegularExpression *DARegex=nil;
 
-- (void)URLSession:(NSURLSession *)session
-              task:(NSURLSessionTask *)task
-didCompleteWithError:(NSError *)error
-{
+@implementation DCMTypes
+
++ (void) initialize {
+    DTFormatter = [[NSDateFormatter alloc] init];
+    [DTFormatter setDateFormat:@"yyyyMMddHHmmss"];
+    DAFormatter = [[NSDateFormatter alloc] init];
+    [DAFormatter setDateFormat:@"yyyyMMdd"];
+    TMFormatter = [[NSDateFormatter alloc] init];
+    [TMFormatter setDateFormat:@"HHmmss"];
+
+    UIRegex = [NSRegularExpression regularExpressionWithPattern:@"^[1-2](\\d)*(\\.0|\\.[1-9](\\d)*)*$" options:0 error:NULL];
+    SHRegex = [NSRegularExpression regularExpressionWithPattern:@"^(?:\\s*)([^\\r\\n\\f\\t]*[^\\r\\n\\f\\t\\s])(?:\\s*)$" options:0 error:NULL];
+    DARegex = [NSRegularExpression regularExpressionWithPattern:@"^(19|20)\\d\\d(01|02|03|04|05|06|07|08|09|10|11|12)(01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31)$" options:0 error:NULL];
+
+
 }
 
-- (void)URLSession:(NSURLSession *)session
-          dataTask:(NSURLSessionDataTask *)dataTask
-    didReceiveData:(NSData *)data
++(NSDate*)dateFromDAString:(NSString*)string
 {
-    if (data.length) [dataPile addObject:data];
-    else [dataPile addObject:dataEnd];    
+    return [DAFormatter dateFromString:string];
 }
 
--(id)proxySession:(NSURLSession*)session URI:(NSString*)urlString contentType:(NSString*)contentType
++(NSString*)DAStringFromDate:(NSDate*)date
 {
-    dataPile=[NSMutableArray array];
-    uuid_t uuid;
-    [[NSUUID UUID]getUUIDBytes:uuid];
-    dataEnd=[NSData dataWithBytes:uuid length:16];
-    __block NSURLSessionDataTask * const __URLSessionDataTask = [session dataTaskWithURL:[NSURL URLWithString:urlString]];
-    //__block bool __shouldExit = false;
-    [__URLSessionDataTask resume];
-    RSStreamedResponse* response = [RSStreamedResponse responseWithContentType:contentType asyncStreamBlock:^(RSBodyReaderCompletionBlock completionBlock){
-        //while (!__shouldExit && [runLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]])
-        
-        if ([dataPile count]>0)
-        {
-            if([dataPile[0] isEqualToData:dataEnd]) completionBlock([NSData data], nil);
-            else completionBlock(dataPile[0], nil);
-            [dataPile removeObjectAtIndex:0];
-        }
-        else completionBlock(nil,nil);
-      }];
-    return response;
+    return [DAFormatter stringFromDate:date];
+}
+
++(NSDate*)dateFromTMString:(NSString*)string
+{
+    return [TMFormatter dateFromString:string];
+}
+
++(NSString*)TMStringFromDate:(NSDate*)date
+{
+    return [TMFormatter stringFromDate:date];
+}
+
++(NSDate*)dateFromDTString:(NSString*)string
+{
+    return [DTFormatter dateFromString:string];
+}
+
++(NSString*)DTStringFromDate:(NSDate*)date
+{
+    return [DTFormatter stringFromDate:date];
 }
 
 @end

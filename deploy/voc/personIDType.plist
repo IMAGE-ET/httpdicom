@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist xmlns="http://www.opendicom.com/xsd/plist/patientIDType.xsd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.opendicom.com/xsd/plist/patientIDType.xsd 
+    file:personIDType.xsd">
+    <dict>
+        <key>69020</key>
+        <string>CARNE DE ASISTENCIA DE SALUD PRIVADA</string>
+        <key>69019</key>
+        <string>CARNE DE ASISTENCIA DE SALUD PUBLICA</string>
+        <key>69018</key>
+        <string>CARNE DE ASISTENCIA SOCIAL</string>
+        <key>68932</key>
+        <string>CARNE DE PRACTICO (ICAO - CP)</string>
+        <key>69017</key>
+        <string>CARNE MILITAR</string>
+        <key>69096</key>
+        <string>CARNE O DOCUMENTO FRONTERIZO</string>
+        <key>69015</key>
+        <string>CARNE O REGISTRO PROFESIONAL</string>
+        <key>69016</key>
+        <string>CARNE POLICIAL</string>
+        <key>68909</key>
+        <string>CEDULA DE IDENTIDAD (ICAO - ID)</string>
+        <key>68944</key>
+        <string>CREDENCIAL CIVICA (ICAO - CC)</string>
+        <key>68946</key>
+        <string>CREW MEMBER CERTIFICATE (ICAO - AC)</string>
+        <key>68939</key>
+        <string>DOC. VIAJE - UN 1951 - (ICAO - UN)</string>
+        <key>68910</key>
+        <string>DOCUMENTO DE IDENTIDAD (ICAO - DN)</string>
+        <key>68927</key>
+        <string>LAISSEZ PASSER UN (ICAO - LP)</string>
+        <key>68918</key>
+        <string>LIBRETA CIVICA (ICAO - LC)</string>
+        <key>68933</key>
+        <string>LIBRETA DE BAQUEANO (ICAO - LB)</string>
+        <key>69012</key>
+        <string>LIBRETA DE CONDUCIR EXTRANJERA</string>
+        <key>69011</key>
+        <string>LIBRETA DE CONDUCIR NACIONAL</string>
+        <key>68916</key>
+        <string>LIBRETA DE ENROLAMIENTO (ICAO - LE)</string>
+        <key>69014</key>
+        <string>LIBRETA DE PROPIEDAD VEHICULAR EXTRANJERA</string>
+        <key>69013</key>
+        <string>LIBRETA DE PROPIEDAD VEHICULAR NACIONAL</string>
+        <key>69025</key>
+        <string>LIBRETA DE TRIPULANTE (ICAO - LT)</string>
+        <key>69024</key>
+        <string>OTRO DOCUMENTO DE IDENTIFICACION PERSONAL</string>
+        <key>68912</key>
+        <string>PASAPORTE (ICAO - P)</string>
+        <key>68928</key>
+        <string>PASAPORTE CEE (ICAO - EE)</string>
+        <key>68929</key>
+        <string>PASAPORTE DE EMERGENCIA (ICAO EM)</string>
+        <key>68919</key>
+        <string>PASAPORTE DE SERVICIO (ICAO - PS)</string>
+        <key>68915</key>
+        <string>PASAPORTE DIPLOMATICO (ICAO - PD)</string>
+        <key>68922</key>
+        <string>PASAPORTE ESPECIAL (ICAO - PE)</string>
+        <key>68926</key>
+        <string>PASAPORTE OEA (ICAO - PT)</string>
+        <key>68920</key>
+        <string>PASAPORTE OFICIAL (ICAO - PO)</string>
+        <key>68947</key>
+        <string>PASAPORTE PROVISORIO (ICAO - PP)</string>
+        <key>69097</key>
+        <string>PASE LIBRE FRONTERIZO</string>
+        <key>68943</key>
+        <string>SALVOCONDUCTO (ICAO - SC)</string>
+        <key>68936</key>
+        <string>SALVOCONDUCTO ONU ASILADO (ICAO - SU)</string>
+        <key>68937</key>
+        <string>SALVOCONDUCTO ONU FUNCIONARIO (ICAO - PU)</string>
+        <key>68945</key>
+        <string>SIN DOCUMENTO (ICAO - SD)</string>
+        <key>69021</key>
+        <string>TARJETA DE CREDITO</string>
+        <key>69022</key>
+        <string>TARJETA DE DEBITO</string>
+        <key>68930</key>
+        <string>TARJETA DE IDENTIDAD (ICAO - I)</string>
+        <key>69023</key>
+        <string>TARJETA DE USO DE TRANSPORTE DE PASAJEROS</string>
+        <key>68923</key>
+        <string>TITULO DE IDENTIDAD Y VIAJE (ICAO - PX)</string>
+        <key>68941</key>
+        <string>TITULO DE V. CRUZ ROJA (ICAO - CR)</string>
+        <key>68924</key>
+        <string>VALIDO DE VIAJE CONSULAR (ICAO - VC)</string>
+    </dict>
+</plist>

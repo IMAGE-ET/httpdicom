@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist
+ xmlns="http://www.opendicom.com/xsd/plist/codesystem.xsd"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://www.opendicom.com/xsd/plist/codesystem.xsd 
+                     file:codesystem.xsd"
+    >
+    <dict>
+        <key id="titleidstring">C4</key>
+        <dict>
+            <key>oid</key>
+            <string id="oid">2.16.840.1.113883.6.12</string>
+            <key>description</key>
+            <string id="description">American Medical Association's Current Procedure Terminology</string>
+            <key>version</key>
+            <string id="version">4 (CPT-4)</string>
+            <key>hl7v2</key>
+            <string id="hl7v2"></string>
+            <key>dcm</key>
+            <string id="dcm">C4</string>
+            <key>uri</key>
+            <string id="uri"></string>
+        </dict>
+        <key id="titleidstring">C5</key>
+        <dict>
+            <key>oid</key>
+            <string id="oid">2.16.840.1.113883.6.82</string>
+            <key>description</key>
+            <string id="description">American Medical Association's Current Procedure Terminology</string>
+            <key>version</key>
+            <string id="version">5 (CPT-5)</string>
+            <key>hl7v2</key>
+            <string id="hl7v2"></string>
+            <key>dcm</key>
+            <string id="dcm">C5</string>
+            <key>uri</key>
+            <string id="uri"></string>
+        </dict>
+        <key id="titleidstring">CIP</key>
+        <dict>
+            <key>oid</key>
+            <string id="oid">2.16.858.0.2.16.86.9.0.0.2.214462250019</string>
+            <key>description</key>
+            <string id="description">Clínica Imagenológica Dres Parada</string>
+            <key>version</key>
+            <string id="version"></string>
+            <key>hl7v2</key>
+            <string id="hl7v2"></string>
+            <key>dcm</key>
+            <string id="dcm"></string>
+            <key>uri</key>
+            <string id="uri"></string>
+        </dict>
+    </dict>
+</plist>

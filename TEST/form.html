@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <style>
             body { 
                 font-family:Verdana ; 
@@ -69,9 +70,13 @@
         
         <!--  application/x-www-form-urlencoded does not pass file contents...-->
         <!--  multipart/form-data does pass all name/value within body...-->
+        <!--127.0.0.1:11111 / 192.168.15.200:11109-->
         <form action="http://127.0.0.1:11111/mwlitem" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="pacs" value="2.16.858.2.212659800019.72769.217215590012" />
+            
+            <input type="hidden" name="pacs" value="2.16.858.0.2.16.86.9.0.0.2.214462250019.72769.217215590012" />
+            <input type="hidden" name="aet" value="FCR-CSL-SCU" />            
             <input type="hidden" name="Modality" value="CR" />
+            
             <table border="1">
                 <tr>
                     <th>
@@ -83,53 +88,51 @@
                 </tr>
                 <tr>
                     <th>
-                        <label for="StudyDescription">Estudio</label>
+                        <label>Estudio</label>
                     </th>
                     <td>
-                        <select class="fullwidth" id="StudyDescription" name="StudyDescription">
-                            <option value="7014001">RX HUESOS FACIALES</option>
-                            <option value="7022001">RX SENOS FACIALES</option>
-                            <option value="7024001">RX SILLA TURCA</option>
-                            <option value="7026001">RX CRANEO</option>
-                            <option value="7036001">RX CUELLO (PARTES BLANDAS)</option>
-                            <option value="7101001">RX TORAX ( PARTES BLANDAS)</option>
-                            <option value="7102001">RX TORAX (F y P)</option>
-                            <option value="7201001">RX COLUMNA ENTERA</option>
-                            <option value="7204001">RX COLUMNA CERVICAL</option>
-                            <option value="7207001">RX COLUMNA TORAXICA (DORSAL)</option>
-                            <option value="7210001">RX COLUMNA LUMBO - SACRA</option>
-                            <option value="7211001">RX EST. COMPLEMENTARIOS c/ Placa MS,COLUMNA
-                                VERT.c/Placa</option>
-                            <option value="7211050">RX EST.COMPLEMENTARIOS c/ PLACA MI</option>
-                            <option value="7211401">RX EST. COMPLEMENTARIOS Perfil,de
-                                pie,acostado</option>
-                            <option value="7217001">RX PELVIS</option>
-                            <option value="7300001">RX CLAVICULA</option>
-                            <option value="7301001">RX ESCAPULA</option>
-                            <option value="7302001">RX HOMBRO</option>
-                            <option value="7306001">RX BRAZO</option>
-                            <option value="7307001">RX CODO</option>
-                            <option value="7309001">RX ANTEBRAZO</option>
-                            <option value="7310001">RX PU—O</option>
-                            <option value="7312001">RX MANO</option>
-                            <option value="7314001">RX DEDOS</option>
-                            <option value="7350001">RX CADERA</option>
-                            <option value="7351001">METODO DE GREEN</option>
-                            <option value="7355001">RX FEMUR</option>
-                            <option value="7356001">RX RODILLA</option>
-                            <option value="7359001">RX TIBIA Y PERONE</option>
-                            <option value="7361501">RX TOBILLO</option>
-                            <option value="7362001">RX PIE</option>
-                            <option value="7400001">RX ABDOMEN</option>
-                            <option value="7423002">TRANSITO INTESTINO DELGADO</option>
-                            <option value="7423501">ESTUDIO DE LA DEGLUCION</option>
-                            <option value="7447001">RX APARATO URINARIO</option>
-                            <option value="7697701">DENSITOMETRIA OSEA</option>
-                            <option value="7697750">DENSITOMETRIA OSEA PEDIATRICA</option>
-                            <option value="7101002">RX TRAQUEA</option>
-                            <option value="7036002">RX CUELLO PERFIL</option>
-                            <option value="7424604">RX GASTRODUODENO</option>
-                            <option value="7424605">RX ESOFAGO</option>
+                        <select class="fullwidth" name="StudyDescription">
+                            <option value="7014001^CPT^RX HUESOS FACIALES">RX HUESOS FACIALES</option>
+                            <option value="7022001^CPT^RX SENOS FACIALES">RX SENOS FACIALES</option>
+                            <option value="7024001^CPT^RX SILLA TURCA">RX SILLA TURCA</option>
+                            <option value="7026001^CPT^RX CRANEO">RX CRANEO</option>
+                            <option value="7036001^CPT^RX CUELLO (PARTES BLANDAS)">RX CUELLO (PARTES BLANDAS)</option>
+                            <option value="7101001^CPT^RX TORAX ( PARTES BLANDAS)">RX TORAX ( PARTES BLANDAS)</option>
+                            <option value="7102001^CPT^RX TORAX (F y P)">RX TORAX (F y P)</option>
+                            <option value="7201001^CPT^RX COLUMNA ENTERA">RX COLUMNA ENTERA</option>
+                            <option value="7204001^CPT^RX COLUMNA CERVICAL">RX COLUMNA CERVICAL</option>
+                            <option value="7207001^CPT^RX COLUMNA TORAXICA (DORSAL)">RX COLUMNA TORAXICA (DORSAL)</option>
+                            <option value="7210001^CPT^RX COLUMNA LUMBO - SACRA">RX COLUMNA LUMBO - SACRA</option>
+                            <option value="7211001^CPT^RX EST. COMPLEMENTARIOS c/ Placa MS,COLUMNA VERT.c/Placa">RX EST. COMPLEMENTARIOS c/ Placa MS,COLUMNA VERT.c/Placa</option>
+                            <option value="7211050^CPT^RX EST.COMPLEMENTARIOS c/ PLACA MI">RX EST.COMPLEMENTARIOS c/ PLACA MI</option>
+                            <option value="7211401^CPT^RX EST. COMPLEMENTARIOS Perfil,de pie,acostado">RX EST. COMPLEMENTARIOS Perfil,de pie,acostado</option>
+                            <option value="7217001^CPT^RX PELVIS">RX PELVIS</option>
+                            <option value="7300001^CPT^RX CLAVICULA">RX CLAVICULA</option>
+                            <option value="7301001^CPT^RX ESCAPULA">RX ESCAPULA</option>
+                            <option value="7302001^CPT^RX HOMBRO">RX HOMBRO</option>
+                            <option value="7306001^CPT^RX BRAZO">RX BRAZO</option>
+                            <option value="7307001^CPT^">RX CODO</option>
+                            <option value="7309001^CPT^RX CODO">RX ANTEBRAZO</option>
+                            <option value="7310001^CPT^RX PUÑO">RX PUÑO</option>
+                            <option value="7312001^CPT^RX MANO">RX MANO</option>
+                            <option value="7314001^CPT^RX DEDOS">RX DEDOS</option>
+                            <option value="7350001^CPT^RX CADERA">RX CADERA</option>
+                            <option value="7351001^CPT^METODO DE GREEN">METODO DE GREEN</option>
+                            <option value="7355001^CPT^RX FEMUR">RX FEMUR</option>
+                            <option value="7356001^CPT^RX RODILLA">RX RODILLA</option>
+                            <option value="7359001^CPT^RX TIBIA Y PERONE">RX TIBIA Y PERONE</option>
+                            <option value="7361501^CPT^RX TOBILLO">RX TOBILLO</option>
+                            <option value="7362001^CPT^RX PIE">RX PIE</option>
+                            <option value="7400001^CPT^RX ABDOMEN">RX ABDOMEN</option>
+                            <option value="7423002^CPT^TRANSITO INTESTINO DELGADO">TRANSITO INTESTINO DELGADO</option>
+                            <option value="7423501^CPT^ESTUDIO DE LA DEGLUCION">ESTUDIO DE LA DEGLUCION</option>
+                            <option value="7447001^CPT^RX APARATO URINARIO">RX APARATO URINARIO</option>
+                            <option value="7697701^CPT^DENSITOMETRIA OSEA">DENSITOMETRIA OSEA</option>
+                            <option value="7697750^CPT^DENSITOMETRIA OSEA PEDIATRICA">DENSITOMETRIA OSEA PEDIATRICA</option>
+                            <option value="7101002^CPT^RX TRAQUEA">RX TRAQUEA</option>
+                            <option value="7036002^CPT^RX CUELLO PERFIL">RX CUELLO PERFIL</option>
+                            <option value="7424604^CPT^RX GASTRODUODENO">RX GASTRODUODENO</option>
+                            <option value="7424605^CPT^RX ESOFAGO">RX ESOFAGO</option>
                         </select>
                     </td>
                 </tr>
@@ -145,16 +148,16 @@
                 </tr>
                 <tr>
                     <th>
-                        <label for="PatientID">ID</label>
+                        <label>ID</label>
                     </th>
                     <td>
-                        <input id="PatientID" type="text" name="PatientID" placeholder="nro" />
-                        <select id="PatientIDIssuer" name="Country">
+                        <input type="text" name="PatientID" placeholder="nro" />
+                        <select name="PatientIDCountry">
                             <option value="858">Uruguay</option>
                             <option value="03">Argentina</option>
                             <option value="724">España</option>
                         </select>
-                        <select id="documentType" name="documentType">
+                        <select name="PatientIDType">
                             <option value="68909">cédula</option>
                             <option value="68912">pasaporte</option>
                         </select>
@@ -162,10 +165,10 @@
                 </tr>
                 <tr>
                     <th>
-                        <label for="PatientBirthDate">Nacimiento</label>
+                        <label>Nacimiento</label>
                     </th>
                     <td>
-                        <input class="fullwidth" id="PatientBirthDate" type="text" placeholder="aaaammdd"
+                        <input class="fullwidth" type="text" placeholder="aaaammdd"
                             name="PatientBirthDate" />
                     </td>
                 </tr>
@@ -175,7 +178,7 @@
                     </th>
                     <td>
                         
-                        <label><input type="radio" name="PatientSex" value="F" checked="checked"/> feminino</label>
+                        <label><input type="radio" name="PatientSex" value="F" checked="checked"/> femenino</label>
                         <label><input type="radio" name="PatientSex" value="M"/> masculino</label>
                         <label><input type="radio" name="PatientSex" value="O"/> otro</label>
                     </td>
@@ -185,38 +188,38 @@
                         <label>Prioridad</label>
                     </th>
                     <td>
-                        <label><input type="radio" name="Priority" value="N" checked="checked"/> normal</label>
-                        <label><input type="radio" name="Priority" value="U"/> urgente</label>
+                        <label><input type="radio" name="Priority" value="MEDIUM" checked="checked"/> normal</label>
+                        <label><input type="radio" name="Priority" value="HIGH"/> urgente</label>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label><input 
                             type="radio" 
-                            name="enc" 
+                            name="enclosure" 
                             value="msg" 
                             checked="checked" 
-                            onclick="document.getElementById('enctextarea').style.display = 'block';
-                                     document.getElementById('encpdf').style.display = 'none';"
+                            onclick="document.getElementById('enclosureTextarea').style.display = 'block';
+                                     document.getElementById('enclosurePdf').style.display = 'none';"
                         /> mensaje</label>
                     </td>
                     <td>
-                        <textarea id="enctextarea" name="Message" placeholder="información a comunicar al radiólogo"></textarea> 
+                        <textarea id="enclosureTextarea" name="enclosureTextarea" placeholder="información a comunicar al radiólogo"></textarea> 
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label><input 
                             type="radio" 
-                            name="enc" 
+                            name="enclosure" 
                             value="pdf" 
-                            onclick="document.getElementById('encpdf').style.display = 'block';
-                                     document.getElementById('enctextarea').style.display = 'none';"
+                            onclick="document.getElementById('enclosurePdf').style.display = 'block';
+                                     document.getElementById('enclosureTextarea').style.display = 'none';"
                             /> pdf</label>
                         
                         </td>
                     <td>
-                        <input id="encpdf" hidden="hidden" name="encpdf" type="file" />
+                        <input id="enclosurePdf" hidden="hidden" name="enclosurePdf" type="file" />
                     </td>
                 </tr>
             </table>

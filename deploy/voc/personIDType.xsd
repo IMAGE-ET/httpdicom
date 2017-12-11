@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema 
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://www.opendicom.com/xsd/plist/patientIDType.xsd"
+    xmlns="http://www.opendicom.com/xsd/plist/patientIDType.xsd" 
+    elementFormDefault="qualified"
+    xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" 
+    vc:minVersion="1.1"
+    >
+
+    <xs:element name="plist">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="dict">
+                    <xs:complexType>
+                        <xs:sequence maxOccurs="unbounded">
+                            <xs:element name="key" type="xs:positiveInteger"/>                                    
+                            <xs:element name="string" type="xs:string"/>                      
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="version" fixed="1.0"/>
+        </xs:complexType>
+    </xs:element>    
+</xs:schema>

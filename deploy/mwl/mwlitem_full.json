@@ -1,0 +1,55 @@
+[
+    {
+    "00080005": {"vr":"CS","Value":["<CHARSET>"]},    
+    "00400100": {"vr":"SQ","Value":[
+        {
+        "00400001":{"vr":"AE","Value":["<AET>"]},
+        "00400002":{"vr":"DA","Value":["<DATE>"]},
+        "00400003":{"vr":"TM","Value":["<TIME>"]},
+        "00080060":{"vr":"CS","Value":["<MODALITY>"]},
+        "00400006":{"vr":"PN","Value":["<PERFORMING>"]},
+        "00400007":{"vr":"LO","Value":["<STEPDESC>"]},
+        "00400011":{"vr":"SH","Value":["<LOCATION>"]},
+        "00400008":{"vr":"SQ","Value":[
+            {
+            "00080100":{"vr":"SH","Value":["<STEPCODE>"]},
+            "00080102":{"vr":"SH","Value":["<STEPSCHEME>"]},
+            "00080104":{"vr":"SH","Value":["<STEPMEANING>"]}
+            }
+        ]},
+        "00400012":{"vr":"LO","Value":["<PREMEDICATION>"]},
+        "00400009":{"vr":"SH","Value":["<STEPID>"]},
+        "00321070":{"vr":"LO","Value":["<CONTRAST>"]},
+        "00400020":{"vr":"LO","Value":["<STATUS>"]}
+        }
+    ]},
+    "00401001":{"vr":"SH","Value":["<PROCID>"]},
+    "00321060":{"vr":"LO","Value":["<PROCDESC>"]},
+    "00321064":{"vr":"SQ","Value":[
+        {
+        "00080100":{"vr":"SH","Value":["<PROCCODE>"]},
+        "00080102":{"vr":"SH","Value":["<PROCSCHEME>"]},
+        "00080104":{"vr":"SH","Value":["<PROCMEANING>"]}
+        }                
+    ]},
+    "0020000D":{"vr":"UI","Value":["<STUDYUID>"]},
+    "00401003":{"vr":"SH","Value":["<PRIORITY>"]},
+    "00080050":{"vr":"UI","Value":["<ACCNUM>"]},
+    "00321032":{"vr":"PN","Value":["<REQPHYS>"]},
+    "00321033":{"vr":"LO","Value":["<REQSERV>"]},
+    "00080090":{"vr":"PN","Value":["<REFPHYS>"]},
+    "00380010":{"vr":"LO","Value":["<ADMISSIONID>"]},
+    "00380300":{"vr":"LO","Value":["<ADMISSIONLOC>"]},
+    "00100010":{"vr":"PN","Value":["<PATNAME>"]},
+    "00100020":{"vr":"LO","Value":["<PATID>"]},
+    "00100021":{"vr":"LO","Value":["<PATIDISSUER>"]},
+    "00100030":{"vr":"DA","Value":["<BIRTHDATE>"]},
+    "00100040":{"vr":"CS","Value":["<SEXO>"]},
+    "00101030":{"vr":"DS","Value":["<WEIGHT>"]},
+    "00403001":{"vr":"LO","Value":["<CONFIDENCIALITY>"]},
+    "00380500":{"vr":"LO","Value":["<PATSTATE>"]},
+    "001021C0":{"vr":"US","Value":["<PREGNANCY>"]},
+    "00102000":{"vr":"LO","Value":["<MEDICALALERT>"]},
+    "00102110":{"vr":"LO","Value":["<CONTRASTALLERGIES>"]},
+    "00380050":{"vr":"LO","Value":["<SPECIALNEEDS>"]}
+}]
