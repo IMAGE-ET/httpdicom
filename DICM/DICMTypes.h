@@ -35,12 +35,13 @@
 
 @import Foundation;
 
-@interface DCMTypes : NSObject
+@interface DICMTypes : NSObject
 +(NSDate*)dateFromDAString:(NSString*)string;
 +(NSString*)DAStringFromDate:(NSDate*)date;
 +(NSDate*)dateFromTMString:(NSString*)string;
 +(NSString*)TMStringFromDate:(NSDate*)date;
 +(NSDate*)dateFromDTString:(NSString*)string;
 +(NSString*)DTStringFromDate:(NSDate*)date;
-
++(NSString*)ASSinceDate:(NSDate*)sinceDate untilDate:(NSDate*)untilDate;
++(NSString*)ASSinceDA:(NSString*)sinceDA untilDA:(NSString*)untilDA;
 @end

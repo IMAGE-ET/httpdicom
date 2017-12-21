@@ -72,7 +72,8 @@
         <!--  multipart/form-data does pass all name/value within body...-->
         <!--127.0.0.1:11111 / 192.168.15.200:11109-->
         <form action="http://127.0.0.1:11111/mwlitem" method="post" enctype="multipart/form-data">
-            
+            <input type="hidden" name="organizationId" value="214462250019" />
+            <input type="hidden" name="manufacturerId" value="217215590012" />
             <input type="hidden" name="pacs" value="2.16.858.0.2.16.86.9.0.0.2.214462250019.72769.217215590012" />
             <input type="hidden" name="aet" value="FCR-CSL-SCU" />            
             <input type="hidden" name="Modality" value="CR" />
@@ -197,7 +198,7 @@
                         <label><input 
                             type="radio" 
                             name="enclosure" 
-                            value="msg" 
+                            value="textarea" 
                             checked="checked" 
                             onclick="document.getElementById('enclosureTextarea').style.display = 'block';
                                      document.getElementById('enclosurePdf').style.display = 'none';"
@@ -224,6 +225,7 @@
                 </tr>
             </table>
             <br />
+            <input type="hidden" name="enclosurexmlformat" value="" />           
             <input
                 type="submit" ></input>
         </form>

@@ -122,9 +122,15 @@
                                             <xs:element ref="string" id="wadorslocaluri"/>
         
         
-                                            <xs:element name="key" fixed="stowlocaluri"/>
-                                            <xs:element ref="string" id="stowlocaluri"/>
-    
+                                            <xs:element name="key" fixed="stowjsonlocaluri"/>
+                                            <xs:element ref="string" id="stowjsonlocaluri"/>
+                                            
+                                            <xs:element name="key" fixed="stowxmllocaluri"/>
+                                            <xs:element ref="string" id="stowxmllocaluri"/>
+                                            
+                                            <xs:element name="key" fixed="stowdicomlocaluri"/>
+                                            <xs:element ref="string" id="stowdicomlocaluri"/>
+                                            
     
                                             <xs:element name="key" fixed="mwlitemlocaluri"/>
                                             <xs:element ref="string" id="mwlitemlocaluri"/>
@@ -159,28 +165,28 @@
                                                 <xs:element ref="string" id="dicomport"/>
                                                 
                                                 
-                                                <xs:element name="key" fixed="c-find">
+                                                <xs:element name="key" fixed="cfind">
                                                     <xs:annotation>
                                                         <xs:documentation>disponibilidad del comando</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:element>
                                                 <xs:group ref="truefalse"/>
                                                 
-                                                <xs:element name="key" fixed="c-get">
+                                                <xs:element name="key" fixed="cget">
                                                     <xs:annotation>
                                                         <xs:documentation>disponibilidad del comando</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:element>
                                                 <xs:group ref="truefalse"/>
                                                 
-                                                <xs:element name="key" fixed="c-move">
+                                                <xs:element name="key" fixed="cmove">
                                                     <xs:annotation>
                                                         <xs:documentation>disponibilidad del comando</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:element>
                                                 <xs:group ref="truefalse"/>
                                                 
-                                                <xs:element name="key" fixed="c-store">
+                                                <xs:element name="key" fixed="cstore">
                                                     <xs:annotation>
                                                         <xs:documentation>disponibilidad del comando</xs:documentation>
                                                     </xs:annotation>

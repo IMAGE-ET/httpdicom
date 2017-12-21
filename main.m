@@ -46,11 +46,14 @@
 
 #import "LFCGzipUtility.h"
 
-#import "DCMTypes.h"
+#import "DICMTypes.h"
 #import "NSString+PCS.h"
 #import "NSData+PCS.h"
+#import "NSData+ZIP.h"
 #import "NSURLSessionDataTask+PCS.h"
 #import "NSMutableURLRequest+PCS.h"
+#import "NSMutableString+DSCD.h"
+#import "NSUUID+DICM.h"
 
 
 //static immutable write
@@ -849,6 +852,29 @@ int main(int argc, const char* argv[]) {
                      pidlocaluri=entityDict[@"pidlocaluri"];
                  else return [RSErrorResponse responseWithClientError:404 message:@"[mwlitem] pacs '%@' doesn´t offer patients or pid service",pacs];
 
+                 
+                 NSString *stowjsonlocaluri=nil;
+                 NSString *stowxmllocaluri=nil;
+                 NSString *stowdicomlocaluri=nil;
+                 NSString *cstore=nil;
+                 if (
+                     entityDict[@"stowjsonlocaluri"]
+                     && [entityDict[@"stowjsonlocaluri"] length])
+                     stowjsonlocaluri=entityDict[@"stowjsonlocaluri"];
+                 else if (
+                     entityDict[@"stowxmllocaluri"]
+                     && [entityDict[@"stowxmllocaluri"] length])
+                     stowxmllocaluri=entityDict[@"stowxmllocaluri"];
+                 else if (
+                          entityDict[@"stowdicomlocaluri"]
+                          && [entityDict[@"stowdicomlocaluri"] length])
+                     stowdicomlocaluri=entityDict[@"stowdicomlocaluri"];
+                 else if (
+                          entityDict[@"cstore"]
+                          && [entityDict[@"cstore"]boolValue])
+                     cstore=entityDict[@"cstore"];
+                 else return [RSErrorResponse responseWithClientError:404 message:@"[mwlitem] pacs '%@' doesn´t offer stow or store service",pacs];
+
 //aet
                  NSUInteger aetIndex=[names indexOfObject:@"aet"];
                  NSString *aet=nil;
@@ -904,14 +930,19 @@ int main(int argc, const char* argv[]) {
 //PatientName
                  NSMutableString *PatientName=[NSMutableString string];
 
-                 NSUInteger PatientNameIndex=NSNotFound;
-                 PatientNameIndex=[names indexOfObject:@"apellido1"];
-                 if (PatientNameIndex==NSNotFound) return [RSErrorResponse responseWithClientError:404 message:@"[mwlitem] 'apellido1' required"];
-                 [PatientName appendString:[values[PatientNameIndex] uppercaseString]];
-                 PatientNameIndex=[names indexOfObject:@"apellido2"];
-                 if (PatientNameIndex!=NSNotFound) [PatientName appendFormat:@">%@",[values[PatientNameIndex] uppercaseString]];
-                 PatientNameIndex=[names indexOfObject:@"nombres"];
-                 if (PatientNameIndex!=NSNotFound) [PatientName appendFormat:@"^%@",[values[PatientNameIndex] uppercaseString]];
+                 NSUInteger apellido1Index=[names indexOfObject:@"apellido1"];
+                 if (apellido1Index==NSNotFound) return [RSErrorResponse responseWithClientError:404 message:@"[mwlitem] 'apellido1' required"];
+                 NSString *apellido1String=[values[apellido1Index] uppercaseString];
+                 [PatientName appendString:apellido1String];
+                 
+                 NSUInteger apellido2Index=[names indexOfObject:@"apellido2"];
+                 NSString *apellido2String=[values[apellido2Index] uppercaseString];
+                 if (apellido2Index!=NSNotFound) [PatientName appendFormat:@">%@",apellido2String];
+                 
+                 NSUInteger nombresIndex=[names indexOfObject:@"nombres"];
+                 NSString *nombresString=[values[nombresIndex] uppercaseString];
+
+                 if (nombresIndex!=NSNotFound) [PatientName appendFormat:@"^%@",nombresString];
 
 //PatientID
                  NSUInteger IDCountryIndex=[names indexOfObject:@"PatientIDCountry"];
@@ -1039,8 +1070,9 @@ int main(int argc, const char* argv[]) {
                   POSTmwlitem:mwlitemlocaluri
                   CS:@"ISO_IR 192"
                   aet:aet
-                  DA:[DCMTypes DAStringFromDate:now]
-                  TM:[DCMTypes TMStringFromDate:now]
+                  DA:[DICMTypes DAStringFromDate:now]
+                  TM:[DICMTypes TMStringFromDate:now]
+                  TZ:@"-0300"
                   modality:Modality
                   accessionNumber:AccessionNumber
                   status:@"ARRIVED"
@@ -1076,36 +1108,191 @@ int main(int argc, const char* argv[]) {
                  }
                  LOG_VERBOSE(@"[mwlitem] %@",[POSTmwlitemResponse description]);
 
-                 
-
-                 //crear enclosure pdf
-                 
-                 //mandar enclosure pdf
-
                  NSMutableString* html = [NSMutableString stringWithString:@"<html><body>"];
-                 [html appendFormat:@"<p>mwlitem added (%@)</p>",[now description]];
-                  /*
-                 [html appendString:@"<dl>"];
-                 for (int i=0; i < [names count]; i++)
+                 [html appendFormat:@"<p>mwlitem sent to %@</p>",mwlitemlocaluri];
+                 
+                 if (stowdicomlocaluri)
                  {
-                     [html appendFormat:@"<dt>%@</dt>",names[i]];
-                     if (  !types
-                         ||![types[i] length]
-                         || [types[i] hasPrefix:@"text"]
-                         || [types[i] hasPrefix:@"application/json"]
-                         || [types[i] hasPrefix:@"application/dicom+json"]
-                         || [types[i] hasPrefix:@"application/xml"]
-                         || [types[i] hasPrefix:@"application/xml+json"]
-                         )[html appendFormat:@"<dd>%@</dd>",values[i]];
-                     else
-                     {
-                         [html appendString:@"<dd>"];
-                         [html appendFormat:@"<embed src=\"data:%@;base64,%@\" width=\"500\" height=\"375\" type=\"%@\">",types[i],values[i],types[i] ];
-                         [html appendString:@"</dd>"];
-                     }
+
+                     //dscd object
+                     NSMutableString *dscd=[NSMutableString string];
+                     [dscd appendDSCDprefix];
                      
+                     [dscd appendSCDprefix];
+                     [dscd appendCDAprefix];
+                     
+                     unsigned long long organizationId;
+                     NSUInteger organizationIdIndex=[names indexOfObject:@"organizationId"];
+                     if (organizationIdIndex==NSNotFound) organizationId=214462250019;//BCBSU
+                     else organizationId=(unsigned long long)[values[organizationIdIndex]longLongValue];
+                     
+                     unsigned long long manufacturerId;
+                     NSUInteger manufacturerIdIndex=[names indexOfObject:@"manufacturerId"];
+                     if (manufacturerIdIndex==NSNotFound) manufacturerId=217215590012;//Opendicom
+                     else manufacturerId=(unsigned long long)[values[manufacturerIdIndex]longLongValue];
+
+                     [dscd appendCdaOntoWithTitle:StudyDescriptionArray[PROCMEANING]
+                                   OrganizationId:organizationId
+                                        timestamp:now
+                                      incremental:1
+                                   manufacturerId:manufacturerId];
+                     
+                     [dscd appendCdaRecordTargetWithPid:PatientID
+                                                 issuer:IssuerOfPatientID
+                                              apellido1:apellido1String
+                                              apellido2:apellido2String
+                                                nombres:nombresString
+                                                    sex:PatientSexValue
+                                              birthdate:PatientBirthdate];
+#pragma mark TODO custodian...
+                     [dscd appendCdaCustodianOid:@"2.16.858.0.2.16.86.9.0.0.2.214462250019"
+                                            name:@"BCBSU"];
+                     
+                     [dscd appendCdaRequestFrom:@"BCBSU"
+                                         issuer:@"2.16.858.0.2.16.86.9.0.0.2.214462250019"
+                                accessionNumber:AccessionNumber
+                                       studyUID:AccessionNumber
+                                           code:(NSString*)StudyDescriptionArray[PROCCODE]
+                                         system:(NSString*)StudyDescriptionArray[PROCSCHEME]
+                                        display:(NSString*)StudyDescriptionArray[PROCMEANING]
+                                       datetime:(NSString*)[[DICMTypes DAStringFromDate:now]
+                                             stringByAppendingString:[DICMTypes TMStringFromDate:now]]];
+                     
+                     [dscd appendComponentofWithSnomedCode:@"371527006"
+                                             snomedDisplay:@"informe radiológico (elemento de registro)"
+                                                     lowDA:[DICMTypes DAStringFromDate:now]
+                                                    highDA:[DICMTypes DAStringFromDate:now]
+                                               serviceCode:@"310125001"
+                                               serviceName:@"BCBSU CR PUNTA DEL ESTE"];
+                     
+                     NSString *enclosure=values[[names indexOfObject:@"enclosure"]];
+                     
+                     if ([enclosure isEqualToString:@"pdf"])
+                     {
+                         NSString *enclosurePdf=values[[names indexOfObject:@"enclosurePdf"]];
+                         if  (enclosurePdf && [enclosurePdf length]) [dscd appendUrlComponentWithPdf:enclosurePdf];
+                         else [dscd appendEmptyComponent];
+                     }
+                     else if ([enclosure isEqualToString:@"textarea"])
+                     {
+                         NSString *enclosureTextarea=values[[names indexOfObject:@"enclosureTextarea"]];
+                        if  (enclosureTextarea && [enclosureTextarea length])
+                            [dscd appendTextComponent:enclosureTextarea];
+                        else
+                            [dscd appendEmptyComponent];
+                     }
+                     else [dscd appendEmptyComponent];
+
+                     [dscd appendCDAsuffix];
+                     [dscd appendSCDsuffix];
+                     [dscd appendDSCDsuffix];
+
+                     //create dscd headers
+                     
+                     
+                     //dicom object
+                     NSMutableURLRequest *POSTenclosedRequest=
+                     [NSMutableURLRequest
+                      POSTenclosed:stowdicomlocaluri
+                      CS:@"ISO_IR 192"
+                      aet:aet
+                      DA:[DICMTypes DAStringFromDate:now]
+                      TM:[DICMTypes TMStringFromDate:now]
+                      TZ:@"-0300" 
+                      modality:@"OT"
+                      accessionNumber:AccessionNumber
+                      status:@"ARRIVED"
+                      procCode:StudyDescriptionArray[PROCCODE]
+                      procScheme:StudyDescriptionArray[PROCSCHEME]
+                      procMeaning:StudyDescriptionArray[PROCMEANING]
+                      priority:Priority
+                      name:PatientName
+                      pid:PatientID
+                      issuer:IssuerOfPatientID
+                      birthdate:(NSString *)PatientBirthdate
+                      sex:PatientSexValue
+                      instanceUID:[[NSUUID UUID]ITUTX667UIDString]
+                      seriesUID:[[NSUUID UUID]ITUTX667UIDString]
+                      studyUID:AccessionNumber
+                      seriesNumber:@"-32"
+                      seriesDescription:@"Solicitud de informe imagenológico"
+                      enclosureHL7II:@""
+                      enclosureTitle:@"Solicitud de informe imagenológico"
+                      enclosureTransferSyntax:@"1.2.840.10008.5.1.4.1.1.104.2"
+                      enclosureData:[dscd dataUsingEncoding:NSUTF8StringEncoding]
+                      contentType:@"application/dicom"
+                      timeout:timeout
+                      ];
+                     
+                     LOG_VERBOSE(@"%@",[POSTenclosedRequest URL]);
+                     LOG_VERBOSE(@"%@ %@",[POSTenclosedRequest HTTPMethod],[[POSTenclosedRequest allHTTPHeaderFields]description]);
+                     LOG_VERBOSE(@"%@",[[NSString alloc] initWithData:[POSTenclosedRequest HTTPBody] encoding:NSUTF8StringEncoding]);
+                     
+                     NSHTTPURLResponse *POSTenclosedResponse=nil;
+                     //URL properties: expectedContentLength, MIMEType, textEncodingName
+                     //HTTP properties: statusCode, allHeaderFields
+                     NSError *error=nil;
+
+                     NSData *POSTenclosedResponseData=[NSURLConnection sendSynchronousRequest:POSTenclosedRequest returningResponse:&POSTenclosedResponse error:&error];
+                     
+                     NSString *POSTenclosedResponseString=[[NSString alloc]initWithData:POSTenclosedResponseData encoding:NSUTF8StringEncoding];
+                     LOG_INFO(@"[mwlitem] POSTenclosedCDA at %@",stowdicomlocaluri);
+                     
+                     if (error || POSTenclosedResponse.statusCode>299)
+                     {
+
+                     
+                      //Failure
+                      //=======
+                      //400 - Bad Request (bad syntax)
+                      //401 - Unauthorized
+                      //403 - Forbidden (insufficient priviledges)
+                      //409 - Conflict (formed correctly - system unable to store due to a conclict in the request
+                      //(e.g., unsupported SOP Class or StudyInstance UID mismatch)
+                      //additional information can be found in teh xml response body
+                      //415 - unsopported media type (e.g. not supporting JSON)
+                      //500 (instance already exists in db - delete file)
+                      //503 - Busy (out of resource)
+                      
+                      //Warning
+                      //=======
+                      //202 - Accepted (stored some - not all)
+                      //additional information can be found in teh xml response body
+                      
+                      //Success
+                      //=======
+                      //200 - OK (successfully stored all the instances)
+
+
+                         LOG_ERROR(@"[mwlitem] can not POST CDA for patient: %@. Error: %@ body:%@",PatientName,[error description], POSTenclosedResponseString);
+                         return [RSErrorResponse responseWithClientError:404 message:@"[mwlitem] can not POST CDA for patient: %@. Error: %@ body:%@",PatientName,[error description], POSTenclosedResponseString];
+                     }
+                     LOG_VERBOSE(@"[mwlitem] %@",[POSTenclosedResponse description]);
+                     [html appendFormat:@"<p>solicitud dicom cda sent to %@</p>",stowdicomlocaluri];
+
+                      /*
+                     [html appendString:@"<dl>"];
+                     for (int i=0; i < [names count]; i++)
+                     {
+                         [html appendFormat:@"<dt>%@</dt>",names[i]];
+                         if (  !types
+                             ||![types[i] length]
+                             || [types[i] hasPrefix:@"text"]
+                             || [types[i] hasPrefix:@"application/json"]
+                             || [types[i] hasPrefix:@"application/dicom+json"]
+                             || [types[i] hasPrefix:@"application/xml"]
+                             || [types[i] hasPrefix:@"application/xml+json"]
+                             )[html appendFormat:@"<dd>%@</dd>",values[i]];
+                         else
+                         {
+                             [html appendString:@"<dd>"];
+                             [html appendFormat:@"<embed src=\"data:%@;base64,%@\" width=\"500\" height=\"375\" type=\"%@\">",types[i],values[i],types[i] ];
+                             [html appendString:@"</dd>"];
+                         }
+                       
+                     }
+                     [html appendString:@"</dl>"];*/
                  }
-                 [html appendString:@"</dl>"];*/
                  [html appendString:@"</body></html>"];
                  
                  return [RSDataResponse responseWithHTML:html];
