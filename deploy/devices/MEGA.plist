@@ -34,7 +34,11 @@
             <string id="qidolocaluri">http://192.168.1.51:8080/dcm4chee-arc/aets/DCM4CHEE/rs</string>
             <key>wadorslocaluri</key>
             <string id="wadorslocaluri">http://192.168.1.51:8080/dcm4chee-arc/aets/DCM4CHEE/rs</string>
-            <key>stowlocaluri</key>
+            <key>stowjsonlocaluri</key>
+            <string id="stowlocaluri"></string>
+            <key>stowxmllocaluri</key>
+            <string id="stowlocaluri"></string>
+            <key>stowdicomlocaluri</key>
             <string id="stowlocaluri">http://192.168.1.51:8080/dcm4chee-arc/aets/DCM4CHEE/rs/studies</string>
             <key>mwlitemlocaluri</key>
             <string id="mwlitemlocaluri">http://192.168.1.51:8080/dcm4chee-arc/aets/DCM4CHEE/rs/mwlitems</string>
@@ -46,13 +50,13 @@
             <string id="dicomip">192.168.15.200</string>
             <key>dicomport</key>
             <string id="dicomport">11112</string>
-            <key>c-find</key>
+            <key>cfind</key>
             <false/>
-            <key>c-get</key>
+            <key>cget</key>
             <false/>
-            <key>c-move</key>
+            <key>cmove</key>
             <false/>
-            <key>c-store</key>
+            <key>cstore</key>
             <false/>
             <key>ormlocaluri</key>
             <string id="ormlocaluri"></string>
